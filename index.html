@@ -1,0 +1,156 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Project 1 - Final Stable Version</title>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <style>
+    html, body { margin: 0; padding: 0; height: 100%; font-family: monospace; background: #111; color: #00ff00; }
+    #map { width: 100%; height: 100%; z-index: 1; }
+    .hud { position: absolute; width: 100%; bottom: 0; background: rgba(0,0,0,0.85); padding: 8px; box-sizing: border-box; z-index: 999; }
+    .hud-row { display: flex; justify-content: space-between; flex-wrap: wrap; font-size: 12px; }
+    .hud-buttons { display: flex; gap: 10px; margin-top: 5px; flex-wrap: wrap; }
+    .hud-buttons button { background: black; color: #00ff00; border: 1px solid #00ff00; padding: 5px 10px; cursor: pointer; font-size: 12px; }
+    #centerBtn { position: absolute; right: 10px; top: 60px; background: black; border: 1px solid #00ff00; color: #00ff00; border-radius: 50%; width: 30px; height: 30px; text-align: center; line-height: 30px; cursor: pointer; z-index: 999; }
+    #address { position: absolute; top: 0; left: 0; padding: 5px 10px; font-size: 12px; background: rgba(0,0,0,0.8); color: #00ff00; z-index: 999; }
+  </style>
+</head>
+<body>
+  <div id="map"></div>
+  <div id="centerBtn" title="Center GPS">◉</div>
+  <button id="toggleMapType" style="position:absolute;top:50px;left:10px;z-index:999;background:black;color:#00ff00;border:1px solid #00ff00;padding:5px;font-size:12px;">SATELLITE VIEW</button></div>
+<div id="timer" style="position:absolute;top:115px;left:10px;z-index:999;font-size:12px;background:rgba(0,0,0,0.7);padding:4px 6px 4px 6px;font-weight:bold;border:1px solid #00ff00;margin-bottom:2px;"> style="position:absolute;top:90px;left:10px;z-index:999;font-size:12px;">Active Time: 00:00:00</div></div>
+<div id="address">LOCATING...</div>
+
+  <div class="hud">
+    <div class="hud-row">
+      <div>OFFICER: <input id="officer" type="text" placeholder="Enter Officer Name" value="" style="background:black;color:#00ff00;border:none;" /></div>
+      <div id="clock">TIME: --:--:--</div>
+      <div id="gpsStatus">GPS: WAITING...</div>
+      <div id="markerCount">MARKERS: 0</div>
+    </div>
+    <div class="hud-buttons">
+      <button onclick="setMarkerMode('clear')">[✓] SECURE</button>
+      <button onclick="setMarkerMode('incident')">[⚠] INCIDENT</button>
+      <button onclick="setMarkerMode('move')">[↻] MOVEMENT</button>
+      <button onclick="setMarkerMode('custom')">[+] ADD CUSTOM</button>
+      <button onclick="clearAll()">🗑️ CLEAR MARKERS</button>
+    </div>
+  </div>
+
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+  <script>
+    const map = L.map('map').setView([33.4484, -112.0740], 19);
+    const street = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png');
+const satellite = L.tileLayer('https://{s}.google.com/vt/lyrs=s&x={x}&y={y}&z={z}', {crossOrigin: "anonymous", 
+  subdomains: ['mt0', 'mt1', 'mt2', 'mt3'], maxZoom: 20
+});
+street.addTo(map);
+let currentLayer = street;
+document.getElementById('toggleMapType').onclick = () => {
+  map.removeLayer(currentLayer);
+  currentLayer = currentLayer === street ? satellite : street;
+  currentLayer.addTo(map);
+  document.getElementById('toggleMapType').textContent = currentLayer === street ? 'SATELLITE VIEW' : 'MAP VIEW';
+};
+
+    let markerCount = 0;
+    let markerMode = null;
+    let trail = [];
+    let markerGroup = L.layerGroup().addTo(map);
+
+    function updateClock() {
+      const now = new Date();
+      document.getElementById('clock').textContent = "TIME: " + now.toLocaleString();
+    }
+    setInterval(updateClock, 1000);
+
+    function reverseGeocode(lat, lon) {
+      fetch(`https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${lat}&lon=${lon}`)
+        .then(res => res.json())
+        .then(data => {
+          document.getElementById('address').textContent = data.display_name || `Lat: ${lat.toFixed(5)}, Lon: ${lon.toFixed(5)}`;
+        }).catch(() => {
+          document.getElementById('address').textContent = `Lat: ${lat.toFixed(5)}, Lon: ${lon.toFixed(5)}`;
+        });
+    }
+
+    
+let startTime = Date.now();
+function updateTimer() {
+  let now = Date.now() - startTime;
+  let hrs = Math.floor(now / 3600000);
+  let mins = Math.floor((now % 3600000) / 60000);
+  let secs = Math.floor((now % 60000) / 1000);
+  document.getElementById('timer').textContent =
+    "Active Time: " + String(hrs).padStart(2, '0') + ":" + String(mins).padStart(2, '0') + ":" + String(secs).padStart(2, '0');
+}
+setInterval(updateTimer, 1000);
+
+navigator.geolocation.watchPosition(pos => {
+    
+      const { latitude, longitude } = pos.coords;
+      document.getElementById('gpsStatus').textContent = "GPS: LOCKED";
+
+      const latlng = [latitude, longitude];
+      trail.push(latlng);
+      L.circleMarker(latlng, { radius: 2, color: '#00ff00', fillColor: '#00ff00', fillOpacity: 1 }).addTo(map); // breadcrumb dot
+      reverseGeocode(latitude, longitude);
+    }, err => {
+      document.getElementById('gpsStatus').textContent = "GPS: ERROR";
+    }, { enableHighAccuracy: true });
+
+    function setMarkerMode(type) {
+      markerMode = type;
+      alert(`Tap on the map to place ${type.toUpperCase()} marker.`);
+    }
+
+    map.on('click', function (e) {
+      if (!markerMode) return;
+      let label = markerMode.toUpperCase();
+      let color = markerMode === 'clear' ? 'green' :
+                  markerMode === 'incident' ? 'red' :
+                  markerMode === 'move' ? '#ffaa00' : 'cyan';
+
+      if (markerMode === 'custom') {
+        const custom = prompt("Enter custom label:");
+        if (!custom) return;
+        label = custom;
+      }
+
+      const m = L.circleMarker(e.latlng, { radius: 6, color }).bindTooltip(label);
+      m.addTo(markerGroup);
+      markerCount++;
+      document.getElementById('markerCount').textContent = `MARKERS: ${markerCount}`;
+      markerMode = null;
+    });
+
+    function takeScreenshot() {
+  setTimeout(() => {
+    html2canvas(document.body).then(canvas => {
+        const a = document.createElement("a");
+        a.href = canvas.toDataURL("image/png");
+        a.download = `Project1_Screenshot_${Date.now()}.png`;
+        a.click();
+      });
+  }, 500);
+    }
+
+    function clearAll() {
+      markerGroup.clearLayers();
+      markerCount = 0;
+      document.getElementById('markerCount').textContent = "MARKERS: 0";
+      trail = [];
+    }
+
+    document.getElementById('centerBtn').onclick = () => {
+      if (trail.length > 0) {
+        map.setView(trail[trail.length - 1], map.getZoom());
+      }
+    };
+  </script>
+</body>
+</html>
