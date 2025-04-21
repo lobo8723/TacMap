@@ -3,11 +3,11 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Project 1 - Final Stable Version (v1.2R12)</title>
+  <title>Project 1 - Final Stable Version (v1.2R13)</title>
 
   <!-- =======================
        CHANGE LOG
-       v1.2R12 - Button boxes auto-size to fit text
+       v1.2R13 - Added auto-collapsing dropdown action menu
        ======================= -->
 
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
@@ -15,27 +15,66 @@
     html, body { margin: 0; padding: 0; height: 100%; font-family: monospace; background: #111; color: #00ff00; }
     #map { width: 100%; height: 100%; z-index: 1; }
 
-    .hud { position: absolute; width: 100%; bottom: 0; background: rgba(0,0,0,0.85); padding: 8px; box-sizing: border-box; z-index: 999; }
-    .hud-row { display: flex; justify-content: space-between; flex-wrap: wrap; font-size: 12px; margin-bottom: 6px; }
-
-    .hud-buttons {
-      display: flex;
-      justify-content: center;
-      flex-wrap: wrap;
-      gap: 10px;
-      padding-top: 6px;
+    .hud {
+      position: absolute;
+      width: 100%;
+      bottom: 0;
+      background: rgba(0,0,0,0.85);
+      padding: 8px;
+      box-sizing: border-box;
+      z-index: 999;
     }
 
-    .hud-buttons button {
+    .hud-row {
+      display: flex;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      font-size: 12px;
+      margin-bottom: 6px;
+    }
+
+    .dropdown {
+      position: relative;
+      display: inline-block;
+      text-align: center;
+    }
+
+    .dropdown-btn {
       background: black;
       color: #00ff00;
       border: 1px solid #00ff00;
       padding: 6px 12px;
       cursor: pointer;
       font-size: 12px;
-      white-space: nowrap;
-      height: auto;
-      width: auto;
+    }
+
+    .dropdown-content {
+      display: none;
+      position: absolute;
+      bottom: 100%;
+      left: 50%;
+      transform: translateX(-50%);
+      background-color: black;
+      border: 1px solid #00ff00;
+      padding: 8px;
+      z-index: 1000;
+      box-shadow: 0 0 10px #00ff00;
+    }
+
+    .dropdown-content button {
+      display: block;
+      width: 100%;
+      background: black;
+      color: #00ff00;
+      border: 1px solid #00ff00;
+      padding: 6px;
+      margin-bottom: 4px;
+      font-size: 12px;
+      cursor: pointer;
+    }
+
+    .dropdown-content button:last-child {
+      margin-bottom: 0;
     }
 
     #centerBtn {
@@ -103,12 +142,17 @@
       <div id="gpsStatus">GPS: WAITING...</div>
       <div id="markerCount">MARKERS: 0</div>
     </div>
-    <div class="hud-buttons">
-      <button onclick="setMarkerMode('clear')">[✓] SECURE</button>
-      <button onclick="setMarkerMode('incident')">[⚠] INCIDENT</button>
-      <button onclick="setMarkerMode('move')">[↻] MOVEMENT</button>
-      <button onclick="setMarkerMode('custom')">[+] ADD CUSTOM</button>
-      <button onclick="clearAll()">🗑️ CLEAR MARKERS</button>
+    <div style="text-align:center;">
+      <div class="dropdown">
+        <button class="dropdown-btn" onclick="toggleDropdown()">[+] ACTION MENU</button>
+        <div id="dropdownContent" class="dropdown-content">
+          <button onclick="handleAction('clear')">[✓] SECURE</button>
+          <button onclick="handleAction('incident')">[⚠] INCIDENT</button>
+          <button onclick="handleAction('move')">[↻] MOVEMENT</button>
+          <button onclick="handleAction('custom')">[+] ADD CUSTOM</button>
+          <button onclick="clearAll()">🗑️ CLEAR MARKERS</button>
+        </div>
+      </div>
     </div>
   </div>
 
@@ -122,7 +166,48 @@
     let map, trail = [], markerGroup, markerCount = 0, markerMode = null, startTime = Date.now();
 
     // =======================
-    // INIT: MAP + LAYERS + CLICK EVENTS
+    // DROPDOWN MENU LOGIC
+    // =======================
+    function toggleDropdown() {
+      const menu = document.getElementById("dropdownContent");
+      menu.style.display = menu.style.display === "block" ? "none" : "block";
+    }
+
+    function handleAction(type) {
+      toggleDropdown();  // Auto-collapse
+      if (type === 'custom') {
+        const custom = prompt("Enter custom label:");
+        if (!custom) return;
+        placeMarker(custom, 'cyan');
+      } else {
+        const label = type.toUpperCase();
+        const color = type === 'clear' ? 'green' :
+                      type === 'incident' ? 'red' :
+                      type === 'move' ? '#ffaa00' : 'cyan';
+        placeMarker(label, color);
+      }
+    }
+
+    function placeMarker(label, color) {
+      map.once('click', function (e) {
+        const m = L.circleMarker(e.latlng, { radius: 6, color }).bindTooltip(label);
+        m.addTo(markerGroup);
+        markerCount++;
+        document.getElementById('markerCount').textContent = `MARKERS: ${markerCount}`;
+      });
+      alert(`Tap on the map to place ${label} marker.`);
+    }
+
+    function clearAll() {
+      toggleDropdown();
+      markerGroup.clearLayers();
+      markerCount = 0;
+      trail = [];
+      document.getElementById('markerCount').textContent = "MARKERS: 0";
+    }
+
+    // =======================
+    // MAP SETUP
     // =======================
     function setupMap() {
       map = L.map('map').setView([33.4484, -112.0740], 19);
@@ -140,84 +225,48 @@
         currentLayer.addTo(map);
         document.getElementById('toggleMapType').textContent = currentLayer === street ? 'SATELLITE VIEW' : 'MAP VIEW';
       };
-
-      map.on('click', function (e) {
-        if (!markerMode) return;
-        let label = markerMode.toUpperCase();
-        let color = markerMode === 'clear' ? 'green' :
-                    markerMode === 'incident' ? 'red' :
-                    markerMode === 'move' ? '#ffaa00' : 'cyan';
-
-        if (markerMode === 'custom') {
-          const custom = prompt("Enter custom label:");
-          if (!custom) return;
-          label = custom;
-        }
-
-        const m = L.circleMarker(e.latlng, { radius: 6, color }).bindTooltip(label);
-        m.addTo(markerGroup);
-        markerCount++;
-        document.getElementById('markerCount').textContent = `MARKERS: ${markerCount}`;
-        markerMode = null;
-      });
     }
 
     // =======================
-    // INIT: GPS TRACKING
+    // GPS
     // =======================
     function initGPS() {
       navigator.geolocation.watchPosition(pos => {
         const { latitude, longitude, accuracy } = pos.coords;
-
         if (accuracy > 20) {
           document.getElementById('gpsStatus').textContent = `GPS: REJECTED (${Math.round(accuracy)}m)`;
           return;
         }
-
         document.getElementById('gpsStatus').textContent = `GPS: LOCKED (${Math.round(accuracy)}m)`;
-
         const latlng = [latitude, longitude];
         trail.push(latlng);
         L.circleMarker(latlng, {
-          radius: 1.5,
-          color: '#00ff00',
-          fillColor: '#00ff00',
-          fillOpacity: 1
+          radius: 1.5, color: '#00ff00', fillColor: '#00ff00', fillOpacity: 1
         }).addTo(map);
-
         reverseGeocode(latitude, longitude);
       }, err => {
         document.getElementById('gpsStatus').textContent = "GPS: ERROR";
-      }, {
-        enableHighAccuracy: true,
-        maximumAge: 0,
-        timeout: 5000
-      });
+      }, { enableHighAccuracy: true, maximumAge: 0, timeout: 5000 });
     }
 
     // =======================
-    // INIT: TIMERS & CLOCK
+    // TIMERS & CLOCK
     // =======================
     function startTimer() {
       setInterval(() => {
-        let now = Date.now() - startTime;
-        let hrs = Math.floor(now / 3600000);
-        let mins = Math.floor((now % 3600000) / 60000);
-        let secs = Math.floor((now % 60000) / 1000);
-        document.getElementById('timer').textContent = "Active Time: " +
-          String(hrs).padStart(2, '0') + ":" +
-          String(mins).padStart(2, '0') + ":" +
-          String(secs).padStart(2, '0');
-      }, 1000);
-
-      setInterval(() => {
         const now = new Date();
         document.getElementById('clock').textContent = "TIME: " + now.toLocaleString();
+        const elapsed = Date.now() - startTime;
+        const hrs = Math.floor(elapsed / 3600000);
+        const mins = Math.floor((elapsed % 3600000) / 60000);
+        const secs = Math.floor((elapsed % 60000) / 1000);
+        document.getElementById('timer').textContent =
+          "Active Time: " + String(hrs).padStart(2, '0') + ":" + String(mins).padStart(2, '0') + ":" + String(secs).padStart(2, '0');
       }, 1000);
     }
 
     // =======================
-    // REVERSE GEOCODE
+    // REVERSE GEOCODING
     // =======================
     function reverseGeocode(lat, lon) {
       fetch(`https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${lat}&lon=${lon}`)
@@ -230,27 +279,11 @@
     }
 
     // =======================
-    // MARKER CONTROLS
-    // =======================
-    function setMarkerMode(type) {
-      markerMode = type;
-      alert(`Tap on the map to place ${type.toUpperCase()} marker.`);
-    }
-
-    function clearAll() {
-      markerGroup.clearLayers();
-      markerCount = 0;
-      trail = [];
-      document.getElementById('markerCount').textContent = "MARKERS: 0";
-    }
-
-    // =======================
-    // MAP INTERACTIONS
+    // MAP INTERACTION
     // =======================
     document.getElementById('centerBtn').onclick = () => {
       if (trail.length > 0) {
-        const last = trail[trail.length - 1];
-        map.setView(last, map.getZoom());
+        map.setView(trail[trail.length - 1], map.getZoom());
       } else {
         alert("GPS location not yet available.");
       }
