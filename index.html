@@ -3,11 +3,11 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Project 1 - Final Stable Version (v1.2R9)</title>
+  <title>Project 1 - Final Stable Version (v1.2R10)</title>
 
   <!-- =======================
        CHANGE LOG
-       v1.2R9 - Aligned all HUD buttons in a clean, even row
+       v1.2R10 - HUD buttons fully aligned into a single row
        ======================= -->
 
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
@@ -17,13 +17,16 @@
 
     .hud { position: absolute; width: 100%; bottom: 0; background: rgba(0,0,0,0.85); padding: 8px; box-sizing: border-box; z-index: 999; }
     .hud-row { display: flex; justify-content: space-between; flex-wrap: wrap; font-size: 12px; margin-bottom: 6px; }
+
     .hud-buttons {
       display: flex;
       justify-content: center;
-      gap: 12px;
       flex-wrap: nowrap;
-      flex-direction: row;
+      gap: 12px;
+      overflow-x: auto;
+      padding: 6px 0;
     }
+
     .hud-buttons button {
       background: black;
       color: #00ff00;
@@ -32,6 +35,8 @@
       cursor: pointer;
       font-size: 12px;
       white-space: nowrap;
+      min-width: 110px;
+      text-align: center;
     }
 
     #centerBtn {
