@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Project 1 - Final Stable Version (v1.2)</title>
+  <title>Project 1 - Final Stable Version (v1.2R)</title>
 
   <!-- =======================
        CHANGE LOG
@@ -12,7 +12,8 @@
        v1.1R    - Modular recovery
        v1.1R3   - GPS center fix
        v1.1R4   - Smaller breadcrumbs
-       v1.2     - Step counter added (DeviceMotion)
+       v1.2     - Step counter added (initial)
+       v1.2R    - Step counter placement corrected
        ======================= -->
 
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
@@ -25,8 +26,14 @@
     .hud-buttons button { background: black; color: #00ff00; border: 1px solid #00ff00; padding: 5px 10px; cursor: pointer; font-size: 12px; }
     #centerBtn { position: absolute; right: 10px; top: 60px; background: black; border: 1px solid #00ff00; color: #00ff00; border-radius: 50%; width: 30px; height: 30px; text-align: center; line-height: 30px; cursor: pointer; z-index: 999; }
     #address { position: absolute; top: 0; left: 0; padding: 5px 10px; font-size: 12px; background: rgba(0,0,0,0.8); color: #00ff00; z-index: 999; }
-    #timer { position:absolute;top:115px;left:10px;z-index:999;font-size:12px;background:rgba(0,0,0,0.7);padding:4px 6px;font-weight:bold;border:1px solid #00ff00; }
-    #stepCounter { position:absolute;top:90px;left:10px;z-index:999;font-size:12px;background:rgba(0,0,0,0.7);padding:4px 6px;font-weight:bold;border:1px solid #00ff00; }
+    #toggleMapType, #stepCounter, #timer {
+      position: absolute; left: 10px; z-index: 999; font-size: 12px;
+      background: rgba(0,0,0,0.7); padding: 4px 6px; font-weight: bold;
+      border: 1px solid #00ff00;
+    }
+    #toggleMapType { top: 50px; padding: 5px; background: black; color: #00ff00; }
+    #stepCounter { top: 80px; }
+    #timer { top: 110px; }
   </style>
 </head>
 
@@ -36,7 +43,7 @@
        ======================= -->
   <div id="map"></div>
   <div id="centerBtn" title="Center GPS">◉</div>
-  <button id="toggleMapType" style="position:absolute;top:50px;left:10px;z-index:999;background:black;color:#00ff00;border:1px solid #00ff00;padding:5px;font-size:12px;">SATELLITE VIEW</button>
+  <button id="toggleMapType">SATELLITE VIEW</button>
   <div id="stepCounter">STEPS: 0</div>
   <div id="timer">Active Time: 00:00:00</div>
   <div id="address">LOCATING...</div>
@@ -111,7 +118,7 @@
     }
 
     // =======================
-    // INIT: GPS TRACKING (Accuracy Filter + Smaller Breadcrumbs)
+    // INIT: GPS TRACKING (with Accuracy Filter + Smaller Breadcrumbs)
     // =======================
     function initGPS() {
       navigator.geolocation.watchPosition(pos => {
@@ -219,7 +226,7 @@
                       Math.abs(accel.y - lastAccel.y || 0) +
                       Math.abs(accel.z - lastAccel.z || 0);
 
-        if (delta > 1.5) { // Simple threshold
+        if (delta > 1.5) {
           steps++;
           document.getElementById("stepCounter").textContent = "STEPS: " + steps;
         }
