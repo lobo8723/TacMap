@@ -3,14 +3,15 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Project 1 - Final Stable Version (v1.1R2)</title>
+  <title>Project 1 - Final Stable Version (v1.1R3)</title>
 
   <!-- =======================
        CHANGE LOG
        v1.0 - Modular foundation
        v1.1 - Added GPS accuracy filter
-       v1.1R - Restored modular structure
-       v1.1R2 - Restored full marker interaction (map click fix)
+       v1.1R - Modular structure restored
+       v1.1R2 - Fixed marker placement / map click
+       v1.1R3 - GPS center button functionality restored + hardened
        ======================= -->
 
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
@@ -59,7 +60,7 @@
     // GLOBAL VARIABLES
     let map, trail = [], markerGroup, markerCount = 0, markerMode = null, startTime = Date.now();
 
-    // INIT: MAP + LAYERS + CLICK EVENTS (FIXED)
+    // INIT: MAP + LAYERS + CLICK EVENTS
     function setupMap() {
       map = L.map('map').setView([33.4484, -112.0740], 19);
       const street = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png');
@@ -172,12 +173,17 @@
       document.getElementById('markerCount').textContent = "MARKERS: 0";
     }
 
-    // CENTER MAP ON CURRENT LOCATION
+    // CENTER MAP ON LAST GPS POINT — Hardened
     document.getElementById('centerBtn').onclick = () => {
-      if (trail.length > 0) map.setView(trail[trail.length - 1], map.getZoom());
+      if (trail.length > 0) {
+        const last = trail[trail.length - 1];
+        map.setView(last, map.getZoom());
+      } else {
+        alert("GPS location not yet available.");
+      }
     };
 
-    // INIT ALL MODULES
+    // INIT EVERYTHING
     setupMap();
     initGPS();
     startTimer();
