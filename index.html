@@ -3,143 +3,147 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>TacMap v1.2R15 – Heatmap Toggle</title>
+  <title>Project 1 - Final Stable Version (v1.2R12)</title>
+
+  <!-- =======================
+       CHANGE LOG
+       v1.2R12 - Button boxes auto-size to fit text
+       ======================= -->
+
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <style>
-    html, body { margin: 0; padding: 0; height: 100%; background: #111; color: #00ff00; font-family: monospace; }
-    #map { width: 100%; height: 100%; }
-    .hud { position: absolute; bottom: 0; width: 100%; background: rgba(0,0,0,0.85); color: #00ff00; padding: 8px; font-size: 12px; box-sizing: border-box; z-index: 999; }
-    .hud-row { display: flex; justify-content: space-between; flex-wrap: wrap; margin-bottom: 6px; }
-    .dropdown { text-align: center; }
-    .dropdown-btn { background: black; color: #00ff00; border: 1px solid #00ff00; padding: 6px 12px; cursor: pointer; font-size: 12px; }
-    .dropdown-content { display: none; position: relative; margin-top: 6px; background: black; border: 1px solid #00ff00; }
-    .dropdown-content button { display: block; width: 100%; background: black; color: #00ff00; border: 1px solid #00ff00; padding: 6px; font-size: 12px; cursor: pointer; }
-    #centerBtn, #toggleMapType, #timer, #address { position: absolute; z-index: 999; font-size: 12px; background: rgba(0,0,0,0.7); border: 1px solid #00ff00; color: #00ff00; padding: 4px 6px; }
-    #centerBtn { right: 10px; top: 60px; border-radius: 50%; width: 30px; height: 30px; text-align: center; line-height: 20px; }
-    #toggleMapType { left: 10px; top: 50px; }
-    #timer { left: 10px; top: 90px; }
-    #address { top: 0; left: 0; padding: 5px 10px; background: rgba(0,0,0,0.8); }
+    html, body { margin: 0; padding: 0; height: 100%; font-family: monospace; background: #111; color: #00ff00; }
+    #map { width: 100%; height: 100%; z-index: 1; }
+    .hud { position: absolute; width: 100%; bottom: 0; background: rgba(0,0,0,0.85); padding: 8px; box-sizing: border-box; z-index: 999; }
+    .hud-row { display: flex; justify-content: space-between; flex-wrap: wrap; font-size: 12px; margin-bottom: 6px; }
+    .hud-buttons { display: flex; justify-content: center; flex-wrap: wrap; gap: 10px; padding-top: 6px; }
+    .hud-buttons button {
+      background: black; color: #00ff00; border: 1px solid #00ff00;
+      padding: 6px 12px; cursor: pointer; font-size: 12px;
+      white-space: nowrap; height: auto; width: auto;
+    }
+    #centerBtn {
+      position: absolute; right: 10px; top: 60px;
+      background: black; border: 1px solid #00ff00; color: #00ff00;
+      border-radius: 50%; width: 30px; height: 30px;
+      text-align: center; line-height: 30px; cursor: pointer; z-index: 999;
+    }
+    #address {
+      position: absolute; top: 0; left: 0; padding: 5px 10px;
+      font-size: 12px; background: rgba(0,0,0,0.8); color: #00ff00; z-index: 999;
+    }
+    #toggleMapType, #timer {
+      position: absolute; left: 10px; z-index: 999;
+      font-size: 12px; background: rgba(0,0,0,0.7); padding: 4px 6px;
+      font-weight: bold; border: 1px solid #00ff00;
+    }
+    #toggleMapType { top: 50px; background: black; color: #00ff00; padding: 5px; }
+    #timer { top: 80px; }
   </style>
 </head>
 <body>
   <div id="map"></div>
-  <div id="centerBtn" title="Center GPS">◉</div>
+  <div id="centerBtn" title="Center GPS">â</div>
   <button id="toggleMapType">SATELLITE VIEW</button>
   <div id="timer">Active Time: 00:00:00</div>
   <div id="address">LOCATING...</div>
   <div class="hud">
     <div class="hud-row">
-      <div>OFFICER: <input id="officer" type="text" style="background:black;color:#00ff00;border:none;" placeholder="Enter Officer Name" /></div>
+      <div>OFFICER: <input id="officer" type="text" placeholder="Enter Officer Name" style="background:black;color:#00ff00;border:none;" /></div>
       <div id="clock">TIME: --:--:--</div>
       <div id="gpsStatus">GPS: WAITING...</div>
       <div id="markerCount">MARKERS: 0</div>
     </div>
-    <div class="dropdown">
-      <button class="dropdown-btn" onclick="toggleDropdown()">[+] ACTION MENU</button>
-      <div id="dropdownContent" class="dropdown-content">
-        <button onclick="handleAction('clear')">[✓] SECURE</button>
-        <button onclick="handleAction('incident')">[⚠] INCIDENT</button>
-        <button onclick="handleAction('move')">[↻] MOVEMENT</button>
-        <button onclick="handleAction('custom')">[+] ADD CUSTOM</button>
-        <button onclick="clearAll()">🗑️ CLEAR MARKERS</button>
-                      </div>
+    <div class="hud-buttons">
+      <button onclick="setMarkerMode('clear')">[â] SECURE</button>
+      <button onclick="setMarkerMode('incident')">[â ] INCIDENT</button>
+      <button onclick="setMarkerMode('move')">[â»] MOVEMENT</button>
+      <button onclick="setMarkerMode('custom')">[+] ADD CUSTOM</button>
+      <button onclick="clearAll()">ðï¸ CLEAR MARKERS</button>
     </div>
   </div>
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-  
+  <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
   <script>
-    // === GLOBAL VARIABLES ===
-    let map, heatLayer, markerGroup, trail = [], markerCount = 0, markerMode = null, startTime = Date.now();
-    const dropdown = document.getElementById('dropdownContent');
+    // =======================
+    // GLOBAL VARIABLES
+    // =======================
+    let map, trail = [], markerGroup, markerCount = 0, markerMode = null, startTime = Date.now();
 
-    // === MAP SETUP ===
-    map = L.map('map').setView([33.4484, -112.0740], 17);
-    const street = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png');
-    const satellite = L.tileLayer('https://{s}.google.com/vt/lyrs=s&x={x}&y={y}&z={z}', {
-      subdomains: ['mt0', 'mt1', 'mt2', 'mt3'], maxZoom: 20
-    });
-    let currentLayer = street;
-    street.addTo(map);
-    markerGroup = L.layerGroup().addTo(map);
-
-    document.getElementById('toggleMapType').onclick = () => {
-      map.removeLayer(currentLayer);
-      currentLayer = currentLayer === street ? satellite : street;
-      currentLayer.addTo(map);
-      document.getElementById('toggleMapType').textContent = currentLayer === street ? 'SATELLITE VIEW' : 'MAP VIEW';
-    };
-
-    // === DROPDOWN + ACTION HANDLERS ===
-    function toggleDropdown() {
-      dropdown.style.display = dropdown.style.display === 'block' ? 'none' : 'block';
-    }
-
-    function handleAction(type) {
-      toggleDropdown();
-      if (type === 'custom') {
-        const label = prompt("Enter custom label:");
-        if (!label) return;
-        setMarker(label, 'cyan');
-      } else {
-        const colors = { clear: 'green', incident: 'red', move: '#ffaa00' };
-        setMarker(type.toUpperCase(), colors[type] || 'cyan');
-      }
-    }
-
-    function setMarker(label, color) {
-      map.once('click', function (e) {
+    // =======================
+    // INIT: MAP + LAYERS + CLICK EVENTS
+    // =======================
+    function setupMap() {
+      map = L.map('map').setView([33.4484, -112.0740], 19);
+      const street = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png');
+      const satellite = L.tileLayer('https://{s}.google.com/vt/lyrs=s&x={x}&y={y}&z={z}', {
+        crossOrigin: "anonymous", subdomains: ['mt0', 'mt1', 'mt2', 'mt3'], maxZoom: 20
+      });
+      let currentLayer = street;
+      street.addTo(map);
+      markerGroup = L.layerGroup().addTo(map);
+      document.getElementById('toggleMapType').onclick = () => {
+        map.removeLayer(currentLayer);
+        currentLayer = currentLayer === street ? satellite : street;
+        currentLayer.addTo(map);
+        document.getElementById('toggleMapType').textContent = currentLayer === street ? 'SATELLITE VIEW' : 'MAP VIEW';
+      };
+      map.on('click', function (e) {
+        if (!markerMode) return;
+        let label = markerMode.toUpperCase();
+        let color = markerMode === 'clear' ? 'green' : markerMode === 'incident' ? 'red' : markerMode === 'move' ? '#ffaa00' : 'cyan';
+        if (markerMode === 'custom') {
+          const custom = prompt("Enter custom label:");
+          if (!custom) return;
+          label = custom;
+        }
         const m = L.circleMarker(e.latlng, { radius: 6, color }).bindTooltip(label);
         m.addTo(markerGroup);
         markerCount++;
         document.getElementById('markerCount').textContent = `MARKERS: ${markerCount}`;
+        markerMode = null;
       });
-      alert(`Tap on the map to place ${label} marker.`);
     }
 
-    function clearAll() {
-      markerGroup.clearLayers();
-      markerCount = 0;
-      trail = [];
-      document.getElementById('markerCount').textContent = "MARKERS: 0";
-      toggleDropdown();
+    // =======================
+    // INIT: GPS TRACKING
+    // =======================
+    function initGPS() {
+      navigator.geolocation.watchPosition(pos => {
+        const { latitude, longitude, accuracy } = pos.coords;
+        if (accuracy > 20) {
+          document.getElementById('gpsStatus').textContent = `GPS: REJECTED (${Math.round(accuracy)}m)`; return;
+        }
+        document.getElementById('gpsStatus').textContent = `GPS: LOCKED (${Math.round(accuracy)}m)`;
+        const latlng = [latitude, longitude];
+        trail.push(latlng);
+        L.circleMarker(latlng, { radius: 1.5, color: '#00ff00', fillColor: '#00ff00', fillOpacity: 1 }).addTo(map);
+        reverseGeocode(latitude, longitude);
+      }, err => {
+        document.getElementById('gpsStatus').textContent = "GPS: ERROR";
+      }, { enableHighAccuracy: true, maximumAge: 0, timeout: 5000 });
     }
 
-    
+    // =======================
+    // INIT: TIMERS & CLOCK
+    // =======================
+    function startTimer() {
+      setInterval(() => {
+        let now = Date.now() - startTime;
+        let hrs = Math.floor(now / 3600000);
+        let mins = Math.floor((now % 3600000) / 60000);
+        let secs = Math.floor((now % 60000) / 1000);
+        document.getElementById('timer').textContent = "Active Time: " + String(hrs).padStart(2, '0') + ":" + String(mins).padStart(2, '0') + ":" + String(secs).padStart(2, '0');
+      }, 1000);
+      setInterval(() => {
+        const now = new Date();
+        document.getElementById('clock').textContent = "TIME: " + now.toLocaleString();
+      }, 1000);
+    }
 
-    // === CENTER GPS BUTTON ===
-    document.getElementById('centerBtn').onclick = () => {
-      if (trail.length > 0) map.setView(trail[trail.length - 1], map.getZoom());
-    };
-
-    // === GPS TRACKING ===
-    navigator.geolocation.watchPosition(pos => {
-      const { latitude, longitude, accuracy } = pos.coords;
-      if (accuracy > 20) {
-        document.getElementById('gpsStatus').textContent = `GPS: REJECTED (${Math.round(accuracy)}m)`;
-        return;
-      }
-      document.getElementById('gpsStatus').textContent = `GPS: LOCKED (${Math.round(accuracy)}m)`;
-      const latlng = [latitude, longitude];
-      trail.push(latlng);
-      L.circleMarker(latlng, { radius: 1.5, color: '#00ff00', fillColor: '#00ff00', fillOpacity: 1 }).addTo(map);
-      reverseGeocode(latitude, longitude);
-    }, err => {
-      document.getElementById('gpsStatus').textContent = "GPS: ERROR";
-    }, { enableHighAccuracy: true, maximumAge: 0, timeout: 5000 });
-
-    // === TIMER & CLOCK ===
-    setInterval(() => {
-      const now = new Date();
-      document.getElementById('clock').textContent = "TIME: " + now.toLocaleString();
-      const elapsed = Date.now() - startTime;
-      const hrs = Math.floor(elapsed / 3600000);
-      const mins = Math.floor((elapsed % 3600000) / 60000);
-      const secs = Math.floor((elapsed % 60000) / 1000);
-      document.getElementById('timer').textContent =
-        "Active Time: " + String(hrs).padStart(2, '0') + ":" + String(mins).padStart(2, '0') + ":" + String(secs).padStart(2, '0');
-    }, 1000);
-
-    // === REVERSE GEOCODING ===
+    // =======================
+    // REVERSE GEOCODE
+    // =======================
     function reverseGeocode(lat, lon) {
       fetch(`https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${lat}&lon=${lon}`)
         .then(res => res.json())
@@ -149,6 +153,40 @@
           document.getElementById('address').textContent = `Lat: ${lat.toFixed(5)}, Lon: ${lon.toFixed(5)}`;
         });
     }
+
+    // =======================
+    // MARKER CONTROLS
+    // =======================
+    function setMarkerMode(type) {
+      markerMode = type;
+      alert(`Tap on the map to place ${type.toUpperCase()} marker.`);
+    }
+
+    function clearAll() {
+      markerGroup.clearLayers();
+      markerCount = 0;
+      trail = [];
+      document.getElementById('markerCount').textContent = "MARKERS: 0";
+    }
+
+    // =======================
+    // MAP INTERACTIONS
+    // =======================
+    document.getElementById('centerBtn').onclick = () => {
+      if (trail.length > 0) {
+        const last = trail[trail.length - 1];
+        map.setView(last, map.getZoom());
+      } else {
+        alert("GPS location not yet available.");
+      }
+    };
+
+    // =======================
+    // INIT EVERYTHING
+    // =======================
+    setupMap();
+    initGPS();
+    startTimer();
   </script>
 </body>
 </html>
