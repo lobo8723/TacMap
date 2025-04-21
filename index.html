@@ -1,14 +1,10 @@
+<!-- FULL HTML CODE START -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Project 1 - Final Stable Version (v1.2R13)</title>
-
-  <!-- =======================
-       CHANGE LOG
-       v1.2R13 - Added auto-collapsing dropdown action menu
-       ======================= -->
+  <title>TacMap v1.2R13 – Dropdown HUD</title>
 
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <style>
@@ -115,16 +111,8 @@
       border: 1px solid #00ff00;
     }
 
-    #toggleMapType {
-      top: 50px;
-      background: black;
-      color: #00ff00;
-      padding: 5px;
-    }
-
-    #timer {
-      top: 80px;
-    }
+    #toggleMapType { top: 50px; background: black; color: #00ff00; padding: 5px; }
+    #timer { top: 80px; }
   </style>
 </head>
 
@@ -157,24 +145,16 @@
   </div>
 
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
-
   <script>
-    // =======================
-    // GLOBAL VARIABLES
-    // =======================
     let map, trail = [], markerGroup, markerCount = 0, markerMode = null, startTime = Date.now();
 
-    // =======================
-    // DROPDOWN MENU LOGIC
-    // =======================
     function toggleDropdown() {
       const menu = document.getElementById("dropdownContent");
       menu.style.display = menu.style.display === "block" ? "none" : "block";
     }
 
     function handleAction(type) {
-      toggleDropdown();  // Auto-collapse
+      toggleDropdown();
       if (type === 'custom') {
         const custom = prompt("Enter custom label:");
         if (!custom) return;
@@ -206,9 +186,6 @@
       document.getElementById('markerCount').textContent = "MARKERS: 0";
     }
 
-    // =======================
-    // MAP SETUP
-    // =======================
     function setupMap() {
       map = L.map('map').setView([33.4484, -112.0740], 19);
       const street = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png');
@@ -227,9 +204,6 @@
       };
     }
 
-    // =======================
-    // GPS
-    // =======================
     function initGPS() {
       navigator.geolocation.watchPosition(pos => {
         const { latitude, longitude, accuracy } = pos.coords;
@@ -249,9 +223,6 @@
       }, { enableHighAccuracy: true, maximumAge: 0, timeout: 5000 });
     }
 
-    // =======================
-    // TIMERS & CLOCK
-    // =======================
     function startTimer() {
       setInterval(() => {
         const now = new Date();
@@ -265,9 +236,6 @@
       }, 1000);
     }
 
-    // =======================
-    // REVERSE GEOCODING
-    // =======================
     function reverseGeocode(lat, lon) {
       fetch(`https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${lat}&lon=${lon}`)
         .then(res => res.json())
@@ -278,9 +246,6 @@
         });
     }
 
-    // =======================
-    // MAP INTERACTION
-    // =======================
     document.getElementById('centerBtn').onclick = () => {
       if (trail.length > 0) {
         map.setView(trail[trail.length - 1], map.getZoom());
@@ -289,12 +254,10 @@
       }
     };
 
-    // =======================
-    // INIT EVERYTHING
-    // =======================
     setupMap();
     initGPS();
     startTimer();
   </script>
 </body>
 </html>
+<!-- FULL HTML CODE END -->
