@@ -3,37 +3,51 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Project 1 - Final Stable Version (v1.2R)</title>
+  <title>Project 1 - Final Stable Version (v1.2R2)</title>
 
   <!-- =======================
        CHANGE LOG
-       v1.0     - Modular foundation
-       v1.1     - Accuracy filter
-       v1.1R    - Modular recovery
-       v1.1R3   - GPS center fix
-       v1.1R4   - Smaller breadcrumbs
-       v1.2     - Step counter added (initial)
-       v1.2R    - Step counter placement corrected
+       v1.2R2 - Step Counter correctly placed between Satellite View and Active Timer
        ======================= -->
 
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <style>
     html, body { margin: 0; padding: 0; height: 100%; font-family: monospace; background: #111; color: #00ff00; }
     #map { width: 100%; height: 100%; z-index: 1; }
+
     .hud { position: absolute; width: 100%; bottom: 0; background: rgba(0,0,0,0.85); padding: 8px; box-sizing: border-box; z-index: 999; }
     .hud-row { display: flex; justify-content: space-between; flex-wrap: wrap; font-size: 12px; }
     .hud-buttons { display: flex; gap: 10px; margin-top: 5px; flex-wrap: wrap; }
     .hud-buttons button { background: black; color: #00ff00; border: 1px solid #00ff00; padding: 5px 10px; cursor: pointer; font-size: 12px; }
+
     #centerBtn { position: absolute; right: 10px; top: 60px; background: black; border: 1px solid #00ff00; color: #00ff00; border-radius: 50%; width: 30px; height: 30px; text-align: center; line-height: 30px; cursor: pointer; z-index: 999; }
     #address { position: absolute; top: 0; left: 0; padding: 5px 10px; font-size: 12px; background: rgba(0,0,0,0.8); color: #00ff00; z-index: 999; }
+
     #toggleMapType, #stepCounter, #timer {
-      position: absolute; left: 10px; z-index: 999; font-size: 12px;
-      background: rgba(0,0,0,0.7); padding: 4px 6px; font-weight: bold;
+      position: absolute;
+      left: 10px;
+      z-index: 999;
+      font-size: 12px;
+      background: rgba(0,0,0,0.7);
+      padding: 4px 6px;
+      font-weight: bold;
       border: 1px solid #00ff00;
     }
-    #toggleMapType { top: 50px; padding: 5px; background: black; color: #00ff00; }
-    #stepCounter { top: 80px; }
-    #timer { top: 110px; }
+
+    #toggleMapType {
+      top: 50px;
+      background: black;
+      color: #00ff00;
+      padding: 5px;
+    }
+
+    #stepCounter {
+      top: 80px;
+    }
+
+    #timer {
+      top: 110px;
+    }
   </style>
 </head>
 
@@ -118,7 +132,7 @@
     }
 
     // =======================
-    // INIT: GPS TRACKING (with Accuracy Filter + Smaller Breadcrumbs)
+    // INIT: GPS TRACKING (Accuracy Filter + Breadcrumbs)
     // =======================
     function initGPS() {
       navigator.geolocation.watchPosition(pos => {
