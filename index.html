@@ -3,18 +3,17 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Project 1 - Final Stable Version (v1.0 Modular)</title>
+  <title>Project 1 - Final Stable Version (v1.1R Modular)</title>
 
   <!-- =======================
-       CHANGE LOG (MODULAR SYSTEM)
-       v1.0 - Refactored to modular architecture
+       CHANGE LOG
+       v1.0 - Modular foundation
+       v1.1 - Added GPS accuracy filter
+       v1.1R - Restored modular structure (refactored)
        ======================= -->
 
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <style>
-    /* =======================
-       BASE STYLES
-       ======================= */
     html, body { margin: 0; padding: 0; height: 100%; font-family: monospace; background: #111; color: #00ff00; }
     #map { width: 100%; height: 100%; z-index: 1; }
     .hud { position: absolute; width: 100%; bottom: 0; background: rgba(0,0,0,0.85); padding: 8px; box-sizing: border-box; z-index: 999; }
@@ -29,7 +28,7 @@
 
 <body>
   <!-- =======================
-       BASE MAP + HUD ELEMENTS
+       INTERFACE ELEMENTS
        ======================= -->
   <div id="map"></div>
   <div id="centerBtn" title="Center GPS">◉</div>
@@ -39,7 +38,7 @@
 
   <div class="hud">
     <div class="hud-row">
-      <div>OFFICER: <input id="officer" type="text" placeholder="Enter Officer Name" value="" style="background:black;color:#00ff00;border:none;" /></div>
+      <div>OFFICER: <input id="officer" type="text" placeholder="Enter Officer Name" style="background:black;color:#00ff00;border:none;" /></div>
       <div id="clock">TIME: --:--:--</div>
       <div id="gpsStatus">GPS: WAITING...</div>
       <div id="markerCount">MARKERS: 0</div>
@@ -87,11 +86,17 @@
     }
 
     // =======================
-    // INIT: GPS TRACKING
+    // INIT: GPS TRACKING (Accuracy Filter Included)
     // =======================
     function initGPS() {
       navigator.geolocation.watchPosition(pos => {
         const { latitude, longitude, accuracy } = pos.coords;
+
+        if (accuracy > 20) {
+          document.getElementById('gpsStatus').textContent = `GPS: REJECTED (${Math.round(accuracy)}m)`;
+          return;
+        }
+
         document.getElementById('gpsStatus').textContent = `GPS: LOCKED (${Math.round(accuracy)}m)`;
 
         const latlng = [latitude, longitude];
@@ -102,6 +107,7 @@
           fillColor: '#00ff00',
           fillOpacity: 1
         }).addTo(map);
+
         reverseGeocode(latitude, longitude);
       }, err => {
         document.getElementById('gpsStatus').textContent = "GPS: ERROR";
