@@ -3,17 +3,16 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Project 1 - Final Stable Version (v1.1R4-CLEAN)</title>
+  <title>Project 1 - Final Stable Version (v1.2)</title>
 
   <!-- =======================
        CHANGE LOG
        v1.0     - Modular foundation
-       v1.1     - Added GPS accuracy filter
-       v1.1R    - Restored modular structure
-       v1.1R2   - Fixed marker placement / map click
-       v1.1R3   - GPS center button hardened
-       v1.1R4   - Reduced breadcrumb marker size
-       v1.1R4-CLEAN - Restored modular headers (stable foundation)
+       v1.1     - Accuracy filter
+       v1.1R    - Modular recovery
+       v1.1R3   - GPS center fix
+       v1.1R4   - Smaller breadcrumbs
+       v1.2     - Step counter added (DeviceMotion)
        ======================= -->
 
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
@@ -27,6 +26,7 @@
     #centerBtn { position: absolute; right: 10px; top: 60px; background: black; border: 1px solid #00ff00; color: #00ff00; border-radius: 50%; width: 30px; height: 30px; text-align: center; line-height: 30px; cursor: pointer; z-index: 999; }
     #address { position: absolute; top: 0; left: 0; padding: 5px 10px; font-size: 12px; background: rgba(0,0,0,0.8); color: #00ff00; z-index: 999; }
     #timer { position:absolute;top:115px;left:10px;z-index:999;font-size:12px;background:rgba(0,0,0,0.7);padding:4px 6px;font-weight:bold;border:1px solid #00ff00; }
+    #stepCounter { position:absolute;top:90px;left:10px;z-index:999;font-size:12px;background:rgba(0,0,0,0.7);padding:4px 6px;font-weight:bold;border:1px solid #00ff00; }
   </style>
 </head>
 
@@ -37,6 +37,7 @@
   <div id="map"></div>
   <div id="centerBtn" title="Center GPS">◉</div>
   <button id="toggleMapType" style="position:absolute;top:50px;left:10px;z-index:999;background:black;color:#00ff00;border:1px solid #00ff00;padding:5px;font-size:12px;">SATELLITE VIEW</button>
+  <div id="stepCounter">STEPS: 0</div>
   <div id="timer">Active Time: 00:00:00</div>
   <div id="address">LOCATING...</div>
 
@@ -110,7 +111,7 @@
     }
 
     // =======================
-    // INIT: GPS TRACKING (with Accuracy Filter + Smaller Breadcrumbs)
+    // INIT: GPS TRACKING (Accuracy Filter + Smaller Breadcrumbs)
     // =======================
     function initGPS() {
       navigator.geolocation.watchPosition(pos => {
@@ -126,7 +127,7 @@
         const latlng = [latitude, longitude];
         trail.push(latlng);
         L.circleMarker(latlng, {
-          radius: 1.5, // Adjusted from 2
+          radius: 1.5,
           color: '#00ff00',
           fillColor: '#00ff00',
           fillOpacity: 1
@@ -202,6 +203,30 @@
         alert("GPS location not yet available.");
       }
     };
+
+    // =======================
+    // STEP COUNTER
+    // =======================
+    let steps = 0;
+    let lastAccel = { x: null, y: null, z: null };
+
+    if (window.DeviceMotionEvent) {
+      window.addEventListener("devicemotion", function (event) {
+        const accel = event.accelerationIncludingGravity;
+        if (!accel.x || !accel.y || !accel.z) return;
+
+        const delta = Math.abs(accel.x - lastAccel.x || 0) +
+                      Math.abs(accel.y - lastAccel.y || 0) +
+                      Math.abs(accel.z - lastAccel.z || 0);
+
+        if (delta > 1.5) { // Simple threshold
+          steps++;
+          document.getElementById("stepCounter").textContent = "STEPS: " + steps;
+        }
+
+        lastAccel = accel;
+      });
+    }
 
     // =======================
     // INIT EVERYTHING
