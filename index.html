@@ -42,13 +42,11 @@
         <button onclick="handleAction('move')">[↻] MOVEMENT</button>
         <button onclick="handleAction('custom')">[+] ADD CUSTOM</button>
         <button onclick="clearAll()">🗑️ CLEAR MARKERS</button>
-        <button onclick="toggleHeatmap()">[🔥] TOGGLE HEATMAP</button>
-      <button onclick="toggleHeatmap()">[🔥] TOGGLE HEATMAP</button>
-        </div>
+                      </div>
     </div>
   </div>
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-  <script src="https://unpkg.com/leaflet.heat/dist/leaflet-heat.js"></script>
+  
   <script>
     // === GLOBAL VARIABLES ===
     let map, heatLayer, markerGroup, trail = [], markerCount = 0, markerMode = null, startTime = Date.now();
@@ -106,21 +104,7 @@
       toggleDropdown();
     }
 
-    function toggleHeatmap() {
-      if (heatLayer) {
-        map.removeLayer(heatLayer);
-        heatLayer = null;
-      } else {
-        const heatData = [];
-        for (let i = 0; i < 250; i++) {
-          let lat = 33.4484 + (Math.random() - 0.5) * 0.004;
-          let lon = -112.0740 + (Math.random() - 0.5) * 0.004;
-          heatData.push([lat, lon, 0.5]);
-        }
-        heatLayer = L.heatLayer(heatData, { radius: 18, blur: 20, minOpacity: 0.4 }).addTo(map);
-      }
-      dropdown.style.display = 'none';
-    }
+    
 
     // === CENTER GPS BUTTON ===
     document.getElementById('centerBtn').onclick = () => {
