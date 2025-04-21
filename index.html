@@ -3,11 +3,11 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Project 1 - Final Stable Version (v1.2R11)</title>
+  <title>Project 1 - Final Stable Version (v1.2R12)</title>
 
   <!-- =======================
        CHANGE LOG
-       v1.2R11 - HUD buttons now wrap and stay within screen width
+       v1.2R12 - Button boxes auto-size to fit text
        ======================= -->
 
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
@@ -30,10 +30,12 @@
       background: black;
       color: #00ff00;
       border: 1px solid #00ff00;
-      padding: 5px 10px;
+      padding: 6px 12px;
       cursor: pointer;
       font-size: 12px;
       white-space: nowrap;
+      height: auto;
+      width: auto;
     }
 
     #centerBtn {
