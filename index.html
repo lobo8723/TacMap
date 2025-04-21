@@ -3,15 +3,17 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Project 1 - Final Stable Version (v1.1R3)</title>
+  <title>Project 1 - Final Stable Version (v1.1R4-CLEAN)</title>
 
   <!-- =======================
        CHANGE LOG
-       v1.0 - Modular foundation
-       v1.1 - Added GPS accuracy filter
-       v1.1R - Modular structure restored
-       v1.1R2 - Fixed marker placement / map click
-       v1.1R3 - GPS center button functionality restored + hardened
+       v1.0     - Modular foundation
+       v1.1     - Added GPS accuracy filter
+       v1.1R    - Restored modular structure
+       v1.1R2   - Fixed marker placement / map click
+       v1.1R3   - GPS center button hardened
+       v1.1R4   - Reduced breadcrumb marker size
+       v1.1R4-CLEAN - Restored modular headers (stable foundation)
        ======================= -->
 
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
@@ -29,7 +31,9 @@
 </head>
 
 <body>
-  <!-- INTERFACE ELEMENTS -->
+  <!-- =======================
+       INTERFACE ELEMENTS
+       ======================= -->
   <div id="map"></div>
   <div id="centerBtn" title="Center GPS">◉</div>
   <button id="toggleMapType" style="position:absolute;top:50px;left:10px;z-index:999;background:black;color:#00ff00;border:1px solid #00ff00;padding:5px;font-size:12px;">SATELLITE VIEW</button>
@@ -52,15 +56,21 @@
     </div>
   </div>
 
-  <!-- LIBRARIES -->
+  <!-- =======================
+       LIBRARIES
+       ======================= -->
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
 
   <script>
+    // =======================
     // GLOBAL VARIABLES
+    // =======================
     let map, trail = [], markerGroup, markerCount = 0, markerMode = null, startTime = Date.now();
 
+    // =======================
     // INIT: MAP + LAYERS + CLICK EVENTS
+    // =======================
     function setupMap() {
       map = L.map('map').setView([33.4484, -112.0740], 19);
       const street = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png');
@@ -99,7 +109,9 @@
       });
     }
 
-    // INIT: GPS TRACKING (with Accuracy Filter)
+    // =======================
+    // INIT: GPS TRACKING (with Accuracy Filter + Smaller Breadcrumbs)
+    // =======================
     function initGPS() {
       navigator.geolocation.watchPosition(pos => {
         const { latitude, longitude, accuracy } = pos.coords;
@@ -114,7 +126,7 @@
         const latlng = [latitude, longitude];
         trail.push(latlng);
         L.circleMarker(latlng, {
-          radius: 2,
+          radius: 1.5, // Adjusted from 2
           color: '#00ff00',
           fillColor: '#00ff00',
           fillOpacity: 1
@@ -130,7 +142,9 @@
       });
     }
 
+    // =======================
     // INIT: TIMERS & CLOCK
+    // =======================
     function startTimer() {
       setInterval(() => {
         let now = Date.now() - startTime;
@@ -149,7 +163,9 @@
       }, 1000);
     }
 
+    // =======================
     // REVERSE GEOCODE
+    // =======================
     function reverseGeocode(lat, lon) {
       fetch(`https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${lat}&lon=${lon}`)
         .then(res => res.json())
@@ -160,7 +176,9 @@
         });
     }
 
+    // =======================
     // MARKER CONTROLS
+    // =======================
     function setMarkerMode(type) {
       markerMode = type;
       alert(`Tap on the map to place ${type.toUpperCase()} marker.`);
@@ -173,7 +191,9 @@
       document.getElementById('markerCount').textContent = "MARKERS: 0";
     }
 
-    // CENTER MAP ON LAST GPS POINT — Hardened
+    // =======================
+    // MAP INTERACTIONS
+    // =======================
     document.getElementById('centerBtn').onclick = () => {
       if (trail.length > 0) {
         const last = trail[trail.length - 1];
@@ -183,7 +203,9 @@
       }
     };
 
+    // =======================
     // INIT EVERYTHING
+    // =======================
     setupMap();
     initGPS();
     startTimer();
