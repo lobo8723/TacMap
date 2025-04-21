@@ -3,9 +3,18 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Project 1 - Final Stable Version</title>
+  <title>Project 1 - Final Stable Version (v1.0 Modular)</title>
+
+  <!-- =======================
+       CHANGE LOG (MODULAR SYSTEM)
+       v1.0 - Refactored to modular architecture
+       ======================= -->
+
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <style>
+    /* =======================
+       BASE STYLES
+       ======================= */
     html, body { margin: 0; padding: 0; height: 100%; font-family: monospace; background: #111; color: #00ff00; }
     #map { width: 100%; height: 100%; z-index: 1; }
     .hud { position: absolute; width: 100%; bottom: 0; background: rgba(0,0,0,0.85); padding: 8px; box-sizing: border-box; z-index: 999; }
@@ -14,13 +23,18 @@
     .hud-buttons button { background: black; color: #00ff00; border: 1px solid #00ff00; padding: 5px 10px; cursor: pointer; font-size: 12px; }
     #centerBtn { position: absolute; right: 10px; top: 60px; background: black; border: 1px solid #00ff00; color: #00ff00; border-radius: 50%; width: 30px; height: 30px; text-align: center; line-height: 30px; cursor: pointer; z-index: 999; }
     #address { position: absolute; top: 0; left: 0; padding: 5px 10px; font-size: 12px; background: rgba(0,0,0,0.8); color: #00ff00; z-index: 999; }
+    #timer { position:absolute;top:115px;left:10px;z-index:999;font-size:12px;background:rgba(0,0,0,0.7);padding:4px 6px;font-weight:bold;border:1px solid #00ff00; }
   </style>
 </head>
+
 <body>
+  <!-- =======================
+       BASE MAP + HUD ELEMENTS
+       ======================= -->
   <div id="map"></div>
   <div id="centerBtn" title="Center GPS">◉</div>
   <button id="toggleMapType" style="position:absolute;top:50px;left:10px;z-index:999;background:black;color:#00ff00;border:1px solid #00ff00;padding:5px;font-size:12px;">SATELLITE VIEW</button>
-  <div id="timer" style="position:absolute;top:115px;left:10px;z-index:999;font-size:12px;background:rgba(0,0,0,0.7);padding:4px 6px;font-weight:bold;border:1px solid #00ff00;">Active Time: 00:00:00</div>
+  <div id="timer">Active Time: 00:00:00</div>
   <div id="address">LOCATING...</div>
 
   <div class="hud">
@@ -39,37 +53,89 @@
     </div>
   </div>
 
+  <!-- =======================
+       LIBRARIES
+       ======================= -->
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+
   <script>
-    const map = L.map('map').setView([33.4484, -112.0740], 19);
-    const street = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png');
-    const satellite = L.tileLayer('https://{s}.google.com/vt/lyrs=s&x={x}&y={y}&z={z}', {
-      crossOrigin: "anonymous", 
-      subdomains: ['mt0', 'mt1', 'mt2', 'mt3'], 
-      maxZoom: 20
-    });
-    street.addTo(map);
-    let currentLayer = street;
+    // =======================
+    // GLOBAL VARIABLES
+    // =======================
+    let map, trail = [], markerGroup, markerCount = 0, markerMode = null, startTime = Date.now();
 
-    document.getElementById('toggleMapType').onclick = () => {
-      map.removeLayer(currentLayer);
-      currentLayer = currentLayer === street ? satellite : street;
-      currentLayer.addTo(map);
-      document.getElementById('toggleMapType').textContent = currentLayer === street ? 'SATELLITE VIEW' : 'MAP VIEW';
-    };
+    // =======================
+    // INIT: MAP + LAYERS
+    // =======================
+    function setupMap() {
+      map = L.map('map').setView([33.4484, -112.0740], 19);
+      const street = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png');
+      const satellite = L.tileLayer('https://{s}.google.com/vt/lyrs=s&x={x}&y={y}&z={z}', {
+        crossOrigin: "anonymous", subdomains: ['mt0', 'mt1', 'mt2', 'mt3'], maxZoom: 20
+      });
+      let currentLayer = street;
+      street.addTo(map);
+      markerGroup = L.layerGroup().addTo(map);
 
-    let markerCount = 0;
-    let markerMode = null;
-    let trail = [];
-    let markerGroup = L.layerGroup().addTo(map);
-
-    function updateClock() {
-      const now = new Date();
-      document.getElementById('clock').textContent = "TIME: " + now.toLocaleString();
+      document.getElementById('toggleMapType').onclick = () => {
+        map.removeLayer(currentLayer);
+        currentLayer = currentLayer === street ? satellite : street;
+        currentLayer.addTo(map);
+        document.getElementById('toggleMapType').textContent = currentLayer === street ? 'SATELLITE VIEW' : 'MAP VIEW';
+      };
     }
-    setInterval(updateClock, 1000);
 
+    // =======================
+    // INIT: GPS TRACKING
+    // =======================
+    function initGPS() {
+      navigator.geolocation.watchPosition(pos => {
+        const { latitude, longitude, accuracy } = pos.coords;
+        document.getElementById('gpsStatus').textContent = `GPS: LOCKED (${Math.round(accuracy)}m)`;
+
+        const latlng = [latitude, longitude];
+        trail.push(latlng);
+        L.circleMarker(latlng, {
+          radius: 2,
+          color: '#00ff00',
+          fillColor: '#00ff00',
+          fillOpacity: 1
+        }).addTo(map);
+        reverseGeocode(latitude, longitude);
+      }, err => {
+        document.getElementById('gpsStatus').textContent = "GPS: ERROR";
+      }, {
+        enableHighAccuracy: true,
+        maximumAge: 0,
+        timeout: 5000
+      });
+    }
+
+    // =======================
+    // INIT: TIMERS & CLOCK
+    // =======================
+    function startTimer() {
+      setInterval(() => {
+        let now = Date.now() - startTime;
+        let hrs = Math.floor(now / 3600000);
+        let mins = Math.floor((now % 3600000) / 60000);
+        let secs = Math.floor((now % 60000) / 1000);
+        document.getElementById('timer').textContent = "Active Time: " +
+          String(hrs).padStart(2, '0') + ":" +
+          String(mins).padStart(2, '0') + ":" +
+          String(secs).padStart(2, '0');
+      }, 1000);
+
+      setInterval(() => {
+        const now = new Date();
+        document.getElementById('clock').textContent = "TIME: " + now.toLocaleString();
+      }, 1000);
+    }
+
+    // =======================
+    // REVERSE GEOCODE
+    // =======================
     function reverseGeocode(lat, lon) {
       fetch(`https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${lat}&lon=${lon}`)
         .then(res => res.json())
@@ -80,47 +146,25 @@
         });
     }
 
-    let startTime = Date.now();
-    function updateTimer() {
-      let now = Date.now() - startTime;
-      let hrs = Math.floor(now / 3600000);
-      let mins = Math.floor((now % 3600000) / 60000);
-      let secs = Math.floor((now % 60000) / 1000);
-      document.getElementById('timer').textContent =
-        "Active Time: " + String(hrs).padStart(2, '0') + ":" + String(mins).padStart(2, '0') + ":" + String(secs).padStart(2, '0');
-    }
-    setInterval(updateTimer, 1000);
-
-    // UPDATED: High-Accuracy GPS Watcher
-    navigator.geolocation.watchPosition(pos => {
-      const { latitude, longitude, accuracy } = pos.coords;
-      document.getElementById('gpsStatus').textContent = `GPS: LOCKED (${Math.round(accuracy)}m)`;
-
-      const latlng = [latitude, longitude];
-      trail.push(latlng);
-      L.circleMarker(latlng, {
-        radius: 2,
-        color: '#00ff00',
-        fillColor: '#00ff00',
-        fillOpacity: 1
-      }).addTo(map);
-
-      reverseGeocode(latitude, longitude);
-
-    }, err => {
-      document.getElementById('gpsStatus').textContent = "GPS: ERROR";
-    }, {
-      enableHighAccuracy: true,
-      maximumAge: 0,
-      timeout: 5000
-    });
-
+    // =======================
+    // MARKER CONTROLS
+    // =======================
     function setMarkerMode(type) {
       markerMode = type;
       alert(`Tap on the map to place ${type.toUpperCase()} marker.`);
     }
 
-    map.on('click', function (e) {
+    function clearAll() {
+      markerGroup.clearLayers();
+      markerCount = 0;
+      trail = [];
+      document.getElementById('markerCount').textContent = "MARKERS: 0";
+    }
+
+    // =======================
+    // MAP INTERACTIONS
+    // =======================
+    map?.on('click', function (e) {
       if (!markerMode) return;
       let label = markerMode.toUpperCase();
       let color = markerMode === 'clear' ? 'green' :
@@ -140,30 +184,16 @@
       markerMode = null;
     });
 
-    function takeScreenshot() {
-      setTimeout(() => {
-        html2canvas(document.body).then(canvas => {
-            const a = document.createElement("a");
-            a.href = canvas.toDataURL("image/png");
-            a.download = `Project1_Screenshot_${Date.now()}.png`;
-            a.click();
-        });
-      }, 500);
-    }
-
-    function clearAll() {
-      markerGroup.clearLayers();
-      markerCount = 0;
-      document.getElementById('markerCount').textContent = "MARKERS: 0";
-      trail = [];
-    }
-
     document.getElementById('centerBtn').onclick = () => {
-      if (trail.length > 0) {
-        map.setView(trail[trail.length - 1], map.getZoom());
-      }
+      if (trail.length > 0) map.setView(trail[trail.length - 1], map.getZoom());
     };
+
+    // =======================
+    // INIT EVERYTHING
+    // =======================
+    setupMap();
+    initGPS();
+    startTimer();
   </script>
 </body>
 </html>
-
