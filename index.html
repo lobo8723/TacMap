@@ -1,10 +1,9 @@
-<!-- FULL HTML CODE START -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>TacMap v1.2R13 – Dropdown HUD</title>
+  <title>TacMap v1.2R14 – Slide Dropdown HUD</title>
 
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <style>
@@ -29,6 +28,7 @@
       margin-bottom: 6px;
     }
 
+    /* DROPDOWN UI */
     .dropdown {
       position: relative;
       display: inline-block;
@@ -45,16 +45,20 @@
     }
 
     .dropdown-content {
-      display: none;
       position: absolute;
       bottom: 100%;
       left: 50%;
       transform: translateX(-50%);
       background-color: black;
       border: 1px solid #00ff00;
-      padding: 8px;
+      overflow: hidden;
+      max-height: 0;
+      transition: max-height 0.3s ease-in-out;
       z-index: 1000;
-      box-shadow: 0 0 10px #00ff00;
+    }
+
+    .dropdown-content.open {
+      max-height: 400px;
     }
 
     .dropdown-content button {
@@ -64,13 +68,8 @@
       color: #00ff00;
       border: 1px solid #00ff00;
       padding: 6px;
-      margin-bottom: 4px;
       font-size: 12px;
       cursor: pointer;
-    }
-
-    .dropdown-content button:last-child {
-      margin-bottom: 0;
     }
 
     #centerBtn {
@@ -145,12 +144,18 @@
   </div>
 
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
   <script>
+    // =======================
+    // GLOBAL VARIABLES
+    // =======================
     let map, trail = [], markerGroup, markerCount = 0, markerMode = null, startTime = Date.now();
 
+    // =======================
+    // DROPDOWN MENU LOGIC
+    // =======================
     function toggleDropdown() {
-      const menu = document.getElementById("dropdownContent");
-      menu.style.display = menu.style.display === "block" ? "none" : "block";
+      document.getElementById("dropdownContent").classList.toggle("open");
     }
 
     function handleAction(type) {
@@ -168,6 +173,9 @@
       }
     }
 
+    // =======================
+    // MARKER CONTROLS
+    // =======================
     function placeMarker(label, color) {
       map.once('click', function (e) {
         const m = L.circleMarker(e.latlng, { radius: 6, color }).bindTooltip(label);
@@ -186,6 +194,20 @@
       document.getElementById('markerCount').textContent = "MARKERS: 0";
     }
 
+    // =======================
+    // MAP INTERACTIONS
+    // =======================
+    document.getElementById('centerBtn').onclick = () => {
+      if (trail.length > 0) {
+        map.setView(trail[trail.length - 1], map.getZoom());
+      } else {
+        alert("GPS location not yet available.");
+      }
+    };
+
+    // =======================
+    // INIT: MAP SETUP
+    // =======================
     function setupMap() {
       map = L.map('map').setView([33.4484, -112.0740], 19);
       const street = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png');
@@ -204,6 +226,9 @@
       };
     }
 
+    // =======================
+    // INIT: GPS
+    // =======================
     function initGPS() {
       navigator.geolocation.watchPosition(pos => {
         const { latitude, longitude, accuracy } = pos.coords;
@@ -223,6 +248,9 @@
       }, { enableHighAccuracy: true, maximumAge: 0, timeout: 5000 });
     }
 
+    // =======================
+    // INIT: TIMERS
+    // =======================
     function startTimer() {
       setInterval(() => {
         const now = new Date();
@@ -236,6 +264,9 @@
       }, 1000);
     }
 
+    // =======================
+    // REVERSE GEOCODE
+    // =======================
     function reverseGeocode(lat, lon) {
       fetch(`https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${lat}&lon=${lon}`)
         .then(res => res.json())
@@ -246,18 +277,12 @@
         });
     }
 
-    document.getElementById('centerBtn').onclick = () => {
-      if (trail.length > 0) {
-        map.setView(trail[trail.length - 1], map.getZoom());
-      } else {
-        alert("GPS location not yet available.");
-      }
-    };
-
+    // =======================
+    // INIT EVERYTHING
+    // =======================
     setupMap();
     initGPS();
     startTimer();
   </script>
 </body>
 </html>
-<!-- FULL HTML CODE END -->
