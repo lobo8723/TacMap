@@ -3,11 +3,11 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Project 1 - Final Stable Version (v1.2R2)</title>
+  <title>Project 1 - Final Stable Version (v1.2R3)</title>
 
   <!-- =======================
        CHANGE LOG
-       v1.2R2 - Step Counter correctly placed between Satellite View and Active Timer
+       v1.2R3 - Step counter fully removed with no impact to functionality or layout
        ======================= -->
 
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
@@ -23,7 +23,7 @@
     #centerBtn { position: absolute; right: 10px; top: 60px; background: black; border: 1px solid #00ff00; color: #00ff00; border-radius: 50%; width: 30px; height: 30px; text-align: center; line-height: 30px; cursor: pointer; z-index: 999; }
     #address { position: absolute; top: 0; left: 0; padding: 5px 10px; font-size: 12px; background: rgba(0,0,0,0.8); color: #00ff00; z-index: 999; }
 
-    #toggleMapType, #stepCounter, #timer {
+    #toggleMapType, #timer {
       position: absolute;
       left: 10px;
       z-index: 999;
@@ -41,12 +41,8 @@
       padding: 5px;
     }
 
-    #stepCounter {
-      top: 80px;
-    }
-
     #timer {
-      top: 110px;
+      top: 80px;
     }
   </style>
 </head>
@@ -58,7 +54,6 @@
   <div id="map"></div>
   <div id="centerBtn" title="Center GPS">◉</div>
   <button id="toggleMapType">SATELLITE VIEW</button>
-  <div id="stepCounter">STEPS: 0</div>
   <div id="timer">Active Time: 00:00:00</div>
   <div id="address">LOCATING...</div>
 
@@ -132,7 +127,7 @@
     }
 
     // =======================
-    // INIT: GPS TRACKING (Accuracy Filter + Breadcrumbs)
+    // INIT: GPS TRACKING
     // =======================
     function initGPS() {
       navigator.geolocation.watchPosition(pos => {
@@ -224,30 +219,6 @@
         alert("GPS location not yet available.");
       }
     };
-
-    // =======================
-    // STEP COUNTER
-    // =======================
-    let steps = 0;
-    let lastAccel = { x: null, y: null, z: null };
-
-    if (window.DeviceMotionEvent) {
-      window.addEventListener("devicemotion", function (event) {
-        const accel = event.accelerationIncludingGravity;
-        if (!accel.x || !accel.y || !accel.z) return;
-
-        const delta = Math.abs(accel.x - lastAccel.x || 0) +
-                      Math.abs(accel.y - lastAccel.y || 0) +
-                      Math.abs(accel.z - lastAccel.z || 0);
-
-        if (delta > 1.5) {
-          steps++;
-          document.getElementById("stepCounter").textContent = "STEPS: " + steps;
-        }
-
-        lastAccel = accel;
-      });
-    }
 
     // =======================
     // INIT EVERYTHING
