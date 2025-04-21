@@ -3,180 +3,91 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>TacMap v1.2R14 – Slide Dropdown HUD</title>
-
+  <title>TacMap v1.2R15 – Heatmap Toggle</title>
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <style>
-    html, body { margin: 0; padding: 0; height: 100%; font-family: monospace; background: #111; color: #00ff00; }
-    #map { width: 100%; height: 100%; z-index: 1; }
-
-    .hud {
-      position: absolute;
-      width: 100%;
-      bottom: 0;
-      background: rgba(0,0,0,0.85);
-      padding: 8px;
-      box-sizing: border-box;
-      z-index: 999;
-    }
-
-    .hud-row {
-      display: flex;
-      justify-content: space-between;
-      flex-wrap: wrap;
-      font-size: 12px;
-      margin-bottom: 6px;
-    }
-
-    /* DROPDOWN UI */
-    .dropdown {
-      position: relative;
-      display: inline-block;
-      text-align: center;
-    }
-
-    .dropdown-btn {
-      background: black;
-      color: #00ff00;
-      border: 1px solid #00ff00;
-      padding: 6px 12px;
-      cursor: pointer;
-      font-size: 12px;
-    }
-
-    .dropdown-content {
-      position: absolute;
-      bottom: 100%;
-      left: 50%;
-      transform: translateX(-50%);
-      background-color: black;
-      border: 1px solid #00ff00;
-      overflow: hidden;
-      max-height: 0;
-      transition: max-height 0.3s ease-in-out;
-      z-index: 1000;
-    }
-
-    .dropdown-content.open {
-      max-height: 400px;
-    }
-
-    .dropdown-content button {
-      display: block;
-      width: 100%;
-      background: black;
-      color: #00ff00;
-      border: 1px solid #00ff00;
-      padding: 6px;
-      font-size: 12px;
-      cursor: pointer;
-    }
-
-    #centerBtn {
-      position: absolute;
-      right: 10px;
-      top: 60px;
-      background: black;
-      border: 1px solid #00ff00;
-      color: #00ff00;
-      border-radius: 50%;
-      width: 30px;
-      height: 30px;
-      text-align: center;
-      line-height: 30px;
-      cursor: pointer;
-      z-index: 999;
-    }
-
-    #address {
-      position: absolute;
-      top: 0;
-      left: 0;
-      padding: 5px 10px;
-      font-size: 12px;
-      background: rgba(0,0,0,0.8);
-      color: #00ff00;
-      z-index: 999;
-    }
-
-    #toggleMapType, #timer {
-      position: absolute;
-      left: 10px;
-      z-index: 999;
-      font-size: 12px;
-      background: rgba(0,0,0,0.7);
-      padding: 4px 6px;
-      font-weight: bold;
-      border: 1px solid #00ff00;
-    }
-
-    #toggleMapType { top: 50px; background: black; color: #00ff00; padding: 5px; }
-    #timer { top: 80px; }
+    html, body { margin: 0; padding: 0; height: 100%; background: #111; color: #00ff00; font-family: monospace; }
+    #map { width: 100%; height: 100%; }
+    .hud { position: absolute; bottom: 0; width: 100%; background: rgba(0,0,0,0.85); color: #00ff00; padding: 8px; font-size: 12px; box-sizing: border-box; z-index: 999; }
+    .hud-row { display: flex; justify-content: space-between; flex-wrap: wrap; margin-bottom: 6px; }
+    .dropdown { text-align: center; }
+    .dropdown-btn { background: black; color: #00ff00; border: 1px solid #00ff00; padding: 6px 12px; cursor: pointer; font-size: 12px; }
+    .dropdown-content { display: none; position: relative; margin-top: 6px; background: black; border: 1px solid #00ff00; box-shadow: 0 0 10px #00ff00; }
+    .dropdown-content button { display: block; width: 100%; background: black; color: #00ff00; border: 1px solid #00ff00; padding: 6px; font-size: 12px; cursor: pointer; }
+    #centerBtn, #toggleMapType, #timer, #address { position: absolute; z-index: 999; font-size: 12px; background: rgba(0,0,0,0.7); border: 1px solid #00ff00; color: #00ff00; padding: 4px 6px; }
+    #centerBtn { right: 10px; top: 60px; border-radius: 50%; width: 30px; height: 30px; text-align: center; line-height: 20px; }
+    #toggleMapType { left: 10px; top: 50px; }
+    #timer { left: 10px; top: 90px; }
+    #address { top: 0; left: 0; padding: 5px 10px; background: rgba(0,0,0,0.8); }
   </style>
 </head>
-
 <body>
   <div id="map"></div>
   <div id="centerBtn" title="Center GPS">◉</div>
   <button id="toggleMapType">SATELLITE VIEW</button>
   <div id="timer">Active Time: 00:00:00</div>
   <div id="address">LOCATING...</div>
-
   <div class="hud">
     <div class="hud-row">
-      <div>OFFICER: <input id="officer" type="text" placeholder="Enter Officer Name" style="background:black;color:#00ff00;border:none;" /></div>
+      <div>OFFICER: <input id="officer" type="text" style="background:black;color:#00ff00;border:none;" placeholder="Enter Officer Name" /></div>
       <div id="clock">TIME: --:--:--</div>
       <div id="gpsStatus">GPS: WAITING...</div>
       <div id="markerCount">MARKERS: 0</div>
     </div>
-    <div style="text-align:center;">
-      <div class="dropdown">
-        <button class="dropdown-btn" onclick="toggleDropdown()">[+] ACTION MENU</button>
-        <div id="dropdownContent" class="dropdown-content">
-          <button onclick="handleAction('clear')">[✓] SECURE</button>
-          <button onclick="handleAction('incident')">[⚠] INCIDENT</button>
-          <button onclick="handleAction('move')">[↻] MOVEMENT</button>
-          <button onclick="handleAction('custom')">[+] ADD CUSTOM</button>
-          <button onclick="clearAll()">🗑️ CLEAR MARKERS</button>
-        </div>
+    <div class="dropdown">
+      <button class="dropdown-btn" onclick="toggleDropdown()">[+] ACTION MENU</button>
+      <div id="dropdownContent" class="dropdown-content">
+        <button onclick="handleAction('clear')">[✓] SECURE</button>
+        <button onclick="handleAction('incident')">[⚠] INCIDENT</button>
+        <button onclick="handleAction('move')">[↻] MOVEMENT</button>
+        <button onclick="handleAction('custom')">[+] ADD CUSTOM</button>
+        <button onclick="clearAll()">🗑️ CLEAR MARKERS</button>
+        <button onclick="toggleHeatmap()">[🔥] TOGGLE HEATMAP</button>
       </div>
     </div>
   </div>
-
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-
+  <script src="https://unpkg.com/leaflet.heat/dist/leaflet-heat.js"></script>
   <script>
-    // =======================
-    // GLOBAL VARIABLES
-    // =======================
-    let map, trail = [], markerGroup, markerCount = 0, markerMode = null, startTime = Date.now();
+    // === GLOBAL VARIABLES ===
+    let map, heatLayer, markerGroup, trail = [], markerCount = 0, markerMode = null, startTime = Date.now();
+    const dropdown = document.getElementById('dropdownContent');
 
-    // =======================
-    // DROPDOWN MENU LOGIC
-    // =======================
+    // === MAP SETUP ===
+    map = L.map('map').setView([33.4484, -112.0740], 17);
+    const street = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png');
+    const satellite = L.tileLayer('https://{s}.google.com/vt/lyrs=s&x={x}&y={y}&z={z}', {
+      subdomains: ['mt0', 'mt1', 'mt2', 'mt3'], maxZoom: 20
+    });
+    let currentLayer = street;
+    street.addTo(map);
+    markerGroup = L.layerGroup().addTo(map);
+
+    document.getElementById('toggleMapType').onclick = () => {
+      map.removeLayer(currentLayer);
+      currentLayer = currentLayer === street ? satellite : street;
+      currentLayer.addTo(map);
+      document.getElementById('toggleMapType').textContent = currentLayer === street ? 'SATELLITE VIEW' : 'MAP VIEW';
+    };
+
+    // === DROPDOWN + ACTION HANDLERS ===
     function toggleDropdown() {
-      document.getElementById("dropdownContent").classList.toggle("open");
+      dropdown.style.display = dropdown.style.display === 'block' ? 'none' : 'block';
     }
 
     function handleAction(type) {
       toggleDropdown();
       if (type === 'custom') {
-        const custom = prompt("Enter custom label:");
-        if (!custom) return;
-        placeMarker(custom, 'cyan');
+        const label = prompt("Enter custom label:");
+        if (!label) return;
+        setMarker(label, 'cyan');
       } else {
-        const label = type.toUpperCase();
-        const color = type === 'clear' ? 'green' :
-                      type === 'incident' ? 'red' :
-                      type === 'move' ? '#ffaa00' : 'cyan';
-        placeMarker(label, color);
+        const colors = { clear: 'green', incident: 'red', move: '#ffaa00' };
+        setMarker(type.toUpperCase(), colors[type] || 'cyan');
       }
     }
 
-    // =======================
-    // MARKER CONTROLS
-    // =======================
-    function placeMarker(label, color) {
+    function setMarker(label, color) {
       map.once('click', function (e) {
         const m = L.circleMarker(e.latlng, { radius: 6, color }).bindTooltip(label);
         m.addTo(markerGroup);
@@ -187,86 +98,63 @@
     }
 
     function clearAll() {
-      toggleDropdown();
       markerGroup.clearLayers();
       markerCount = 0;
       trail = [];
       document.getElementById('markerCount').textContent = "MARKERS: 0";
+      toggleDropdown();
     }
 
-    // =======================
-    // MAP INTERACTIONS
-    // =======================
-    document.getElementById('centerBtn').onclick = () => {
-      if (trail.length > 0) {
-        map.setView(trail[trail.length - 1], map.getZoom());
+    function toggleHeatmap() {
+      if (heatLayer) {
+        map.removeLayer(heatLayer);
+        heatLayer = null;
       } else {
-        alert("GPS location not yet available.");
+        const heatData = [];
+        for (let i = 0; i < 250; i++) {
+          let lat = 33.4484 + (Math.random() - 0.5) * 0.004;
+          let lon = -112.0740 + (Math.random() - 0.5) * 0.004;
+          heatData.push([lat, lon, 0.5]);
+        }
+        heatLayer = L.heatLayer(heatData, { radius: 18, blur: 20, minOpacity: 0.4 }).addTo(map);
       }
+      dropdown.style.display = 'none';
+    }
+
+    // === CENTER GPS BUTTON ===
+    document.getElementById('centerBtn').onclick = () => {
+      if (trail.length > 0) map.setView(trail[trail.length - 1], map.getZoom());
     };
 
-    // =======================
-    // INIT: MAP SETUP
-    // =======================
-    function setupMap() {
-      map = L.map('map').setView([33.4484, -112.0740], 19);
-      const street = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png');
-      const satellite = L.tileLayer('https://{s}.google.com/vt/lyrs=s&x={x}&y={y}&z={z}', {
-        crossOrigin: "anonymous", subdomains: ['mt0', 'mt1', 'mt2', 'mt3'], maxZoom: 20
-      });
-      let currentLayer = street;
-      street.addTo(map);
-      markerGroup = L.layerGroup().addTo(map);
+    // === GPS TRACKING ===
+    navigator.geolocation.watchPosition(pos => {
+      const { latitude, longitude, accuracy } = pos.coords;
+      if (accuracy > 20) {
+        document.getElementById('gpsStatus').textContent = `GPS: REJECTED (${Math.round(accuracy)}m)`;
+        return;
+      }
+      document.getElementById('gpsStatus').textContent = `GPS: LOCKED (${Math.round(accuracy)}m)`;
+      const latlng = [latitude, longitude];
+      trail.push(latlng);
+      L.circleMarker(latlng, { radius: 1.5, color: '#00ff00', fillColor: '#00ff00', fillOpacity: 1 }).addTo(map);
+      reverseGeocode(latitude, longitude);
+    }, err => {
+      document.getElementById('gpsStatus').textContent = "GPS: ERROR";
+    }, { enableHighAccuracy: true, maximumAge: 0, timeout: 5000 });
 
-      document.getElementById('toggleMapType').onclick = () => {
-        map.removeLayer(currentLayer);
-        currentLayer = currentLayer === street ? satellite : street;
-        currentLayer.addTo(map);
-        document.getElementById('toggleMapType').textContent = currentLayer === street ? 'SATELLITE VIEW' : 'MAP VIEW';
-      };
-    }
+    // === TIMER & CLOCK ===
+    setInterval(() => {
+      const now = new Date();
+      document.getElementById('clock').textContent = "TIME: " + now.toLocaleString();
+      const elapsed = Date.now() - startTime;
+      const hrs = Math.floor(elapsed / 3600000);
+      const mins = Math.floor((elapsed % 3600000) / 60000);
+      const secs = Math.floor((elapsed % 60000) / 1000);
+      document.getElementById('timer').textContent =
+        "Active Time: " + String(hrs).padStart(2, '0') + ":" + String(mins).padStart(2, '0') + ":" + String(secs).padStart(2, '0');
+    }, 1000);
 
-    // =======================
-    // INIT: GPS
-    // =======================
-    function initGPS() {
-      navigator.geolocation.watchPosition(pos => {
-        const { latitude, longitude, accuracy } = pos.coords;
-        if (accuracy > 20) {
-          document.getElementById('gpsStatus').textContent = `GPS: REJECTED (${Math.round(accuracy)}m)`;
-          return;
-        }
-        document.getElementById('gpsStatus').textContent = `GPS: LOCKED (${Math.round(accuracy)}m)`;
-        const latlng = [latitude, longitude];
-        trail.push(latlng);
-        L.circleMarker(latlng, {
-          radius: 1.5, color: '#00ff00', fillColor: '#00ff00', fillOpacity: 1
-        }).addTo(map);
-        reverseGeocode(latitude, longitude);
-      }, err => {
-        document.getElementById('gpsStatus').textContent = "GPS: ERROR";
-      }, { enableHighAccuracy: true, maximumAge: 0, timeout: 5000 });
-    }
-
-    // =======================
-    // INIT: TIMERS
-    // =======================
-    function startTimer() {
-      setInterval(() => {
-        const now = new Date();
-        document.getElementById('clock').textContent = "TIME: " + now.toLocaleString();
-        const elapsed = Date.now() - startTime;
-        const hrs = Math.floor(elapsed / 3600000);
-        const mins = Math.floor((elapsed % 3600000) / 60000);
-        const secs = Math.floor((elapsed % 60000) / 1000);
-        document.getElementById('timer').textContent =
-          "Active Time: " + String(hrs).padStart(2, '0') + ":" + String(mins).padStart(2, '0') + ":" + String(secs).padStart(2, '0');
-      }, 1000);
-    }
-
-    // =======================
-    // REVERSE GEOCODE
-    // =======================
+    // === REVERSE GEOCODING ===
     function reverseGeocode(lat, lon) {
       fetch(`https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${lat}&lon=${lon}`)
         .then(res => res.json())
@@ -276,13 +164,6 @@
           document.getElementById('address').textContent = `Lat: ${lat.toFixed(5)}, Lon: ${lon.toFixed(5)}`;
         });
     }
-
-    // =======================
-    // INIT EVERYTHING
-    // =======================
-    setupMap();
-    initGPS();
-    startTimer();
   </script>
 </body>
 </html>
