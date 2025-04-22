@@ -1,14 +1,13 @@
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Project 1 - Final Stable Version (v1.1R6 - ASCII)</title>
+  <title>Project 1 - Final Stable Version (v1.1R7 - GPS + Photo Dropdown)</title>
 
   <!-- =======================
        CHANGE LOG
-       v1.1R6 - Pure ASCII version (no special characters)
+       v1.1R7 - Clean GPS button + dropdown photo viewer
        ======================= -->
 
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
@@ -19,26 +18,29 @@
     .hud-row { display: flex; justify-content: space-between; flex-wrap: wrap; font-size: 12px; }
     .hud-buttons { display: flex; gap: 10px; margin-top: 5px; flex-wrap: wrap; }
     .hud-buttons button { background: black; color: #00ff00; border: 1px solid #00ff00; padding: 5px 10px; cursor: pointer; font-size: 12px; }
-    #centerBtn { position: absolute; right: 10px; top: 60px; background: black; border: 1px solid #00ff00; color: #00ff00; padding: 3px 8px; font-size: 12px; z-index: 1001; }
+
+    #gpsBtn { position: absolute; right: 10px; top: 60px; background: black; border: 1px solid #00ff00; color: #00ff00; padding: 4px 8px; font-size: 12px; z-index: 1001; }
+
     #address { position: absolute; top: 0; left: 0; padding: 5px 10px; font-size: 12px; background: rgba(0,0,0,0.8); color: #00ff00; z-index: 999; }
     #timer { position:absolute;top:115px;left:10px;z-index:999;font-size:12px;background:rgba(0,0,0,0.7);padding:4px 6px;font-weight:bold;border:1px solid #00ff00; }
-    #photoThumbs { position: absolute; bottom: 75px; left: 10px; z-index: 999; display: flex; flex-wrap: wrap; gap: 4px; max-width: 90vw; }
-    #photoThumbs img { width: 60px; height: 60px; object-fit: cover; border: 1px solid #00ff00; }
+
+    #photoDropdown { display: none; flex-wrap: wrap; gap: 6px; margin-top: 6px; padding-top: 4px; border-top: 1px solid #00ff00; }
+    #photoDropdown img { width: 120px; height: auto; object-fit: contain; border: 1px solid #00ff00; }
   </style>
 </head>
 
 <body>
   <div id="map"></div>
 
-  <!-- GPS CENTER BUTTON -->
-  <div id="centerBtn" title="Center GPS">CENTER</div>
+  <!-- GPS BUTTON (TOP-RIGHT) -->
+  <div id="gpsBtn" title="Center on GPS">[GPS]</div>
 
-  <!-- HUD TOP -->
+  <!-- HUD OVERLAYS -->
   <button id="toggleMapType" style="position:absolute;top:50px;left:10px;z-index:999;background:black;color:#00ff00;border:1px solid #00ff00;padding:5px;font-size:12px;">SATELLITE VIEW</button>
   <div id="timer">Active Time: 00:00:00</div>
   <div id="address">LOCATING...</div>
 
-  <!-- HUD BOTTOM PANEL -->
+  <!-- BOTTOM HUD PANEL -->
   <div class="hud">
     <div class="hud-row">
       <div>OFFICER: <input id="officer" type="text" placeholder="Enter Officer Name" style="background:black;color:#00ff00;border:none;" /></div>
@@ -53,12 +55,13 @@
       <button onclick="setMarkerMode('custom')">[ADD CUSTOM]</button>
       <button onclick="clearAll()">[CLEAR MARKERS]</button>
       <button onclick="takePhoto()">[CAPTURE]</button>
+      <button onclick="toggleDropdown()">[VIEW PHOTOS]</button>
     </div>
+    <div id="photoDropdown"></div>
   </div>
 
-  <!-- PHOTO CAPTURE MODULE -->
+  <!-- HIDDEN PHOTO INPUT -->
   <input id="photoInput" type="file" accept="image/*" capture="environment" style="display:none;" />
-  <div id="photoThumbs"></div>
 
   <!-- LIBRARIES -->
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
@@ -184,10 +187,15 @@
       if (!file) return;
       const img = document.createElement('img');
       img.src = URL.createObjectURL(file);
-      document.getElementById('photoThumbs').appendChild(img);
+      document.getElementById('photoDropdown').appendChild(img);
     });
 
-    document.getElementById('centerBtn').onclick = () => {
+    function toggleDropdown() {
+      const panel = document.getElementById('photoDropdown');
+      panel.style.display = (panel.style.display === 'none' || panel.style.display === '') ? 'flex' : 'none';
+    }
+
+    document.getElementById('gpsBtn').onclick = () => {
       if (trail.length > 0) {
         const last = trail[trail.length - 1];
         map.setView(last, map.getZoom());
