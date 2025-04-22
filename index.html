@@ -54,7 +54,7 @@
       <button onclick="setMarkerMode('move')">[MOVEMENT]</button>
       <button onclick="setMarkerMode('custom')">[ADD CUSTOM]</button>
       <button onclick="clearAll()">[CLEAR MARKERS]</button>
-      <button onclick="takePhoto()">[CAPTURE]</button>
+      <button onclick="takePhoto()">[CAPTURE]</button><button onclick="toggleDropdown()">[VIEW PHOTOS]</button>
       <button onclick="toggleDropdown()">[VIEW PHOTOS]</button>
     </div>
     <div id="photoDropdown"></div>
@@ -187,7 +187,11 @@
       if (!file) return;
       const img = document.createElement('img');
       img.src = URL.createObjectURL(file);
+      
+      // Ensure images only appear in the dropdown
       document.getElementById('photoDropdown').appendChild(img);
+      img.style.display = 'block';
+    
     });
 
     function toggleDropdown() {
