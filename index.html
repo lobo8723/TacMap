@@ -1,10 +1,9 @@
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Project 1 - Final Stable Version (v1.1R4)</title>
+  <title>Project 1 - Final Stable Version (v1.1R5)</title>
 
   <!-- =======================
        CHANGE LOG
@@ -13,7 +12,8 @@
        v1.1R - Modular structure restored
        v1.1R2 - Fixed marker placement / map click
        v1.1R3 - GPS center button functionality restored + hardened
-       v1.1R4 - Photo capture with thumbnail preview added
+       v1.1R4 - Photo capture + thumbnail viewer added
+       v1.1R5 - Cleaned UI, fixed GPS overlay, repositioned thumbnails
        ======================= -->
 
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
@@ -24,20 +24,22 @@
     .hud-row { display: flex; justify-content: space-between; flex-wrap: wrap; font-size: 12px; }
     .hud-buttons { display: flex; gap: 10px; margin-top: 5px; flex-wrap: wrap; }
     .hud-buttons button { background: black; color: #00ff00; border: 1px solid #00ff00; padding: 5px 10px; cursor: pointer; font-size: 12px; }
-    #centerBtn { position: absolute; right: 10px; top: 60px; background: black; border: 1px solid #00ff00; color: #00ff00; border-radius: 50%; width: 30px; height: 30px; text-align: center; line-height: 30px; cursor: pointer; z-index: 999; }
+    #centerBtn { position: absolute; right: 10px; top: 60px; background: black; border: 1px solid #00ff00; color: #00ff00; border-radius: 50%; width: 30px; height: 30px; text-align: center; line-height: 30px; cursor: pointer; z-index: 1001; }
     #address { position: absolute; top: 0; left: 0; padding: 5px 10px; font-size: 12px; background: rgba(0,0,0,0.8); color: #00ff00; z-index: 999; }
     #timer { position:absolute;top:115px;left:10px;z-index:999;font-size:12px;background:rgba(0,0,0,0.7);padding:4px 6px;font-weight:bold;border:1px solid #00ff00; }
-    #photoThumbs { position: absolute; bottom: 75px; right: 10px; z-index: 999; display: flex; flex-wrap: wrap; gap: 4px; }
+    #photoThumbs { position: absolute; bottom: 75px; left: 10px; z-index: 999; display: flex; flex-wrap: wrap; gap: 4px; max-width: 90vw; }
     #photoThumbs img { width: 60px; height: 60px; object-fit: cover; border: 1px solid #00ff00; }
   </style>
 </head>
 
 <body>
-  <!-- MAP DISPLAY -->
+  <!-- MAP -->
   <div id="map"></div>
 
-  <!-- MAP CONTROLS -->
+  <!-- GPS CENTER BUTTON -->
   <div id="centerBtn" title="Center GPS">â</div>
+
+  <!-- HUD TOP OVERLAYS -->
   <button id="toggleMapType" style="position:absolute;top:50px;left:10px;z-index:999;background:black;color:#00ff00;border:1px solid #00ff00;padding:5px;font-size:12px;">SATELLITE VIEW</button>
   <div id="timer">Active Time: 00:00:00</div>
   <div id="address">LOCATING...</div>
@@ -51,16 +53,16 @@
       <div id="markerCount">MARKERS: 0</div>
     </div>
     <div class="hud-buttons">
-      <button onclick="setMarkerMode('clear')">[â] SECURE</button>
-      <button onclick="setMarkerMode('incident')">[â ] INCIDENT</button>
-      <button onclick="setMarkerMode('move')">[â»] MOVEMENT</button>
-      <button onclick="setMarkerMode('custom')">[+] ADD CUSTOM</button>
-      <button onclick="clearAll()">ðï¸ CLEAR MARKERS</button>
-      <button onclick="takePhoto()">[ð·] CAPTURE</button>
+      <button onclick="setMarkerMode('clear')">[SECURE]</button>
+      <button onclick="setMarkerMode('incident')">[INCIDENT]</button>
+      <button onclick="setMarkerMode('move')">[MOVEMENT]</button>
+      <button onclick="setMarkerMode('custom')">[ADD CUSTOM]</button>
+      <button onclick="clearAll()">[CLEAR MARKERS]</button>
+      <button onclick="takePhoto()">[CAPTURE]</button>
     </div>
   </div>
 
-  <!-- PHOTO CAPTURE MODULE -->
+  <!-- PHOTO MODULE -->
   <input id="photoInput" type="file" accept="image/*" capture="environment" style="display:none;" />
   <div id="photoThumbs"></div>
 
@@ -69,10 +71,10 @@
   <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
 
   <script>
-    // GLOBAL VARIABLES
+    // ========== GLOBAL VARIABLES ==========
     let map, trail = [], markerGroup, markerCount = 0, markerMode = null, startTime = Date.now();
 
-    // INIT: MAP + LAYERS + CLICK EVENTS
+    // ========== INIT MAP ==========
     function setupMap() {
       map = L.map('map').setView([33.4484, -112.0740], 19);
       const street = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png');
@@ -111,7 +113,7 @@
       });
     }
 
-    // INIT: GPS TRACKING
+    // ========== INIT GPS ==========
     function initGPS() {
       navigator.geolocation.watchPosition(pos => {
         const { latitude, longitude, accuracy } = pos.coords;
@@ -142,7 +144,7 @@
       });
     }
 
-    // INIT: TIMERS & CLOCK
+    // ========== INIT TIMERS ==========
     function startTimer() {
       setInterval(() => {
         let now = Date.now() - startTime;
@@ -161,7 +163,7 @@
       }, 1000);
     }
 
-    // REVERSE GEOCODE
+    // ========== REVERSE GEOCODING ==========
     function reverseGeocode(lat, lon) {
       fetch(`https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${lat}&lon=${lon}`)
         .then(res => res.json())
@@ -172,7 +174,7 @@
         });
     }
 
-    // MARKER CONTROLS
+    // ========== MARKER CONTROLS ==========
     function setMarkerMode(type) {
       markerMode = type;
       alert(`Tap on the map to place ${type.toUpperCase()} marker.`);
@@ -185,7 +187,7 @@
       document.getElementById('markerCount').textContent = "MARKERS: 0";
     }
 
-    // PHOTO CAPTURE
+    // ========== PHOTO CAPTURE ==========
     function takePhoto() {
       document.getElementById('photoInput').click();
     }
@@ -198,7 +200,7 @@
       document.getElementById('photoThumbs').appendChild(img);
     });
 
-    // GPS CENTERING
+    // ========== GPS CENTERING ==========
     document.getElementById('centerBtn').onclick = () => {
       if (trail.length > 0) {
         const last = trail[trail.length - 1];
@@ -208,7 +210,7 @@
       }
     };
 
-    // INIT
+    // INIT ALL
     setupMap();
     initGPS();
     startTimer();
