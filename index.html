@@ -1,212 +1,248 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Project 1 - Final Stable Version (v1.1R7 - GPS + Photo Dropdown)</title>
- 
-  <!-- =======================
-       CHANGE LOG
-       v1.1R7 - Clean GPS button + dropdown photo viewer
-       ======================= -->
- 
-  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-  <style>
-    html, body { margin: 0; padding: 0; height: 100%; font-family: monospace; background: #111; color: #00ff00; }
-    #map { width: 100%; height: 100%; z-index: 1; }
-    .hud { position: absolute; width: 100%; bottom: 0; background: rgba(0,0,0,0.85); padding: 8px; box-sizing: border-box; z-index: 999; }
-    .hud-row { display: flex; justify-content: space-between; flex-wrap: wrap; font-size: 12px; }
-    .hud-buttons { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 10px; justify-items: center; padding: 5px 0; }
-    .hud-buttons button { background: black; color: #00ff00; border: 1px solid #00ff00; padding: 5px 12px; cursor: pointer; font-size: 12px; min-width: 110px; text-align: center; }
- 
-    #gpsBtn { position: absolute; right: 10px; top: 60px; background: black; border: 1px solid #00ff00; color: #00ff00; padding: 4px 8px; font-size: 12px; z-index: 1001; }
- 
-    #address { position: absolute; top: 0; left: 0; padding: 5px 10px; font-size: 12px; background: rgba(0,0,0,0.8); color: #00ff00; z-index: 999; }
-    #timer { position:absolute;top:115px;left:10px;z-index:999;font-size:12px;background:rgba(0,0,0,0.7);padding:4px 6px;font-weight:bold;border:1px solid #00ff00; }
- 
-    #photoDropdown { display: none; flex-wrap: wrap; gap: 6px; margin-top: 6px; padding-top: 4px; border-top: 1px solid #00ff00; }
-    #photoDropdown img { width: 120px; height: auto; object-fit: contain; border: 1px solid #00ff00; }
-  </style>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Project 1 - Final Stable Version (v1.1R7 - GPS + Photo Dropdown)</title>
+
+  <!-- =======================
+       CHANGE LOG
+       v1.1R7 - Clean GPS button + dropdown photo viewer
+       ======================= -->
+
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <style>
+    html, body { margin: 0; padding: 0; height: 100%; font-family: monospace; background: #111; color: #00ff00; }
+    #map { width: 100%; height: 100%; z-index: 1; }
+    .hud { position: absolute; width: 100%; bottom: 0; background: rgba(0,0,0,0.85); padding: 8px; box-sizing: border-box; z-index: 999; }
+    .hud-row { display: flex; justify-content: space-between; flex-wrap: wrap; font-size: 12px; }
+    .hud-buttons { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 10px; justify-items: center; padding: 5px 0; }
+    .hud-buttons button { background: black; color: #00ff00; border: 1px solid #00ff00; padding: 5px 12px; cursor: pointer; font-size: 12px; min-width: 110px; text-align: center; }
+
+    #gpsBtn { position: absolute; right: 10px; top: 60px; background: black; border: 1px solid #00ff00; color: #00ff00; padding: 4px 8px; font-size: 12px; z-index: 1001; }
+
+    #address { position: absolute; top: 0; left: 0; padding: 5px 10px; font-size: 12px; background: rgba(0,0,0,0.8); color: #00ff00; z-index: 999; }
+    #timer { position:absolute;top:115px;left:10px;z-index:999;font-size:12px;background:rgba(0,0,0,0.7);padding:4px 6px;font-weight:bold;border:1px solid #00ff00; }
+
+    #photoDropdown { display: none; flex-wrap: wrap; gap: 6px; margin-top: 6px; padding-top: 4px; border-top: 1px solid #00ff00; }
+    #photoDropdown img { width: 120px; height: auto; object-fit: contain; border: 1px solid #00ff00; }
+  </style>
 </head>
- 
+
 <body>
-  <div id="map"></div>
- 
-  <!-- GPS BUTTON (TOP-RIGHT) -->
-  <div id="gpsBtn" title="Center on GPS">[GPS]</div>
- 
-  <!-- HUD OVERLAYS -->
-  <button id="toggleMapType" style="position:absolute;top:50px;left:10px;z-index:999;background:black;color:#00ff00;border:1px solid #00ff00;padding:5px;font-size:12px;">SATELLITE VIEW</button>
-  <div id="timer">Active Time: 00:00:00</div>
-  <div id="address">LOCATING...</div>
- 
-  <!-- BOTTOM HUD PANEL -->
-  <div class="hud">
-    <div class="hud-row">
-      <div>OFFICER: <input id="officer" type="text" placeholder="Enter Officer Name" style="background:black;color:#00ff00;border:none;" /></div>
-      <div id="clock">TIME: --:--:--</div>
-      <div id="gpsStatus">GPS: WAITING...</div>
-      <div id="markerCount">MARKERS: 0</div>
-    </div>
-    <div class="hud-buttons">
-      <button onclick="setMarkerMode('clear')">[SECURE]</button>
-      <button onclick="setMarkerMode('incident')">[INCIDENT]</button>
-      <button onclick="setMarkerMode('move')">[MOVEMENT]</button>
-      <button onclick="setMarkerMode('custom')">[ADD CUSTOM]</button>
-      <button onclick="clearAll()">[CLEAR MARKERS]</button>
-      <button onclick="takePhoto()">[CAPTURE]</button>
-      <button onclick="toggleDropdown()">[VIEW PHOTOS]</button>
-    </div>
-    <div id="photoDropdown"></div>
-  </div>
- 
-  <!-- HIDDEN PHOTO INPUT -->
-  <input id="photoInput" type="file" accept="image/*" capture="environment" style="display:none;" />
- 
-  <!-- LIBRARIES -->
-  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
- 
-  <script>
-    let map, trail = [], markerGroup, markerCount = 0, markerMode = null, startTime = Date.now();
- 
-    function setupMap() {
-      map = L.map('map').setView([33.4484, -112.0740], 19);
-      const street = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png');
-      const satellite = L.tileLayer('https://{s}.google.com/vt/lyrs=s&x={x}&y={y}&z={z}', {
-        crossOrigin: "anonymous", subdomains: ['mt0', 'mt1', 'mt2', 'mt3'], maxZoom: 20
-      });
-      let currentLayer = street;
-      street.addTo(map);
-      markerGroup = L.layerGroup().addTo(map);
- 
-      document.getElementById('toggleMapType').onclick = () => {
-        map.removeLayer(currentLayer);
-        currentLayer = currentLayer === street ? satellite : street;
-        currentLayer.addTo(map);
-        document.getElementById('toggleMapType').textContent = currentLayer === street ? 'SATELLITE VIEW' : 'MAP VIEW';
-      };
- 
-      map.on('click', function (e) {
-        if (!markerMode) return;
-        let label = markerMode.toUpperCase();
-        let color = markerMode === 'clear' ? 'green' :
-                    markerMode === 'incident' ? 'red' :
-                    markerMode === 'move' ? '#ffaa00' : 'cyan';
- 
-        if (markerMode === 'custom') {
-          const custom = prompt("Enter custom label:");
-          if (!custom) return;
-          label = custom;
-        }
- 
-        const m = L.circleMarker(e.latlng, { radius: 6, color }).bindTooltip(label);
-        m.addTo(markerGroup);
-        markerCount++;
-        document.getElementById('markerCount').textContent = `MARKERS: ${markerCount}`;
-        markerMode = null;
-      });
-    }
- 
-    function initGPS() {
-      navigator.geolocation.watchPosition(pos => {
-        const { latitude, longitude, accuracy } = pos.coords;
- 
-        if (accuracy > 20) {
-          document.getElementById('gpsStatus').textContent = `GPS: REJECTED (${Math.round(accuracy)}m)`;
-          return;
-        }
- 
-        document.getElementById('gpsStatus').textContent = `GPS: LOCKED (${Math.round(accuracy)}m)`;
- 
-        const latlng = [latitude, longitude];
-        trail.push(latlng);
-        L.circleMarker(latlng, {
-          radius: 2,
-          color: '#00ff00',
-          fillColor: '#00ff00',
-          fillOpacity: 1
-        }).addTo(map);
- 
-        reverseGeocode(latitude, longitude);
-      }, err => {
-        document.getElementById('gpsStatus').textContent = "GPS: ERROR";
-      }, {
-        enableHighAccuracy: true,
-        maximumAge: 0,
-        timeout: 5000
-      });
-    }
- 
-    function startTimer() {
-      setInterval(() => {
-        let now = Date.now() - startTime;
-        let hrs = Math.floor(now / 3600000);
-        let mins = Math.floor((now % 3600000) / 60000);
-        let secs = Math.floor((now % 60000) / 1000);
-        document.getElementById('timer').textContent = "Active Time: " +
-          String(hrs).padStart(2, '0') + ":" +
-          String(mins).padStart(2, '0') + ":" +
-          String(secs).padStart(2, '0');
-      }, 1000);
- 
-      setInterval(() => {
-        const now = new Date();
-        document.getElementById('clock').textContent = "TIME: " + now.toLocaleString();
-      }, 1000);
-    }
- 
-    function reverseGeocode(lat, lon) {
-      fetch(`https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${lat}&lon=${lon}`)
-        .then(res => res.json())
-        .then(data => {
-          document.getElementById('address').textContent = data.display_name || `Lat: ${lat.toFixed(5)}, Lon: ${lon.toFixed(5)}`;
-        }).catch(() => {
-          document.getElementById('address').textContent = `Lat: ${lat.toFixed(5)}, Lon: ${lon.toFixed(5)}`;
-        });
-    }
- 
-    function setMarkerMode(type) {
-      markerMode = type;
-      alert(`Tap on the map to place ${type.toUpperCase()} marker.`);
-    }
- 
-    function clearAll() {
-      markerGroup.clearLayers();
-      markerCount = 0;
-      trail = [];
-      document.getElementById('markerCount').textContent = "MARKERS: 0";
-    }
- 
-    function takePhoto() {
-      document.getElementById('photoInput').click();
-    }
- 
-    document.getElementById('photoInput').addEventListener('change', function() {
-      const file = this.files[0];
-      if (!file) return;
-      const img = document.createElement('img');
-      img.src = URL.createObjectURL(file);
-      document.getElementById('photoDropdown').appendChild(img);
-    });
- 
-    function toggleDropdown() {
-      const panel = document.getElementById('photoDropdown');
-      panel.style.display = (panel.style.display === 'none' || panel.style.display === '') ? 'flex' : 'none';
-    }
- 
-    document.getElementById('gpsBtn').onclick = () => {
-      if (trail.length > 0) {
-        const last = trail[trail.length - 1];
-        map.setView(last, map.getZoom());
-      } else {
-        alert("GPS location not yet available.");
-      }
-    };
- 
-    setupMap();
-    initGPS();
-    startTimer();
-  </script>
+  <div id="map"></div>
+
+  <!-- GPS BUTTON (TOP-RIGHT) -->
+  <div id="gpsBtn" title="Center on GPS">[GPS]</div>
+
+  <!-- HUD OVERLAYS -->
+  <button id="toggleMapType" style="position:absolute;top:50px;left:10px;z-index:999;background:black;color:#00ff00;border:1px solid #00ff00;padding:5px;font-size:12px;">SATELLITE VIEW</button>
+  <div id="timer">Active Time: 00:00:00</div>
+  <div id="address">LOCATING...</div>
+
+  <!-- BOTTOM HUD PANEL -->
+  <div class="hud">
+    <div class="hud-row">
+      <div>OFFICER: <input id="officer" type="text" placeholder="Enter Officer Name" style="background:black;color:#00ff00;border:none;" /></div>
+      <div id="clock">TIME: --:--:--</div>
+      <div id="gpsStatus">GPS: WAITING...</div>
+      <div id="markerCount">MARKERS: 0</div>
+    </div>
+    <div class="hud-buttons">
+      <button onclick="setMarkerMode('clear')">[SECURE]</button>
+      <button onclick="setMarkerMode('incident')">[INCIDENT]</button>
+      <button onclick="setMarkerMode('move')">[MOVEMENT]</button>
+      <button onclick="setMarkerMode('custom')">[ADD CUSTOM]</button>
+      <button onclick="clearAll()">[CLEAR MARKERS]</button>
+      <button onclick="takePhoto()">[CAPTURE]</button>
+      <button onclick="toggleDropdown()">[VIEW PHOTOS]</button>
+    </div>
+    <div id="photoDropdown"></div>
+  </div>
+
+  <!-- HIDDEN PHOTO INPUT -->
+  <input id="photoInput" type="file" accept="image/*" capture="environment" style="display:none;" />
+
+  <!-- LIBRARIES -->
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+
+  <script>
+    let map, trail = [], markerGroup, markerCount = 0, markerMode = null, startTime = Date.now();
+
+    function setupMap() {
+      map = L.map('map').setView([33.4484, -112.0740], 19);
+      const street = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png');
+      const satellite = L.tileLayer('https://{s}.google.com/vt/lyrs=s&x={x}&y={y}&z={z}', {
+        crossOrigin: "anonymous", subdomains: ['mt0', 'mt1', 'mt2', 'mt3'], maxZoom: 20
+      });
+      let currentLayer = street;
+      street.addTo(map);
+      markerGroup = L.layerGroup().addTo(map);
+
+      document.getElementById('toggleMapType').onclick = () => {
+        map.removeLayer(currentLayer);
+        currentLayer = currentLayer === street ? satellite : street;
+        currentLayer.addTo(map);
+        document.getElementById('toggleMapType').textContent = currentLayer === street ? 'SATELLITE VIEW' : 'MAP VIEW';
+      };
+
+      map.on('click', function (e) {
+// ================================
+// MAP INTERACTIONS: BREADCRUMB HANDLER
+// ================================
+        if (breadcrumbMode) {
+          const m = L.circleMarker(e.latlng, {
+            radius: 2,
+            color: '#00ff00',
+            fillColor: '#00ff00',
+            fillOpacity: 1
+          }).bindTooltip("BREADCRUMB").addTo(markerGroup);
+          return;
+        }
+
+        if (!markerMode) return;
+        let label = markerMode.toUpperCase();
+        let color = markerMode === 'clear' ? 'green' :
+                    markerMode === 'incident' ? 'red' :
+                    markerMode === 'move' ? '#ffaa00' : 'cyan';
+
+        if (markerMode === 'custom') {
+          const custom = prompt("Enter custom label:");
+          if (!custom) return;
+          label = custom;
+        }
+
+        const m = L.circleMarker(e.latlng, {
+          radius: 6,
+          color: color,
+          fillColor: color,
+          fillOpacity: 1
+        }).bindTooltip(label);
+        m.addTo(markerGroup);
+        markerCount++;
+        document.getElementById('markerCount').textContent = `MARKERS: ${markerCount}`;
+        markerMode = null;
+      });
+    }
+
+    function initGPS() {
+      navigator.geolocation.watchPosition(pos => {
+        const { latitude, longitude, accuracy } = pos.coords;
+
+        if (accuracy > 20) {
+          document.getElementById('gpsStatus').textContent = `GPS: REJECTED (${Math.round(accuracy)}m)`;
+          return;
+        }
+
+        document.getElementById('gpsStatus').textContent = `GPS: LOCKED (${Math.round(accuracy)}m)`;
+
+        const latlng = [latitude, longitude];
+        trail.push(latlng);
+        L.circleMarker(latlng, {
+          radius: 2,
+          color: '#00ff00',
+          fillColor: '#00ff00',
+          fillOpacity: 1
+        }).addTo(map);
+
+        reverseGeocode(latitude, longitude);
+      }, err => {
+        document.getElementById('gpsStatus').textContent = "GPS: ERROR";
+      }, {
+        enableHighAccuracy: true,
+        maximumAge: 0,
+        timeout: 5000
+      });
+    }
+
+    function startTimer() {
+      setInterval(() => {
+        let now = Date.now() - startTime;
+        let hrs = Math.floor(now / 3600000);
+        let mins = Math.floor((now % 3600000) / 60000);
+        let secs = Math.floor((now % 60000) / 1000);
+        document.getElementById('timer').textContent = "Active Time: " +
+          String(hrs).padStart(2, '0') + ":" +
+          String(mins).padStart(2, '0') + ":" +
+          String(secs).padStart(2, '0');
+      }, 1000);
+
+      setInterval(() => {
+        const now = new Date();
+        document.getElementById('clock').textContent = "TIME: " + now.toLocaleString();
+      }, 1000);
+    }
+
+    function reverseGeocode(lat, lon) {
+      fetch(`https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${lat}&lon=${lon}`)
+        .then(res => res.json())
+        .then(data => {
+          document.getElementById('address').textContent = data.display_name || `Lat: ${lat.toFixed(5)}, Lon: ${lon.toFixed(5)}`;
+        }).catch(() => {
+          document.getElementById('address').textContent = `Lat: ${lat.toFixed(5)}, Lon: ${lon.toFixed(5)}`;
+        });
+    }
+
+    function setMarkerMode(type) {
+      markerMode = type;
+      alert(`Tap on the map to place ${type.toUpperCase()} marker.`);
+    }
+
+    function clearAll() {
+      markerGroup.clearLayers();
+      markerCount = 0;
+      trail = [];
+      document.getElementById('markerCount').textContent = "MARKERS: 0";
+    }
+
+    function takePhoto() {
+      document.getElementById('photoInput').click();
+    }
+
+    document.getElementById('photoInput').addEventListener('change', function() {
+      const file = this.files[0];
+      if (!file) return;
+      const img = document.createElement('img');
+      img.src = URL.createObjectURL(file);
+      document.getElementById('photoDropdown').appendChild(img);
+    });
+
+    function toggleDropdown() {
+      const panel = document.getElementById('photoDropdown');
+      panel.style.display = (panel.style.display === 'none' || panel.style.display === '') ? 'flex' : 'none';
+    }
+
+    document.getElementById('gpsBtn').onclick = () => {
+      if (trail.length > 0) {
+        const last = trail[trail.length - 1];
+        map.setView(last, map.getZoom());
+      } else {
+        alert("GPS location not yet available.");
+      }
+    };
+
+    
+
+    // ================================
+    // INIT: BREADCRUMB MODE TOGGLE
+    // ================================
+    let breadcrumbMode = false;
+
+    document.getElementById('officer').addEventListener('change', function () {
+      const value = this.value.trim().toLowerCase();
+      if (value === 'deltaon') {
+        breadcrumbMode = true;
+        alert('🟢 Breadcrumb Mode Activated');
+      } else if (value === 'deltaoff') {
+        breadcrumbMode = false;
+        alert('🔴 Breadcrumb Mode Deactivated');
+      }
+    });
+
+    setupMap();
+    initGPS();
+    startTimer();
+  </script>
 </body>
 </html>
