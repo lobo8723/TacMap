@@ -88,6 +88,39 @@
       };
 
       map.on('click', function (e) {
+        if (breadcrumbMode) {
+          const m = L.circleMarker(e.latlng, {
+            radius: 4,
+            color: '#00ffff',
+            fillColor: '#00ffff',
+            fillOpacity: 0.5
+          }).bindTooltip("BREADCRUMB").addTo(markerGroup);
+          return;
+        }
+
+        if (!markerMode) return;
+        let label = markerMode.toUpperCase();
+        let color = markerMode === 'clear' ? 'green' :
+                    markerMode === 'incident' ? 'red' :
+                    markerMode === 'move' ? '#ffaa00' : 'cyan';
+
+        if (markerMode === 'custom') {
+          const custom = prompt("Enter custom label:");
+          if (!custom) return;
+          label = custom;
+        }
+
+        const m = L.circleMarker(e.latlng, {
+          radius: 6,
+          color: color,
+          fillColor: color,
+          fillOpacity: 1
+        }).bindTooltip(label);
+        m.addTo(markerGroup);
+        markerCount++;
+        document.getElementById('markerCount').textContent = `MARKERS: ${markerCount}`;
+        markerMode = null;
+      });
         if (!markerMode) return;
         let label = markerMode.toUpperCase();
         let color = markerMode === 'clear' ? 'green' :
@@ -209,9 +242,24 @@
       }
     };
 
+    
+    let breadcrumbMode = false;
+
+    document.getElementById('officer').addEventListener('change', function() {
+      const value = this.value.trim().toLowerCase();
+      if (value === 'delta87') {
+        breadcrumbMode = true;
+        alert('🟢 Breadcrumb Mode Activated');
+      } else if (value === 'deltaoff') {
+        breadcrumbMode = false;
+        alert('🔴 Breadcrumb Mode Deactivated');
+      }
+    });
+
     setupMap();
     initGPS();
     startTimer();
   </script>
 </body>
 </html>
+
