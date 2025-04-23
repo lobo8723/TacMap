@@ -3,11 +3,11 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Project 1 - Final Stable Version (v1.1R10 - Fixed Map + Help Restored)</title>
+  <title>Project 1 - Final Stable Version (v1.1R11 - GPS Fix)</title>
 
   <!-- =======================
        CHANGE LOG
-       v1.1R10 - Map restored, dropdown menu and Help button re-integrated
+       v1.1R11 - GPS fix: location trail and accuracy restored
        ======================= -->
 
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
@@ -49,10 +49,6 @@
       <div id="gpsStatus">GPS: WAITING...</div>
       <div id="markerCount">MARKERS: 0</div>
     </div>
-
-    <!-- ================================
-         HUD: DROPDOWN ACTION MENU
-         ================================ -->
     <div id="actionMenuWrapper">
       <button id="actionDropdownBtn">[ ACTION MENU ]</button>
       <div id="actionDropdownContent">
@@ -69,9 +65,6 @@
     <div id="photoDropdown"></div>
   </div>
 
-  <!-- ================================
-       MODAL: HELP OVERLAY
-       ================================ -->
   <div id="helpModal">
     <button id="closeHelp" onclick="document.getElementById('helpModal').style.display='none'">CLOSE</button>
     <h2>Help Reference Guide</h2>
@@ -95,7 +88,6 @@
   </div>
 
   <input id="photoInput" type="file" accept="image/*" capture="environment" style="display:none;" />
-
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <script>
     // ================================
@@ -121,6 +113,72 @@
     function showHelp() {
       document.getElementById('helpModal').style.display = 'block';
     }
+
+    // ================================
+    // GPS INITIALIZATION + REVERSE GEOCODE
+    // ================================
+    function initGPS() {
+      navigator.geolocation.watchPosition(pos => {
+        const { latitude, longitude, accuracy } = pos.coords;
+
+        if (accuracy > 20) {
+          document.getElementById('gpsStatus').textContent = `GPS: REJECTED (${Math.round(accuracy)}m)`;
+          return;
+        }
+
+        document.getElementById('gpsStatus').textContent = `GPS: LOCKED (${Math.round(accuracy)}m)`;
+        const latlng = [latitude, longitude];
+        trail.push(latlng);
+
+        L.circleMarker(latlng, {
+          radius: 2,
+          color: '#00ff00',
+          fillColor: '#00ff00',
+          fillOpacity: 1
+        }).addTo(markerGroup);
+
+        fetch(`https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${latitude}&lon=${longitude}`)
+          .then(res => res.json())
+          .then(data => {
+            document.getElementById('address').textContent = data.display_name || `Lat: ${latitude.toFixed(5)}, Lon: ${longitude.toFixed(5)}`;
+          }).catch(() => {
+            document.getElementById('address').textContent = `Lat: ${latitude.toFixed(5)}, Lon: ${longitude.toFixed(5)}`;
+          });
+      }, err => {
+        document.getElementById('gpsStatus').textContent = "GPS: ERROR";
+      }, {
+        enableHighAccuracy: true,
+        maximumAge: 0,
+        timeout: 5000
+      });
+    }
+
+    initGPS();
+
+    document.getElementById('gpsBtn').onclick = () => {
+      if (trail.length > 0) {
+        const last = trail[trail.length - 1];
+        map.setView(last, map.getZoom());
+      } else {
+        alert("GPS location not yet available.");
+      }
+    };
+
+    setInterval(() => {
+      let now = Date.now() - startTime;
+      let hrs = Math.floor(now / 3600000);
+      let mins = Math.floor((now % 3600000) / 60000);
+      let secs = Math.floor((now % 60000) / 1000);
+      document.getElementById('timer').textContent = "Active Time: " +
+        String(hrs).padStart(2, '0') + ":" +
+        String(mins).padStart(2, '0') + ":" +
+        String(secs).padStart(2, '0');
+    }, 1000);
+
+    setInterval(() => {
+      const now = new Date();
+      document.getElementById('clock').textContent = "TIME: " + now.toLocaleString();
+    }, 1000);
   </script>
 </body>
 </html>
