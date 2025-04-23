@@ -100,7 +100,12 @@
           label = custom;
         }
 
-        const m = L.circleMarker(e.latlng, { radius: 6, color }).bindTooltip(label);
+        const m = L.circleMarker(e.latlng, {
+          radius: 6,
+          color: color,
+          fillColor: color,
+          fillOpacity: 1
+        }).bindTooltip(label);
         m.addTo(markerGroup);
         markerCount++;
         document.getElementById('markerCount').textContent = `MARKERS: ${markerCount}`;
