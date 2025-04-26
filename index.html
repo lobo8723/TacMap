@@ -26,6 +26,61 @@
   </style>
 </head>
 <body>
+  <!-- LOGIN OVERLAY -->
+<div id="loginOverlay" style="position:fixed;top:0;left:0;width:100%;height:100%;background:black;color:#00ff00;z-index:3000;display:flex;flex-direction:column;justify-content:center;align-items:center;font-family:monospace;">
+  <h2 style="margin-bottom:20px;">AUTHENTICATION REQUIRED</h2>
+  <input id="loginUsername" type="text" placeholder="Username" style="background:black;color:#00ff00;border:1px solid #00ff00;padding:8px;margin:6px;width:200px;text-align:center;">
+  <input id="loginPassword" type="password" placeholder="Password" style="background:black;color:#00ff00;border:1px solid #00ff00;padding:8px;margin:6px;width:200px;text-align:center;">
+  <button id="loginBtn" style="margin-top:15px;background:black;color:#00ff00;border:1px solid #00ff00;padding:8px 20px;cursor:pointer;">LOGIN</button>
+  <div id="loginError" style="margin-top:10px;color:red;display:none;">ACCESS DENIED</div>
+</div>
+
+<script>
+  // List of users and their SHA-256 hashed passwords
+  const users = {
+    "admin": "5e884898da28047151d0e56f8dc6292773603d0d6aabbddabf19a5cb54ad3b39", // password: "password"
+    "officer": "8d969eef6ecad3c29a3a629280e686cff8ca4f546f3c179f96a0578f6e6b3f7b" // password: "123456"
+  };
+
+  async function hashPassword(password) {
+    const enc = new TextEncoder().encode(password);
+    const hashBuffer = await crypto.subtle.digest('SHA-256', enc);
+    return Array.from(new Uint8Array(hashBuffer)).map(b => b.toString(16).padStart(2, '0')).join('');
+  }
+
+  function unlockSystem() {
+    document.getElementById('loginOverlay').style.display = 'none';
+    localStorage.setItem('authenticated', 'true');
+  }
+
+  async function validateLogin() {
+    const username = document.getElementById('loginUsername').value.trim();
+    const password = document.getElementById('loginPassword').value;
+    if (!username || !password) {
+      document.getElementById('loginError').style.display = 'block';
+      return;
+    }
+    const hashed = await hashPassword(password);
+    if (users[username] && users[username] === hashed) {
+      unlockSystem();
+    } else {
+      document.getElementById('loginError').style.display = 'block';
+    }
+  }
+
+  document.getElementById('loginBtn').addEventListener('click', validateLogin);
+  document.getElementById('loginPassword').addEventListener('keyup', function(event) {
+    if (event.key === 'Enter') {
+      validateLogin();
+    }
+  });
+
+  window.addEventListener('DOMContentLoaded', () => {
+    if (localStorage.getItem('authenticated') === 'true') {
+      unlockSystem();
+    }
+  });
+</script>
   <div id="map"></div>
   <div id="gpsBtn" title="Center on GPS">[GPS]</div>
   <button id="toggleMapType" style="position:absolute;top:50px;left:10px;z-index:999;background:black;color:#00ff00;border:1px solid #00ff00;padding:5px;font-size:12px;">SATELLITE VIEW</button>
