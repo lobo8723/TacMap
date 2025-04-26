@@ -219,6 +219,27 @@ window.addEventListener('DOMContentLoaded',()=>{
 });
     let currentLayer = street;
     street.addTo(map);
+  
+   // ─── LIVE INCIDENT CALLS FOR SERVICE ───
+  fetch('https://data.phoenix.gov/resource/t6hg-eeb8.json?$order=call_date_time DESC&$limit=50')
+    .then(res => res.json())
+    .then(calls => {
+      calls.forEach(call => {
+        if (!call.latitude || !call.longitude) return;
+        L.circleMarker(
+          [parseFloat(call.latitude), parseFloat(call.longitude)],
+          { radius: 6, color: 'red', fillColor: '#ff4444', fillOpacity: 0.7, weight: 1 }
+        )
+        .bindTooltip(
+          `<strong>${call.call_type}</strong><br>` +
+          `${new Date(call.call_date_time).toLocaleString()}<br>` +
+          `${call.address || ''}`
+        )
+        .addTo(map);
+      });
+    })
+    .catch(err => console.error('Error fetching calls:', err));
+  // ─────────────────────────────────────────
     let markerGroup = L.layerGroup().addTo(map);
     let trail = [], markerCount = 0, markerMode = null, startTime = Date.now();
     let breadcrumbMode = false;
