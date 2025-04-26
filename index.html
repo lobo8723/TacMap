@@ -45,9 +45,11 @@
   <div id="bootLog" style="width:80%;max-height:200px;overflow-y:auto;
     text-align:left;font-size:14px;border-top:1px solid #00ff00;padding-top:10px;">
   </div>
-  <div id="helpTip" style="font-size:12px;color:#00ff00;margin-top:6px;display:none;">
-    Press <strong>H</strong> for diagnostics help
-  </div>
+  <!-- Visible Diagnostics Help Button -->
+  <button id="helpBtn" style="margin-top:10px;background:black;color:#00ff00;
+    border:1px solid #00ff00;padding:6px 12px;font-size:12px;cursor:pointer;display:none;">
+    Diagnostics Help
+  </button>
 </div>
 
 <!-- Hidden Audio Element -->
@@ -69,12 +71,13 @@ const loadingSteps=[
   "Connecting to GPS Module..."
 ];
 
+// Element getters
 const el = {
   progressBar: () => document.getElementById('progressBar'),
   progressPercent: () => document.getElementById('progressPercent'),
   bootLog: () => document.getElementById('bootLog'),
   beep: () => document.getElementById('beepSound'),
-  helpTip: () => document.getElementById('helpTip')
+  helpBtn: () => document.getElementById('helpBtn')
 };
 
 function logMessage(text, color="#00ff00", isError=false) {
@@ -84,17 +87,16 @@ function logMessage(text, color="#00ff00", isError=false) {
   msg.textContent = `${text} (${elapsed}s)`;
   el.bootLog().appendChild(msg);
   el.bootLog().scrollTop = el.bootLog().scrollHeight;
-  if (isError) el.helpTip().style.display = 'block';
+  if (isError) {
+    el.helpBtn().style.display = 'block';
+  }
 }
 
 function tryGPS() {
   navigator.geolocation.getCurrentPosition(
-    pos => {
-      if (pos.coords.accuracy <= 20) gpsLocked = true;
-      else gpsLocked = false;
-    },
+    pos => { gpsLocked = pos.coords.accuracy <= 20; },
     () => { gpsLocked = false; },
-    { enableHighAccuracy: true, timeout: 7000, maximumAge: 0 }
+    { enableHighAccuracy:true, timeout:7000, maximumAge:0 }
   );
 }
 
@@ -121,7 +123,7 @@ async function nextStep() {
   }
 
   const step = loadingSteps[currentStep];
-  // Only showing Local Storage example; repeat similar pattern for each check
+  // Example: only storage check shown; apply similar pattern for each
   if (step.includes("Local Data Storage")) {
     let ok;
     try { localStorage.setItem('t','1'); localStorage.removeItem('t'); ok = true; }
@@ -152,20 +154,18 @@ function completeBoot() {
 window.addEventListener('DOMContentLoaded', () => {
   bootStartTime = performance.now();
   document.getElementById('startTime').textContent = new Date().toLocaleTimeString();
-  tryGPS();    // prime GPS check immediately
+  tryGPS();  // Prime GPS immediately
   setTimeout(nextStep, 800);
-});
 
-// Hotkey help: press H to alert troubleshooting info
-window.addEventListener('keydown', e => {
-  if (e.key.toLowerCase() === 'h') {
+  // Help button click
+  el.helpBtn().addEventListener('click', () => {
     alert(
       "Diagnostics Help:\n" +
       "- Ensure GPS & location services are enabled\n" +
       "- Grant camera & storage permissions\n" +
       "- Check network connectivity"
     );
-  }
+  });
 });
 </script>
   <div id="map"></div>
