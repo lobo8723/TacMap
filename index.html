@@ -220,33 +220,24 @@ window.addEventListener('DOMContentLoaded',()=>{
     let currentLayer = street;
     street.addTo(map);
   
-   // ─── PROXY FETCH FOR CALLS─FOR─SERVICE ───
-fetch(
-  'https://api.allorigins.win/raw?url=' +
-  encodeURIComponent('https://data.phoenix.gov/resource/t6hg-eeb8.json?$order=call_date_time DESC&$limit=5')
-)
-  // allorigins returns the raw JSON as text, so:
+   // ─── DIAGNOSTIC FETCH & LOG ───
+fetch('https://api.allorigins.win/raw?url=' +
+      encodeURIComponent('https://data.phoenix.gov/resource/t6hg-eeb8.json?$order=call_date_time DESC&$limit=5'))
   .then(res => res.text())
   .then(text => {
-    const calls = JSON.parse(text);
-    console.log('Parsed calls:', calls);
-    if (!Array.isArray(calls) || calls.length === 0) {
-      console.warn('No calls returned or data malformed');
-      return;
+    console.log('RAW PROXY RESPONSE TEXT:', text);
+    try {
+      const calls = JSON.parse(text);
+      console.log('PARSED CALLS ARRAY:', calls);
+      calls.forEach((call, i) => {
+        console.log(`CALL[${i}] lat/lon:`, call.latitude, call.longitude);
+      });
+    } catch (e) {
+      console.error('JSON PARSE ERROR:', e);
     }
-    // Plot each call
-    calls.forEach(call => {
-      const lat = parseFloat(call.latitude),
-            lon = parseFloat(call.longitude);
-      if (isNaN(lat) || isNaN(lon)) return;
-      L.circleMarker([lat, lon], {
-        radius: 8, color: 'cyan', fillColor: 'cyan', fillOpacity: 0.8
-      })
-      .bindPopup(`<strong>${call.call_type}</strong><br>${call.address || ''}`)
-      .addTo(map);
-    });
   })
-  .catch(err => console.error('Proxy fetch or parse failed:', err));
+  .catch(err => console.error('FETCH ERROR:', err));
+// ─────────────────────────────────
     let markerGroup = L.layerGroup().addTo(map);
     let trail = [], markerCount = 0, markerMode = null, startTime = Date.now();
     let breadcrumbMode = false;
