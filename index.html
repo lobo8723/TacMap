@@ -28,8 +28,8 @@
 <body>
   <!-- TACTICAL SYSTEM BOOT OVERLAY -->
 <div id="loadingOverlay" style="position:fixed;top:0;left:0;width:100%;height:100%;
-background:black;color:#00ff00;z-index:3000;display:flex;flex-direction:column;
-justify-content:center;align-items:center;font-family:monospace;">
+ background:black;color:#00ff00;z-index:3000;display:flex;flex-direction:column;
+ justify-content:center;align-items:center;font-family:monospace;">
   <h2 id="loadingText" style="font-size:22px;margin-bottom:10px;">SYSTEM LOADING...</h2>
   <div id="bootTimestamp" style="font-size:12px;color:#00ff00;margin-bottom:8px;">
     Boot started at <span id="startTime"></span>
@@ -39,11 +39,12 @@ justify-content:center;align-items:center;font-family:monospace;">
       <div id="progressBar" style="height:100%;width:0%;background:#00ff00;transition:width 0.4s linear;"></div>
     </div>
     <div id="progressPercent" style="position:absolute;width:100%;height:100%;
-         display:flex;justify-content:center;align-items:center;font-size:14px;
-         color:#ffff00;font-weight:bold;">0%</div>
+      display:flex;justify-content:center;align-items:center;font-size:14px;
+      color:#ffff00;font-weight:bold;">0%</div>
   </div>
   <div id="bootLog" style="width:80%;max-height:200px;overflow-y:auto;
-       text-align:left;font-size:14px;border-top:1px solid #00ff00;padding-top:10px;"></div>
+    text-align:left;font-size:14px;border-top:1px solid #00ff00;padding-top:10px;">
+  </div>
   <div id="helpTip" style="font-size:12px;color:#00ff00;margin-top:6px;display:none;">
     Press <strong>H</strong> for diagnostics help
   </div>
@@ -68,87 +69,102 @@ const loadingSteps=[
   "Connecting to GPS Module..."
 ];
 
-const el={ progressBar:()=>document.getElementById('progressBar'),
-           progressPercent:()=>document.getElementById('progressPercent'),
-           bootLog:()=>document.getElementById('bootLog'),
-           beep:()=>document.getElementById('beepSound'),
-           helpTip:()=>document.getElementById('helpTip') };
+const el = {
+  progressBar: () => document.getElementById('progressBar'),
+  progressPercent: () => document.getElementById('progressPercent'),
+  bootLog: () => document.getElementById('bootLog'),
+  beep: () => document.getElementById('beepSound'),
+  helpTip: () => document.getElementById('helpTip')
+};
 
-function logMessage(text,color="#00ff00",error=false){
-  const elapsed=((performance.now()-bootStartTime)/1000).toFixed(3);
-  const msg=document.createElement('div');
-  msg.style.color=color;
-  msg.textContent=`${text} (${elapsed}s)`;
+function logMessage(text, color="#00ff00", isError=false) {
+  const elapsed = ((performance.now() - bootStartTime)/1000).toFixed(3);
+  const msg = document.createElement('div');
+  msg.style.color = color;
+  msg.textContent = `${text} (${elapsed}s)`;
   el.bootLog().appendChild(msg);
-  el.bootLog().scrollTop=el.bootLog().scrollHeight;
-  if(error) el.helpTip().style.display='block';
+  el.bootLog().scrollTop = el.bootLog().scrollHeight;
+  if (isError) el.helpTip().style.display = 'block';
 }
 
-function tryGPS(){
+function tryGPS() {
   navigator.geolocation.getCurrentPosition(
-    ()=>gpsLocked=true,
-    ()=>gpsLocked=false,
-    {enableHighAccuracy:true,timeout:5000,maximumAge:0}
+    pos => {
+      if (pos.coords.accuracy <= 20) gpsLocked = true;
+      else gpsLocked = false;
+    },
+    () => { gpsLocked = false; },
+    { enableHighAccuracy: true, timeout: 7000, maximumAge: 0 }
   );
 }
 
-function updateProgress(){
-  const pct=Math.floor((currentStep/(loadingSteps.length+1))*100);
-  el.progressBar().style.width=pct+'%';
-  el.progressPercent().textContent=pct+'%';
+function updateProgress() {
+  const pct = Math.floor((currentStep/(loadingSteps.length+1))*100);
+  el.progressBar().style.width = pct + '%';
+  el.progressPercent().textContent = pct + '%';
 }
 
-async function nextStep(){
-  if(currentStep>=loadingSteps.length){
-    if(gpsLocked) return completeBoot();
-    logMessage("Waiting for GPS Signal...","#ffff00",true);
-    gpsRetryInterval=setInterval(()=>{
+async function nextStep() {
+  if (currentStep >= loadingSteps.length) {
+    tryGPS();
+    if (gpsLocked) return completeBoot();
+    logMessage("Waiting for GPS Signal…", "#ffff00", true);
+    gpsRetryInterval = setInterval(() => {
       tryGPS();
-      if(gpsLocked){
+      if (gpsLocked) {
         clearInterval(gpsRetryInterval);
-        logMessage("GPS Module Lock [OK]","#00ff00");
+        logMessage("GPS Module Lock [OK]", "#00ff00");
         completeBoot();
       }
-    },3000);
+    }, 3000);
     return;
   }
-  const step=loadingSteps[currentStep];
-  // Example: only storage vs generic OK; repeat for each real check...
-  if(step.includes("Local Data Storage")){
-    const ok=(()=>{try{localStorage.setItem('t','1');localStorage.removeItem('t');return true;}catch{return false;}})();
-    logMessage(step+(ok?" [OK]":" [FAIL]"),ok?"#00ff00":"red",!ok);
+
+  const step = loadingSteps[currentStep];
+  // Only showing Local Storage example; repeat similar pattern for each check
+  if (step.includes("Local Data Storage")) {
+    let ok;
+    try { localStorage.setItem('t','1'); localStorage.removeItem('t'); ok = true; }
+    catch { ok = false; }
+    logMessage(step + (ok ? " [OK]" : " [FAIL]"), ok ? "#00ff00" : "red", !ok);
   } else {
-    logMessage(step+" [OK]","#00ff00");
+    logMessage(step + " [OK]", "#00ff00");
   }
+
   currentStep++;
   updateProgress();
-  setTimeout(nextStep,700);
+  setTimeout(nextStep, 700);
 }
 
-function completeBoot(){
-  if(loadingComplete) return;
-  loadingComplete=true;
-  el.progressBar().style.width='100%';
-  el.progressPercent().textContent='100%';
+function completeBoot() {
+  if (loadingComplete) return;
+  loadingComplete = true;
+  el.progressBar().style.width = '100%';
+  el.progressPercent().textContent = '100%';
   el.beep().play().catch(()=>{});
-  setTimeout(()=>{
-    document.getElementById('loadingOverlay').style.transition="opacity 1.5s ease";
-    document.getElementById('loadingOverlay').style.opacity=0;
-    setTimeout(()=>document.getElementById('loadingOverlay').style.display='none',1500);
-  },1000);
+  setTimeout(() => {
+    document.getElementById('loadingOverlay').style.transition = "opacity 1.5s ease";
+    document.getElementById('loadingOverlay').style.opacity = 0;
+    setTimeout(() => { document.getElementById('loadingOverlay').style.display = 'none'; }, 1500);
+  }, 1000);
 }
 
-window.addEventListener('DOMContentLoaded',()=>{
-  bootStartTime=performance.now();
-  document.getElementById('startTime').textContent=new Date().toLocaleTimeString();
-  tryGPS();
-  setTimeout(nextStep,800);
+window.addEventListener('DOMContentLoaded', () => {
+  bootStartTime = performance.now();
+  document.getElementById('startTime').textContent = new Date().toLocaleTimeString();
+  tryGPS();    // prime GPS check immediately
+  setTimeout(nextStep, 800);
 });
 
-// Hotkey help: show alert on 'H'
-window.addEventListener('keydown',e=>{
-  if(e.key.toLowerCase()==='h'){
-    alert("Diagnostics Help:\\n- Ensure GPS & Location Services ON.\\n- Grant camera & storage permissions.\\n- Check network connectivity.");
+// Hotkey help: press H to alert troubleshooting info
+window.addEventListener('keydown', e => {
+  if (e.key.toLowerCase() === 'h') {
+    alert(
+      "Diagnostics Help:\n" +
+      "- Ensure GPS & location services are enabled\n" +
+      "- Grant camera & storage permissions\n" +
+      "- Check network connectivity"
+    );
   }
 });
 </script>
