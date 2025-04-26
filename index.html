@@ -35,11 +35,12 @@ justify-content:center;align-items:center;font-family:monospace;">
     <div style="position:absolute;top:0;left:0;width:100%;height:100%;border:1px solid #00ff00;">
       <div id="progressBar" style="height:100%;width:0%;background:#00ff00;transition:width 0.4s linear;"></div>
     </div>
-    <div id="progressPercent" style="position:absolute;width:100%;height:100%;display:flex;justify-content:center;align-items:center;font-size:14px;color:#ffff00;font-weight:bold;">
-      0%
-    </div>
+    <div id="progressPercent" style="position:absolute;width:100%;height:100%;
+    display:flex;justify-content:center;align-items:center;font-size:14px;
+    color:#ffff00;font-weight:bold;">0%</div>
   </div>
-  <div id="bootLog" style="width:80%;max-height:200px;overflow-y:auto;text-align:left;font-size:14px;border-top:1px solid #00ff00;padding-top:10px;">
+  <div id="bootLog" style="width:80%;max-height:200px;overflow-y:auto;
+  text-align:left;font-size:14px;border-top:1px solid #00ff00;padding-top:10px;">
   </div>
 </div>
 
@@ -52,21 +53,18 @@ justify-content:center;align-items:center;font-family:monospace;">
 
 <script>
 const loadingSteps = [
-  "Initializing GPS Module...",
-  "Acquiring Physical Address Locator...",
-  "Loading Street Map Layer...",
-  "Loading Satellite Map Layer...",
-  "Activating Secure Marker System...",
-  "Activating Incident Marker System...",
-  "Activating Movement Tracker...",
-  "Activating Custom Marker Tool...",
-  "Initializing Action Menu Interface...",
+  "Initializing Map Display...",
+  "Activating HUD Systems...",
+  "Initializing Timer System...",
+  "Activating Marker Management...",
   "Loading Photo Capture Module...",
-  "Loading Photo Viewer Module...",
-  "Activating Timer System...",
-  "HUD Initialization (Officer Name, Clock, GPS Status, Marker Count)...",
-  "System Boot Sequence Complete."
+  "Initializing Action Menu Interface...",
+  "Connecting to GPS Module..."
 ];
+
+let gpsLocked = false;
+let gpsRetryInterval = null;
+let loadingComplete = false;
 
 window.addEventListener('DOMContentLoaded', () => {
   let currentStep = 0;
@@ -74,26 +72,68 @@ window.addEventListener('DOMContentLoaded', () => {
   const progressPercent = document.getElementById('progressPercent');
   const bootLog = document.getElementById('bootLog');
 
+  function tryGPS() {
+    navigator.geolocation.getCurrentPosition(position => {
+      gpsLocked = true;
+    }, error => {
+      gpsLocked = false;
+    }, {
+      enableHighAccuracy: true,
+      timeout: 5000,
+      maximumAge: 0
+    });
+  }
+
   function nextStep() {
     if (currentStep >= loadingSteps.length) {
-      setTimeout(() => {
-        document.getElementById('loadingOverlay').style.transition = "opacity 1.5s ease";
-        document.getElementById('loadingOverlay').style.opacity = 0;
-        setTimeout(() => {
-          document.getElementById('loadingOverlay').style.display = 'none';
-        }, 1500);
-      }, 1000);
+      if (gpsLocked) {
+        completeBoot();
+      } else {
+        const waitingMsg = document.createElement('div');
+        waitingMsg.style.color = '#ffff00';
+        waitingMsg.textContent = "Waiting for GPS Signal...";
+        bootLog.appendChild(waitingMsg);
+        bootLog.scrollTop = bootLog.scrollHeight;
+        gpsRetryInterval = setInterval(() => {
+          tryGPS();
+          if (gpsLocked) {
+            clearInterval(gpsRetryInterval);
+            const successMsg = document.createElement('div');
+            successMsg.style.color = '#00ff00';
+            successMsg.textContent = "GPS Module Lock [OK]";
+            bootLog.appendChild(successMsg);
+            bootLog.scrollTop = bootLog.scrollHeight;
+            completeBoot();
+          }
+        }, 3000);
+      }
       return;
     }
+
     const message = document.createElement('div');
     message.textContent = loadingSteps[currentStep] + " [OK]";
     bootLog.appendChild(message);
     bootLog.scrollTop = bootLog.scrollHeight;
     currentStep++;
-    const progress = Math.floor((currentStep / loadingSteps.length) * 100);
+    const progress = Math.floor((currentStep / (loadingSteps.length + 1)) * 100);
     progressBar.style.width = progress + '%';
     progressPercent.textContent = progress + '%';
+
     setTimeout(nextStep, 650);
+  }
+
+  function completeBoot() {
+    if (loadingComplete) return;
+    loadingComplete = true;
+    progressBar.style.width = '100%';
+    progressPercent.textContent = '100%';
+    setTimeout(() => {
+      document.getElementById('loadingOverlay').style.transition = "opacity 1.5s ease";
+      document.getElementById('loadingOverlay').style.opacity = 0;
+      setTimeout(() => {
+        document.getElementById('loadingOverlay').style.display = 'none';
+      }, 1500);
+    }, 1000);
   }
 
   setTimeout(nextStep, 800);
