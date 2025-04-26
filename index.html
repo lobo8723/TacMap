@@ -220,26 +220,48 @@ window.addEventListener('DOMContentLoaded',()=>{
     let currentLayer = street;
     street.addTo(map);
   
-   // ─── LIVE INCIDENT CALLS FOR SERVICE ───
-  fetch('https://data.phoenix.gov/resource/t6hg-eeb8.json?$order=call_date_time DESC&$limit=50')
-    .then(res => res.json())
-    .then(calls => {
-      calls.forEach(call => {
-        if (!call.latitude || !call.longitude) return;
-        L.circleMarker(
-          [parseFloat(call.latitude), parseFloat(call.longitude)],
-          { radius: 6, color: 'red', fillColor: '#ff4444', fillOpacity: 0.7, weight: 1 }
-        )
-        .bindTooltip(
-          `<strong>${call.call_type}</strong><br>` +
-          `${new Date(call.call_date_time).toLocaleString()}<br>` +
-          `${call.address || ''}`
-        )
-        .addTo(map);
-      });
-    })
-    .catch(err => console.error('Error fetching calls:', err));
-  // ─────────────────────────────────────────
+   // ─── LIVE INCIDENT CALLS FOR SERVICE (with debug) ───
+fetch('https://data.phoenix.gov/resource/t6hg-eeb8.json?$order=call_date_time DESC&$limit=50')
+  .then(res => res.json())
+  .then(calls => {
+    console.log('Calls array:', calls);
+    if (!calls || calls.length === 0) {
+      console.warn('No calls returned from API.');
+      return;
+    }
+    console.log('First call example:', calls[0]);
+
+    // Center on the first call so you definitely see it
+    const first = calls[0];
+    map.setView(
+      [parseFloat(first.latitude), parseFloat(first.longitude)],
+      14
+    );
+    console.log('Map recentered to first call at:', first.latitude, first.longitude);
+
+    // Draw each call as a bright yellow circle so it’s obvious
+    calls.forEach(call => {
+      if (!call.latitude || !call.longitude) return;
+      L.circleMarker(
+        [parseFloat(call.latitude), parseFloat(call.longitude)],
+        {
+          radius: 12,
+          color: 'yellow',
+          fillColor: 'yellow',
+          fillOpacity: 1,
+          weight: 2
+        }
+      )
+      .bindTooltip(
+        `<strong>${call.call_type}</strong><br>` +
+        `${new Date(call.call_date_time).toLocaleString()}<br>` +
+        `${call.address || ''}`
+      )
+      .addTo(map);
+    });
+  })
+  .catch(err => console.error('Error fetching service calls:', err));
+// ───────────────────────────────────────────────────────
     let markerGroup = L.layerGroup().addTo(map);
     let trail = [], markerCount = 0, markerMode = null, startTime = Date.now();
     let breadcrumbMode = false;
