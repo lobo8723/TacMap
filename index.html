@@ -28,8 +28,8 @@
 <body>
   <!-- TACTICAL SYSTEM BOOT OVERLAY -->
 <div id="loadingOverlay" style="position:fixed;top:0;left:0;width:100%;height:100%;
- background:black;color:#00ff00;z-index:3000;display:flex;flex-direction:column;
- justify-content:center;align-items:center;font-family:monospace;">
+  background:black;color:#00ff00;z-index:3000;display:flex;flex-direction:column;
+  justify-content:center;align-items:center;font-family:monospace;">
   <h2 id="loadingText" style="font-size:22px;margin-bottom:10px;">SYSTEM LOADING...</h2>
   <div id="bootTimestamp" style="font-size:12px;color:#00ff00;margin-bottom:8px;">
     Boot started at <span id="startTime"></span>
@@ -51,154 +51,113 @@
   </button>
 </div>
 
+<!-- TACTICAL BEEP -->
 <audio id="beepSound" src="https://actions.google.com/sounds/v1/alarms/beep_short.ogg" preload="auto"></audio>
 
 <script>
-let bootStartTime,
-    currentStep = 0,
-    loadingComplete = false,
-    gpsLocked = false,
-    failures = [];
+let bootStartTime, currentStep=0, loadingComplete=false, gpsLocked=false;
+const failures=[];
 
-// Your diagnostic steps
-const loadingSteps = [
-  { name:"Local Data Storage", fn:checkStorage, tip:"Enable browser storage permissions." },
-  { name:"Local Session Storage", fn:checkSessionStorage, tip:"Enable session storage in browser." },
-  { name:"Internet Connection", fn:testInternet, tip:"Check network connectivity." },
-  { name:"Map Servers", fn:pingMapServer, tip:"Ensure OpenStreetMap is reachable." },
-  { name:"Satellite Servers", fn:pingSatelliteServer, tip:"Ensure satellite tiles are reachable." },
-  { name:"Device Type", fn:()=>"OK", tip:null },
-  { name:"Available Memory", fn:checkMemory, tip:"Close other apps to free memory." },
-  { name:"Camera Access", fn:checkCamera, tip:"Allow camera permissions." },
-  { name:"Battery Status", fn:checkBattery, tip:"Charge device; low battery may prevent operation." },
-  { name:"System Clock", fn:checkClockSync, tip:"Sync your device clock within 5 minutes." },
-  { name:"GPS Module", fn:tryGPS, tip:"Enable GPS & give this page location permission." }
+// Define each step with its test function and diagnostic tip
+const steps = [
+  { name:"Checking Local Data Storage", fn:() => { try{localStorage.setItem('x','1');localStorage.removeItem('x');return true;}catch{return false;} }, tip:"Enable browser storage permissions." },
+  { name:"Checking Local Session Storage", fn:() => { try{sessionStorage.setItem('x','1');sessionStorage.removeItem('x');return true;}catch{return false;} }, tip:"Enable session storage." },
+  { name:"Verifying Internet Connection", fn: async () => {
+      try {
+        const res = await fetch('https://jsonplaceholder.typicode.com/posts/1');
+        return res.ok;
+      } catch { return false; }
+    }, tip:"Check network/cellular connectivity." },
+  { name:"Pinging Map Servers", fn: async () => {
+      try {
+        const res = await fetch('https://tile.openstreetmap.org/0/0/0.png');
+        return res.ok;
+      } catch { return false; }
+    }, tip:"OSM tile server unreachable." },
+  { name:"Pinging Satellite Servers", fn: async () => {
+      try {
+        const res = await fetch('https://mt0.google.com/vt/lyrs=s&x=0&y=0&z=1');
+        return res.ok;
+      } catch { return false; }
+    }, tip:"Satellite tile server unreachable." },
+  { name:"Detecting Device Type", fn:() => true, tip:null },
+  { name:"Checking Available Memory", fn:() => navigator.deviceMemory? navigator.deviceMemory*1024>=500 : true, tip:"Close other apps to free memory." },
+  { name:"Checking Camera Access", fn:() => !!(navigator.mediaDevices && navigator.mediaDevices.getUserMedia), tip:"Grant camera permissions." },
+  { name:"Checking Battery Status", fn: async () => {
+      if (!navigator.getBattery) return true;
+      const b = await navigator.getBattery();
+      return b.level*100 >= 20;
+    }, tip:"Charge device; low battery may halt operations." },
+  { name:"Syncing System Clock", fn:() => {
+      const local=new Date(), utc=new Date(local.getTime()+local.getTimezoneOffset()*60000);
+      return Math.abs(Date.now()-utc.getTime())/1000 < 300;
+    }, tip:"Sync device clock within 5 minutes." },
+  { name:"Connecting to GPS Module", fn: async () => {
+      return new Promise(resolve => {
+        navigator.geolocation.getCurrentPosition(
+          pos => resolve(pos.coords.accuracy <= 20),
+          () => resolve(false),
+          { enableHighAccuracy:true, timeout:7000, maximumAge:0 }
+        );
+      });
+    }, tip:"Enable GPS & grant location permission." }
 ];
 
+// UI shortcuts
 const el = {
-  progressBar: ()=>document.getElementById('progressBar'),
-  progressPercent: ()=>document.getElementById('progressPercent'),
-  bootLog: ()=>document.getElementById('bootLog'),
-  helpBtn: ()=>document.getElementById('helpBtn'),
-  beep: ()=>document.getElementById('beepSound')
+  bar:()=>document.getElementById('progressBar'),
+  pct:()=>document.getElementById('progressPercent'),
+  log:()=>document.getElementById('bootLog'),
+  help:()=>document.getElementById('helpBtn'),
+  beep:()=>document.getElementById('beepSound')
 };
 
-function log(text,color="#00ff00") {
-  const elapsed = ((performance.now()-bootStartTime)/1000).toFixed(3);
-  const d = document.createElement('div');
-  d.style.color = color;
-  d.textContent = `${text} (${elapsed}s)`;
-  el.bootLog().appendChild(d);
-  el.bootLog().scrollTop = el.bootLog().scrollHeight;
+function logMsg(text,color="#00ff00"){
+  const t = ((performance.now()-bootStartTime)/1000).toFixed(3);
+  const div = document.createElement('div');
+  div.style.color = color;
+  div.textContent = `${text} (${t}s)`;
+  el.log().appendChild(div);
+  el.log().scrollTop = el.log().scrollHeight;
 }
 
-async function runStep(stepObj){
-  let result, ok;
-  if(stepObj.fn.length===0){
-    // synchronous boolean or string
-    result = stepObj.fn();
-    ok = (result==="OK"||result===true);
-  } else {
-    // async functions
-    result = await stepObj.fn();
-    ok = (typeof result==="boolean"? result : result>0);
-  }
-  const prefix = `${stepObj.name}...`;
-  if(ok){
-    log(`${prefix} [OK]`,"#00ff00");
-  } else {
-    log(`${prefix} [FAIL]`,"red");
-    failures.push(stepObj);
-    el.helpBtn().style.display="block";
-  }
-}
-
-function updateProgress(){
-  const pct = Math.floor((currentStep/loadingSteps.length)*100);
-  el.progressBar().style.width=`${pct}%`;
-  el.progressPercent().textContent=`${pct}%`;
-}
-
-async function nextStep(){
-  if(currentStep>=loadingSteps.length){
-    if(!failures.some(f=>f.name==="GPS Module") && gpsLocked){
-      return complete();
+async function runSteps(){
+  for(const step of steps){
+    const ok = await step.fn();
+    logMsg(`${step.name} ... [${ok?"OK":"FAIL"}]`, ok?"#00ff00":"red");
+    if(!ok && step.tip){
+      failures.push(step.tip);
+      el.help().style.display = 'block';
     }
-    return; // if GPS failure, it already enqueued fail and help button
+    currentStep++;
+    const pct = Math.floor((currentStep/steps.length)*100);
+    el.bar().style.width = pct + '%';
+    el.pct().textContent = pct + '%';
+    await new Promise(r=>setTimeout(r,700));
   }
-  const stepObj = loadingSteps[currentStep++];
-  await runStep(stepObj);
-  updateProgress();
-  setTimeout(nextStep,700);
+  completeBoot();
 }
 
-function complete(){
+function completeBoot(){
   if(loadingComplete) return;
-  loadingComplete=true;
-  el.progressBar().style.width="100%";
-  el.progressPercent().textContent="100%";
+  loadingComplete = true;
+  el.bar().style.width = '100%';
+  el.pct().textContent = '100%';
   el.beep().play().catch(()=>{});
+  el.help().onclick = ()=>{
+    alert("Diagnostics Help:\\n" + failures.map(f=>"• "+f).join("\\n"));
+  };
   setTimeout(()=>{
     document.getElementById('loadingOverlay').style.transition="opacity 1.5s ease";
     document.getElementById('loadingOverlay').style.opacity=0;
-    setTimeout(()=>document.getElementById('loadingOverlay').style.display='none',1500);
+    setTimeout(()=> document.getElementById('loadingOverlay').style.display='none',1500);
   },1000);
 }
 
-// Definitions of check functions (simplified)
-function checkStorage(){
-  try{localStorage.setItem('x','1'); localStorage.removeItem('x'); return true;}
-  catch{return false;}
-}
-function checkSessionStorage(){
-  try{sessionStorage.setItem('x','1'); sessionStorage.removeItem('x'); return true;}
-  catch{return false;}
-}
-async function testInternet(){
-  try{const start=Date.now(); await fetch("https://google.com/favicon.ico"); return (100-Math.min(Date.now()-start,300)/3)>10;}
-  catch{return false;}
-}
-async function pingMapServer(){
-  try{await fetch("https://tile.openstreetmap.org/0/0/0.png"); return true;}catch{return false;}
-}
-async function pingSatelliteServer(){
-  try{await fetch("https://mt0.google.com/vt/lyrs=s&x=0&y=0&z=1");return true;}catch{return false;}
-}
-function getDeviceType(){return /mobile|android|iphone/i.test(navigator.userAgent)?"MOBILE":"DESKTOP";}
-function checkMemory(){return navigator.deviceMemory?navigator.deviceMemory*1024>500:true;}
-function checkCamera(){return !!(navigator.mediaDevices&&navigator.mediaDevices.getUserMedia);}
-async function checkBattery(){
-  if(!navigator.getBattery) return true;
-  const b=await navigator.getBattery(); return b.level*100>20;
-}
-function checkClockSync(){
-  const local=new Date(), utc=new Date(local.getTime()+local.getTimezoneOffset()*60000);
-  return Math.abs(Date.now()-utc.getTime())/1000<300;
-}
-function tryGPS(callback){
-  navigator.geolocation.getCurrentPosition(
-    pos=>{
-      if(pos.coords.accuracy<=20){gpsLocked=true; complete();}
-      else callback(false);
-    },
-    ()=>callback(false),
-    {enableHighAccuracy:true,timeout:7000,maximumAge:0}
-  );
-}
-
-// Diagnostics Help button shows tips for failed checks
-el.helpBtn().addEventListener('click',()=>{
-  let msg="Diagnostics Help:\\n";
-  failures.forEach(f=>{
-    msg+=`- ${f.name}: ${f.tip}\\n`;
-  });
-  alert(msg);
-});
-
 window.addEventListener('DOMContentLoaded',()=>{
-  bootStartTime=performance.now();
-  document.getElementById('startTime').textContent=new Date().toLocaleTimeString();
-  setTimeout(nextStep,800);
+  bootStartTime = performance.now();
+  document.getElementById('startTime').textContent = new Date().toLocaleTimeString();
+  setTimeout(runSteps,800);
 });
 </script>
   <div id="map"></div>
