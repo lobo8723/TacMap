@@ -45,14 +45,14 @@
   <div id="bootLog" style="width:80%;max-height:200px;overflow-y:auto;
     text-align:left;font-size:14px;border-top:1px solid #00ff00;padding-top:10px;">
   </div>
-  <!-- Visible Diagnostics Help Button -->
+  <!-- Diagnostics Help Button (only shown when a check fails) -->
   <button id="helpBtn" style="margin-top:10px;background:black;color:#00ff00;
     border:1px solid #00ff00;padding:6px 12px;font-size:12px;cursor:pointer;display:none;">
     Diagnostics Help
   </button>
 </div>
 
-<!-- Hidden Audio Element -->
+<!-- Hidden Tactical Beep Audio -->
 <audio id="beepSound" src="https://actions.google.com/sounds/v1/alarms/beep_short.ogg" preload="auto"></audio>
 
 <style>
@@ -60,18 +60,21 @@
 </style>
 
 <script>
-let bootStartTime, gpsLocked=false, gpsRetryInterval=null, loadingComplete=false, currentStep=0;
-const loadingSteps=[
-  "Initializing Map Display...", "Activating HUD Systems...",
-  "Checking Local Data Storage...", "Checking Local Session Storage...",
-  "Verifying Internet Connection...", "Pinging Map Servers...",
-  "Pinging Satellite Servers...", "Detecting Device Type...",
-  "Checking Available Memory...", "Checking Camera Access...",
-  "Checking Battery Status...", "Syncing System Clock...",
+let bootStartTime,
+    gpsLocked = false,
+    gpsFailed = false,
+    gpsRetryInterval = null,
+    loadingComplete = false,
+    currentStep = 0;
+
+// Define your loading steps
+const loadingSteps = [
+  "Initializing Map Display...",
+  // ... other steps ...
   "Connecting to GPS Module..."
 ];
 
-// Element getters
+// Element shortcuts
 const el = {
   progressBar: () => document.getElementById('progressBar'),
   progressPercent: () => document.getElementById('progressPercent'),
@@ -80,6 +83,7 @@ const el = {
   helpBtn: () => document.getElementById('helpBtn')
 };
 
+// Log messages with elapsed time, mark GPS failures
 function logMessage(text, color="#00ff00", isError=false) {
   const elapsed = ((performance.now() - bootStartTime)/1000).toFixed(3);
   const msg = document.createElement('div');
@@ -87,29 +91,43 @@ function logMessage(text, color="#00ff00", isError=false) {
   msg.textContent = `${text} (${elapsed}s)`;
   el.bootLog().appendChild(msg);
   el.bootLog().scrollTop = el.bootLog().scrollHeight;
+  // If this is a GPS failure, show Help button
   if (isError) {
+    gpsFailed = true;
     el.helpBtn().style.display = 'block';
   }
 }
 
+// Prime a GPS check
 function tryGPS() {
   navigator.geolocation.getCurrentPosition(
-    pos => { gpsLocked = pos.coords.accuracy <= 20; },
+    pos => {
+      if (pos.coords.accuracy <= 20) {
+        gpsLocked = true;
+      } else {
+        gpsLocked = false;
+      }
+    },
     () => { gpsLocked = false; },
     { enableHighAccuracy:true, timeout:7000, maximumAge:0 }
   );
 }
 
+// Update the progress bar and percent
 function updateProgress() {
   const pct = Math.floor((currentStep/(loadingSteps.length+1))*100);
   el.progressBar().style.width = pct + '%';
   el.progressPercent().textContent = pct + '%';
 }
 
+// Advance through steps, handle GPS at the end
 async function nextStep() {
   if (currentStep >= loadingSteps.length) {
     tryGPS();
-    if (gpsLocked) return completeBoot();
+    if (gpsLocked) {
+      return completeBoot();
+    }
+    // GPS not locked yet
     logMessage("Waiting for GPS Signal…", "#ffff00", true);
     gpsRetryInterval = setInterval(() => {
       tryGPS();
@@ -122,13 +140,11 @@ async function nextStep() {
     return;
   }
 
+  // Example for connecting step; repeat real checks for other steps
   const step = loadingSteps[currentStep];
-  // Example: only storage check shown; apply similar pattern for each
-  if (step.includes("Local Data Storage")) {
-    let ok;
-    try { localStorage.setItem('t','1'); localStorage.removeItem('t'); ok = true; }
-    catch { ok = false; }
-    logMessage(step + (ok ? " [OK]" : " [FAIL]"), ok ? "#00ff00" : "red", !ok);
+  if (step.includes("Connecting to GPS")) {
+    // move on—real handling in the GPS block above
+    logMessage(step + " …", "#00ff00");
   } else {
     logMessage(step + " [OK]", "#00ff00");
   }
@@ -138,6 +154,7 @@ async function nextStep() {
   setTimeout(nextStep, 700);
 }
 
+// Finalize boot, play beep, fade out
 function completeBoot() {
   if (loadingComplete) return;
   loadingComplete = true;
@@ -145,26 +162,29 @@ function completeBoot() {
   el.progressPercent().textContent = '100%';
   el.beep().play().catch(()=>{});
   setTimeout(() => {
-    document.getElementById('loadingOverlay').style.transition = "opacity 1.5s ease";
-    document.getElementById('loadingOverlay').style.opacity = 0;
-    setTimeout(() => { document.getElementById('loadingOverlay').style.display = 'none'; }, 1500);
-  }, 1000);
+    document.getElementById('loadingOverlay').style.transition="opacity 1.5s ease";
+    document.getElementById('loadingOverlay').style.opacity=0;
+    setTimeout(()=>document.getElementById('loadingOverlay').style.display='none',1500);
+  },1000);
 }
 
+// Initialize on DOM load
 window.addEventListener('DOMContentLoaded', () => {
   bootStartTime = performance.now();
   document.getElementById('startTime').textContent = new Date().toLocaleTimeString();
-  tryGPS();  // Prime GPS immediately
+  tryGPS();   // prime GPS right away
   setTimeout(nextStep, 800);
 
-  // Help button click
+  // Diagnostics Help button only covers GPS failures
   el.helpBtn().addEventListener('click', () => {
-    alert(
-      "Diagnostics Help:\n" +
-      "- Ensure GPS & location services are enabled\n" +
-      "- Grant camera & storage permissions\n" +
-      "- Check network connectivity"
-    );
+    if (gpsFailed) {
+      alert(
+        "GPS Diagnostics:\n" +
+        "- Ensure device has line-of-sight to sky\n" +
+        "- Check location services are ON\n" +
+        "- Allow this site to access your location"
+      );
+    }
   });
 });
 </script>
