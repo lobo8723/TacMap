@@ -221,7 +221,8 @@ window.addEventListener('DOMContentLoaded',()=>{
     street.addTo(map);
   
    // ─── LIVE INCIDENT CALLS FOR SERVICE (with debug) ───
-fetch('https://data.phoenix.gov/resource/t6hg-eeb8.json?$order=call_date_time DESC&$limit=50')
+fetch('https://api.allorigins.win/raw?url=' + 
+      encodeURIComponent('https://data.phoenix.gov/resource/t6hg-eeb8.json?$order=call_date_time DESC&$limit=50'))
   .then(res => res.json())
   .then(calls => {
     console.log('Calls array:', calls);
