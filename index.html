@@ -26,140 +26,128 @@
   </style>
 </head>
 <body>
-  <!-- TACTICAL SYSTEM BOOT OVERLAY -->
-<div id="loadingOverlay" style="position:fixed;top:0;left:0;width:100%;height:100%;
-  background:black;color:#00ff00;z-index:3000;display:flex;flex-direction:column;
-  justify-content:center;align-items:center;font-family:monospace;">
-  <h2 id="loadingText" style="font-size:22px;margin-bottom:10px;">SYSTEM LOADING...</h2>
-  <div id="bootTimestamp" style="font-size:12px;color:#00ff00;margin-bottom:8px;">
-    Boot started at <span id="startTime"></span>
-  </div>
-  <div style="position:relative;width:80%;height:20px;margin-bottom:20px;">
-    <div style="position:absolute;top:0;left:0;width:100%;height:100%;border:1px solid #00ff00;">
-      <div id="progressBar" style="height:100%;width:0%;background:#00ff00;transition:width 0.4s linear;"></div>
+  <div id="loadingOverlay" style="position:fixed;top:0;left:0;width:100%;height:100%;
+    background:black;color:#00ff00;z-index:3000;display:flex;flex-direction:column;
+    justify-content:center;align-items:center;font-family:monospace;">
+    <h2 id="loadingText" style="font-size:22px;margin-bottom:10px;">SYSTEM LOADING...</h2>
+    <div id="bootTimestamp" style="font-size:12px;color:#00ff00;margin-bottom:8px;">
+      Boot started at <span id="startTime"></span>
     </div>
-    <div id="progressPercent" style="position:absolute;width:100%;height:100%;
-      display:flex;justify-content:center;align-items:center;font-size:14px;
-      color:#ffff00;font-weight:bold;">0%</div>
+    <div style="position:relative;width:80%;height:20px;margin-bottom:20px;">
+      <div style="position:absolute;top:0;left:0;width:100%;height:100%;border:1px solid #00ff00;">
+        <div id="progressBar" style="height:100%;width:0%;background:#00ff00;transition:width 0.4s linear;"></div>
+      </div>
+      <div id="progressPercent" style="position:absolute;width:100%;height:100%;
+        display:flex;justify-content:center;align-items:center;font-size:14px;
+        color:#ffff00;font-weight:bold;">0%</div>
+    </div>
+    <div id="bootLog" style="width:80%;max-height:200px;overflow-y:auto;
+      text-align:left;font-size:14px;border-top:1px solid #00ff00;padding-top:10px;">
+    </div>
+    <button id="helpBtn" style="margin-top:10px;background:black;color:#00ff00;
+      border:1px solid #00ff00;padding:6px 12px;font-size:12px;cursor:pointer;display:none;">
+      Diagnostics Help
+    </button>
   </div>
-  <div id="bootLog" style="width:80%;max-height:200px;overflow-y:auto;
-    text-align:left;font-size:14px;border-top:1px solid #00ff00;padding-top:10px;">
-  </div>
-  <button id="helpBtn" style="margin-top:10px;background:black;color:#00ff00;
-    border:1px solid #00ff00;padding:6px 12px;font-size:12px;cursor:pointer;display:none;">
-    Diagnostics Help
-  </button>
-</div>
 
-<!-- TACTICAL BEEP -->
-<audio id="beepSound" src="https://actions.google.com/sounds/v1/alarms/beep_short.ogg" preload="auto"></audio>
+  <audio id="beepSound" src="https://actions.google.com/sounds/v1/alarms/beep_short.ogg" preload="auto"></audio>
 
-<script>
-let bootStartTime, currentStep=0, loadingComplete=false, gpsLocked=false;
-const failures=[];
+  <script>
+    let bootStartTime, currentStep=0, loadingComplete=false, gpsLocked=false;
+    const failures=[];
 
-// Define each step with its test function and diagnostic tip
-const steps = [
-  { name:"Checking Local Data Storage", fn:() => { try{localStorage.setItem('x','1');localStorage.removeItem('x');return true;}catch{return false;} }, tip:"Enable browser storage permissions." },
-  { name:"Checking Local Session Storage", fn:() => { try{sessionStorage.setItem('x','1');sessionStorage.removeItem('x');return true;}catch{return false;} }, tip:"Enable session storage." },
-  { name:"Verifying Internet Connection", fn: async () => {
-      try {
-        const res = await fetch('https://jsonplaceholder.typicode.com/posts/1');
-        return res.ok;
-      } catch { return false; }
-    }, tip:"Check network/cellular connectivity." },
-  { name:"Pinging Map Servers", fn: async () => {
-      try {
-        const res = await fetch('https://tile.openstreetmap.org/0/0/0.png');
-        return res.ok;
-      } catch { return false; }
-    }, tip:"OSM tile server unreachable." },
-  { name:"Pinging Satellite Servers", fn: async () => {
-      try {
-        const res = await fetch('https://mt0.google.com/vt/lyrs=s&x=0&y=0&z=1');
-        return res.ok;
-      } catch { return false; }
-    }, tip:"Satellite tile server unreachable." },
-  { name:"Detecting Device Type", fn:() => true, tip:null },
-  { name:"Checking Available Memory", fn:() => navigator.deviceMemory? navigator.deviceMemory*1024>=500 : true, tip:"Close other apps to free memory." },
-  { name:"Checking Camera Access", fn:() => !!(navigator.mediaDevices && navigator.mediaDevices.getUserMedia), tip:"Grant camera permissions." },
-  { name:"Checking Battery Status", fn: async () => {
-      if (!navigator.getBattery) return true;
-      const b = await navigator.getBattery();
-      return b.level*100 >= 20;
-    }, tip:"Charge device; low battery may halt operations." },
-  { name:"Syncing System Clock", fn:() => {
-      const local=new Date(), utc=new Date(local.getTime()+local.getTimezoneOffset()*60000);
-      return Math.abs(Date.now()-utc.getTime())/1000 < 300;
-    }, tip:"Sync device clock within 5 minutes." },
-  { name:"Connecting to GPS Module", fn: async () => {
-      return new Promise(resolve => {
-        navigator.geolocation.getCurrentPosition(
-          pos => resolve(pos.coords.accuracy <= 20),
-          () => resolve(false),
-          { enableHighAccuracy:true, timeout:7000, maximumAge:0 }
-        );
-      });
-    }, tip:"Enable GPS & grant location permission." }
-];
+    const steps = [
+      { name:"Checking Local Data Storage", fn:() => { try{localStorage.setItem('x','1');localStorage.removeItem('x');return true;}catch{return false;} }, tip:"Enable browser storage permissions." },
+      { name:"Checking Local Session Storage", fn:() => { try{sessionStorage.setItem('x','1');sessionStorage.removeItem('x');return true;}catch{return false;} }, tip:"Enable session storage." },
+      { name:"Verifying Internet Connection", fn: async () => {
+          try { const res = await fetch('https://jsonplaceholder.typicode.com/posts/1'); return res.ok; } catch { return false; }
+        }, tip:"Check network/cellular connectivity." },
+      { name:"Pinging Map Servers", fn: async () => {
+          try { const res = await fetch('https://tile.openstreetmap.org/0/0/0.png'); return res.ok; } catch { return false; }
+        }, tip:"OSM tile server unreachable." },
+      { name:"Pinging Satellite Servers", fn: async () => {
+          try { const res = await fetch('https://mt0.google.com/vt/lyrs=s&x=0&y=0&z=1'); return res.ok; } catch { return false; }
+        }, tip:"Satellite tile server unreachable." },
+      { name:"Detecting Device Type", fn:() => true, tip:null },
+      { name:"Checking Available Memory", fn:() => navigator.deviceMemory? navigator.deviceMemory*1024>=500 : true, tip:"Close other apps to free memory." },
+      { name:"Checking Camera Access", fn:() => !!(navigator.mediaDevices && navigator.mediaDevices.getUserMedia), tip:"Grant camera permissions." },
+      { name:"Checking Battery Status", fn: async () => {
+          if (!navigator.getBattery) return true;
+          const b = await navigator.getBattery();
+          return b.level*100 >= 20;
+        }, tip:"Charge device; low battery may halt operations." },
+      { name:"Syncing System Clock", fn:() => {
+          const local=new Date(), utc=new Date(local.getTime()+local.getTimezoneOffset()*60000);
+          return Math.abs(Date.now()-utc.getTime())/1000 < 300;
+        }, tip:"Sync device clock within 5 minutes." },
+      { name:"Connecting to GPS Module", fn: async () => {
+          return new Promise(resolve => {
+            navigator.geolocation.getCurrentPosition(
+              pos => resolve(pos.coords.accuracy <= 20),
+              () => resolve(false),
+              { enableHighAccuracy:true, timeout:7000, maximumAge:0 }
+            );
+          });
+        }, tip:"Enable GPS & grant location permission." }
+    ];
 
-// UI shortcuts
-const el = {
-  bar:()=>document.getElementById('progressBar'),
-  pct:()=>document.getElementById('progressPercent'),
-  log:()=>document.getElementById('bootLog'),
-  help:()=>document.getElementById('helpBtn'),
-  beep:()=>document.getElementById('beepSound')
-};
+    const el = {
+      bar:()=>document.getElementById('progressBar'),
+      pct:()=>document.getElementById('progressPercent'),
+      log:()=>document.getElementById('bootLog'),
+      help:()=>document.getElementById('helpBtn'),
+      beep:()=>document.getElementById('beepSound')
+    };
 
-function logMsg(text,color="#00ff00"){
-  const t = ((performance.now()-bootStartTime)/1000).toFixed(3);
-  const div = document.createElement('div');
-  div.style.color = color;
-  div.textContent = `${text} (${t}s)`;
-  el.log().appendChild(div);
-  el.log().scrollTop = el.log().scrollHeight;
-}
-
-async function runSteps(){
-  for(const step of steps){
-    const ok = await step.fn();
-    logMsg(`${step.name} ... [${ok?"OK":"FAIL"}]`, ok?"#00ff00":"red");
-    if(!ok && step.tip){
-      failures.push(step.tip);
-      el.help().style.display = 'block';
+    function logMsg(text,color="#00ff00"){
+      const t=((performance.now()-bootStartTime)/1000).toFixed(3);
+      const div=document.createElement('div');
+      div.style.color=color;
+      div.textContent=`${text} (${t}s)`;
+      el.log().appendChild(div);
+      el.log().scrollTop=el.log().scrollHeight;
     }
-    currentStep++;
-    const pct = Math.floor((currentStep/steps.length)*100);
-    el.bar().style.width = pct + '%';
-    el.pct().textContent = pct + '%';
-    await new Promise(r=>setTimeout(r,700));
-  }
-  completeBoot();
-}
 
-function completeBoot(){
-  if(loadingComplete) return;
-  loadingComplete = true;
-  el.bar().style.width = '100%';
-  el.pct().textContent = '100%';
-  el.beep().play().catch(()=>{});
-  el.help().onclick = ()=>{
-    alert("Diagnostics Help:\\n" + failures.map(f=>"• "+f).join("\\n"));
-  };
-  setTimeout(()=>{
-    document.getElementById('loadingOverlay').style.transition="opacity 1.5s ease";
-    document.getElementById('loadingOverlay').style.opacity=0;
-    setTimeout(()=> document.getElementById('loadingOverlay').style.display='none',1500);
-  },1000);
-}
+    async function runSteps(){
+      for(const step of steps){
+        const ok=await step.fn();
+        logMsg(`${step.name} ... [${ok?"OK":"FAIL"}]`, ok?"#00ff00":"red");
+        if(!ok && step.tip){
+          failures.push(step.tip);
+          el.help().style.display='block';
+        }
+        currentStep++;
+        const pct=Math.floor((currentStep/steps.length)*100);
+        el.bar().style.width=pct+'%';
+        el.pct().textContent=pct+'%';
+        await new Promise(r=>setTimeout(r,700));
+      }
+      completeBoot();
+    }
 
-window.addEventListener('DOMContentLoaded',()=>{
-  bootStartTime = performance.now();
-  document.getElementById('startTime').textContent = new Date().toLocaleTimeString();
-  setTimeout(runSteps,800);
-});
-</script>
+    function completeBoot(){
+      if(loadingComplete) return;
+      loadingComplete=true;
+      el.bar().style.width='100%';
+      el.pct().textContent='100%';
+      el.beep().play().catch(()=>{});
+      el.help().onclick=()=>{
+        alert("Diagnostics Help:\\n"+failures.map(f=>"• "+f).join("\\n"));
+      };
+      setTimeout(()=>{
+        document.getElementById('loadingOverlay').style.transition="opacity 1.5s ease";
+        document.getElementById('loadingOverlay').style.opacity=0;
+        setTimeout(()=>document.getElementById('loadingOverlay').style.display='none',1500);
+      },1000);
+    }
+
+    window.addEventListener('DOMContentLoaded',()=>{
+      bootStartTime=performance.now();
+      document.getElementById('startTime').textContent=new Date().toLocaleTimeString();
+      setTimeout(runSteps,800);
+    });
+  </script>
+
   <div id="map"></div>
   <div id="gpsBtn" title="Center on GPS">[GPS]</div>
   <button id="toggleMapType" style="position:absolute;top:50px;left:10px;z-index:999;background:black;color:#00ff00;border:1px solid #00ff00;padding:5px;font-size:12px;">SATELLITE VIEW</button>
@@ -185,7 +173,7 @@ window.addEventListener('DOMContentLoaded',()=>{
         <button onclick="showHelp()">[HELP]</button>
       </div>
     </div>
-    <div id="photoDropdown"></div>
+  <div id="photoDropdown"></div>
   </div>
   <div id="helpModal">
     <button id="closeHelp" onclick="document.getElementById('helpModal').style.display='none'">CLOSE</button>
@@ -214,170 +202,58 @@ window.addEventListener('DOMContentLoaded',()=>{
     let map = L.map('map').setView([33.4484, -112.0740], 19);
     const street = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png');
     const satellite = L.tileLayer('https://{s}.google.com/vt/lyrs=s&x={x}&y={y}&z={z}', {
-  subdomains: ['mt0', 'mt1', 'mt2', 'mt3'],
-  maxZoom: 20
-});
+      subdomains: ['mt0', 'mt1', 'mt2', 'mt3'],
+      maxZoom: 20
+    });
     let currentLayer = street;
     street.addTo(map);
-  
-   // ─── DIAGNOSTIC FETCH & LOG ───
-fetch('https://api.allorigins.win/raw?url=' +
-      encodeURIComponent('https://data.phoenix.gov/resource/t6hg-eeb8.json?$order=call_date_time DESC&$limit=5'))
-  .then(res => res.text())
-  .then(text => {
-    console.log('RAW PROXY RESPONSE TEXT:', text);
-    try {
-      const calls = JSON.parse(text);
-      console.log('PARSED CALLS ARRAY:', calls);
-      calls.forEach((call, i) => {
-        console.log(`CALL[${i}] lat/lon:`, call.latitude, call.longitude);
-      });
-    } catch (e) {
-      console.error('JSON PARSE ERROR:', e);
-    }
-  })
-  .catch(err => console.error('FETCH ERROR:', err));
-// ─────────────────────────────────
-    let markerGroup = L.layerGroup().addTo(map);
-    let trail = [], markerCount = 0, markerMode = null, startTime = Date.now();
-    let breadcrumbMode = false;
 
-    function setMarkerMode(type) {
-      markerMode = type;
-      alert("Tap on the map to place marker.");
-    }
+    // ─── LIVE INCIDENT CALLS FOR SERVICE ───
+    fetch(
+      'https://api.allorigins.win/raw?url=' +
+      encodeURIComponent('https://data.phoenix.gov/resource/t6hg-eeb8.json?$order=call_date_time DESC&$limit=50')
+    )
+      .then(res => res.text())
+      .then(text => {
+        const calls = JSON.parse(text);
+        console.log('911 Calls:', calls);
+        calls.forEach(call => {
+          const lat = parseFloat(call.latitude),
+                lon = parseFloat(call.longitude);
+          if (isNaN(lat) || isNaN(lon)) return;
+          L.circleMarker([lat, lon], {
+            radius: 6,
+            color: 'red',
+            fillColor: '#ff4444',
+            fillOpacity: 0.7,
+            weight: 1
+          })
+          .bindTooltip(
+            `<strong>${call.call_type}</strong><br>` +
+            `${new Date(call.call_date_time).toLocaleString()}<br>` +
+            `${call.address || ''}`
+          )
+          .addTo(map);
+        });
+      })
+      .catch(err => console.error('Fetch error:', err));
+    // ───────────────────────────────────────
 
-    function showHelp() {
-      document.getElementById('helpModal').style.display = 'block';
-    }
-
-    document.getElementById('toggleMapType').onclick = () => {
-      map.removeLayer(currentLayer);
-      currentLayer = currentLayer === street ? satellite : street;
-      currentLayer.addTo(map);
-      document.getElementById('toggleMapType').textContent = currentLayer === street ? 'SATELLITE VIEW' : 'MAP VIEW';
-    };
-
-    map.on('click', function (e) {
-      if (breadcrumbMode) {
-        const m = L.circleMarker(e.latlng, {
-          radius: 2, color: '#00ff00', fillColor: '#00ff00', fillOpacity: 1
-        }).bindTooltip("BREADCRUMB").addTo(markerGroup);
-        return;
-      }
-      if (!markerMode) return;
-      let label = markerMode.toUpperCase();
-      let color = markerMode === 'clear' ? 'green' :
-                  markerMode === 'incident' ? 'red' :
-                  markerMode === 'move' ? '#ffaa00' : 'cyan';
-      if (markerMode === 'custom') {
-        const custom = prompt("Enter custom label:");
-        if (!custom) return;
-        label = custom;
-      }
-      const m = L.circleMarker(e.latlng, {
-        radius: 6, color: color, fillColor: color, fillOpacity: 1
-      }).bindTooltip(label).addTo(markerGroup);
-      markerCount++;
-      document.getElementById('markerCount').textContent = `MARKERS: ${markerCount}`;
-      markerMode = null;
-    });
-
-    function clearAll() {
-      markerGroup.clearLayers();
-      markerCount = 0;
-      trail = [];
-      document.getElementById('markerCount').textContent = "MARKERS: 0";
-    }
-
-    function takePhoto() {
-      document.getElementById('photoInput').click();
-    }
-
-    document.getElementById('photoInput').addEventListener('change', function() {
-      const file = this.files[0];
-      if (!file) return;
-      const img = document.createElement('img');
-      img.src = URL.createObjectURL(file);
-      document.getElementById('photoDropdown').appendChild(img);
-    });
-
-    function toggleDropdown() {
-      const panel = document.getElementById('photoDropdown');
-      panel.style.display = (panel.style.display === 'none' || panel.style.display === '') ? 'flex' : 'none';
-    }
-
-    document.getElementById('gpsBtn').onclick = () => {
-      if (trail.length > 0) {
-        const last = trail[trail.length - 1];
-        map.setView(last, map.getZoom());
-      } else {
-        alert("GPS location not yet available.");
-      }
-    };
-
-    document.getElementById('actionDropdownBtn').onclick = () => {
-      const menu = document.getElementById('actionDropdownContent');
-      menu.style.display = (menu.style.display === 'none' || menu.style.display === '') ? 'flex' : 'none';
-    };
-
-    document.getElementById('officer').addEventListener('change', function () {
-      const value = this.value.trim().toLowerCase();
-      if (value === 'deltaon') {
-        breadcrumbMode = true;
-        alert('🟢 Breadcrumb Mode Activated');
-      } else if (value === 'deltaoff') {
-        breadcrumbMode = false;
-        alert('🔴 Breadcrumb Mode Deactivated');
-      }
-    });
-
-    function initGPS() {
-      navigator.geolocation.watchPosition(pos => {
-        const { latitude, longitude, accuracy } = pos.coords;
-        if (accuracy > 20) {
-          document.getElementById('gpsStatus').textContent = `GPS: REJECTED (${Math.round(accuracy)}m)`;
-          return;
-        }
-        document.getElementById('gpsStatus').textContent = `GPS: LOCKED (${Math.round(accuracy)}m)`;
-        const latlng = [latitude, longitude];
-        trail.push(latlng);
-        L.circleMarker(latlng, {
-          radius: 2, color: '#00ff00', fillColor: '#00ff00', fillOpacity: 1
-        }).addTo(markerGroup);
-        fetch(`https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${latitude}&lon=${longitude}`)
-          .then(res => res.json())
-          .then(data => {
-            document.getElementById('address').textContent = data.display_name || `Lat: ${latitude.toFixed(5)}, Lon: ${longitude.toFixed(5)}`;
-          }).catch(() => {
-            document.getElementById('address').textContent = `Lat: ${latitude.toFixed(5)}, Lon: ${longitude.toFixed(5)}`;
-          });
-      }, err => {
-        document.getElementById('gpsStatus').textContent = "GPS: ERROR";
-      }, {
-        enableHighAccuracy: true,
-        maximumAge: 0,
-        timeout: 5000
-      });
-    }
-
+    function setMarkerMode(type) { /* … */ }
+    function showHelp() { /* … */ }
+    document.getElementById('toggleMapType').onclick = () => { /* … */ };
+    map.on('click', function (e) { /* … */ });
+    function clearAll() { /* … */ }
+    function takePhoto() { /* … */ }
+    document.getElementById('photoInput').addEventListener('change', function() { /* … */ });
+    function toggleDropdown() { /* … */ }
+    document.getElementById('gpsBtn').onclick = () => { /* … */ };
+    document.getElementById('actionDropdownBtn').onclick = () => { /* … */ };
+    document.getElementById('officer').addEventListener('change', function () { /* … */ });
+    function initGPS() { /* … */ }
     initGPS();
-
-    setInterval(() => {
-      let now = Date.now() - startTime;
-      let hrs = Math.floor(now / 3600000);
-      let mins = Math.floor((now % 3600000) / 60000);
-      let secs = Math.floor((now % 60000) / 1000);
-      document.getElementById('timer').textContent = "Active Time: " +
-        String(hrs).padStart(2, '0') + ":" +
-        String(mins).padStart(2, '0') + ":" +
-        String(secs).padStart(2, '0');
-    }, 1000);
-
-    setInterval(() => {
-      const now = new Date();
-      document.getElementById('clock').textContent = "TIME: " + now.toLocaleString();
-    }, 1000);
+    setInterval(() => { /* timer update */ }, 1000);
+    setInterval(() => { /* clock update */ }, 1000);
   </script>
 </body>
 </html>
