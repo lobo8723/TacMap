@@ -36,32 +36,21 @@
 </div>
 
 <script>
-  // List of users and their SHA-256 hashed passwords
+  // List of users and their plain text passwords
   const users = {
-    "admin": "5e884898da28047151d0e56f8dc6292773603d0d6aabbddabf19a5cb54ad3b39", // password: "password"
-    "officer": "8d969eef6ecad3c29a3a629280e686cff8ca4f546f3c179f96a0578f6e6b3f7b" // password: "123456"
+    "admin": "password",
+    "officer": "123456"
   };
-
-  async function hashPassword(password) {
-    const enc = new TextEncoder().encode(password);
-    const hashBuffer = await crypto.subtle.digest('SHA-256', enc);
-    return Array.from(new Uint8Array(hashBuffer)).map(b => b.toString(16).padStart(2, '0')).join('');
-  }
 
   function unlockSystem() {
     document.getElementById('loginOverlay').style.display = 'none';
     localStorage.setItem('authenticated', 'true');
   }
 
-  async function validateLogin() {
+  function validateLogin() {
     const username = document.getElementById('loginUsername').value.trim();
     const password = document.getElementById('loginPassword').value;
-    if (!username || !password) {
-      document.getElementById('loginError').style.display = 'block';
-      return;
-    }
-    const hashed = await hashPassword(password);
-    if (users[username] && users[username] === hashed) {
+    if (users[username] && users[username] === password) {
       unlockSystem();
     } else {
       document.getElementById('loginError').style.display = 'block';
