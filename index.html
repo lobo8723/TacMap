@@ -27,48 +27,84 @@
 </head>
 <body>
   <!-- LOGIN OVERLAY -->
-<div id="loginOverlay" style="position:fixed;top:0;left:0;width:100%;height:100%;background:black;color:#00ff00;z-index:3000;display:flex;flex-direction:column;justify-content:center;align-items:center;font-family:monospace;">
+<div id="loginOverlay" style="position:fixed;top:0;left:0;width:100%;height:100%;
+background:black;color:#00ff00;z-index:3000;display:flex;flex-direction:column;
+justify-content:center;align-items:center;font-family:monospace;
+animation: pulseBackground 6s infinite alternate;">
   <h2 style="margin-bottom:20px;">AUTHENTICATION REQUIRED</h2>
-  <input id="loginUsername" type="text" placeholder="Username" style="background:black;color:#00ff00;border:1px solid #00ff00;padding:8px;margin:6px;width:200px;text-align:center;">
-  <input id="loginPassword" type="password" placeholder="Password" style="background:black;color:#00ff00;border:1px solid #00ff00;padding:8px;margin:6px;width:200px;text-align:center;">
-  <button id="loginBtn" style="margin-top:15px;background:black;color:#00ff00;border:1px solid #00ff00;padding:8px 20px;cursor:pointer;">LOGIN</button>
-  <div id="loginError" style="margin-top:10px;color:red;display:none;">ACCESS DENIED</div>
+  <input id="loginUsername" type="text" placeholder="Username" style="background:black;
+  color:#00ff00;border:1px solid #00ff00;padding:8px;margin:6px;width:200px;
+  text-align:center;font-size:16px;">
+  <input id="loginPassword" type="password" placeholder="Password" style="background:black;
+  color:#00ff00;border:1px solid #00ff00;padding:8px;margin:6px;width:200px;
+  text-align:center;font-size:16px;">
+  <label style="margin-top:10px;font-size:14px;">
+    <input type="checkbox" id="rememberMe" style="accent-color:#00ff00;"> Remember Me
+  </label>
+  <button id="loginBtn" style="margin-top:15px;background:black;color:#00ff00;
+  border:1px solid #00ff00;padding:8px 20px;cursor:pointer;font-size:16px;">LOGIN</button>
+  <div id="loginError" style="margin-top:10px;color:red;display:none;font-size:14px;">ACCESS DENIED</div>
 </div>
 
+<style>
+@keyframes pulseBackground {
+  0% { background-color: #000; }
+  100% { background-color: #002200; }
+}
+</style>
+
 <script>
-  // List of users and their plain text passwords
-  const users = {
-    "admin": "password",
-    "officer": "123456"
-  };
+const users = {
+  "admin": "password",
+  "officer": "123456"
+};
 
-  function unlockSystem() {
-    document.getElementById('loginOverlay').style.display = 'none';
-    localStorage.setItem('authenticated', 'true');
-  }
+function unlockSystem() {
+  const overlay = document.getElementById('loginOverlay');
+  overlay.style.transition = "opacity 0.5s ease";
+  overlay.style.opacity = 0;
+  setTimeout(() => {
+    overlay.style.display = "none";
+  }, 500);
+}
 
-  function validateLogin() {
-    const username = document.getElementById('loginUsername').value.trim();
-    const password = document.getElementById('loginPassword').value;
-    if (users[username] && users[username] === password) {
-      unlockSystem();
+function validateLogin() {
+  const username = document.getElementById('loginUsername').value.trim();
+  const password = document.getElementById('loginPassword').value;
+  const remember = document.getElementById('rememberMe').checked;
+
+  if (users[username] && users[username] === password) {
+    if (remember) {
+      localStorage.setItem('authenticated', 'true');
     } else {
-      document.getElementById('loginError').style.display = 'block';
+      sessionStorage.setItem('authenticated', 'true');
     }
+    unlockSystem();
+  } else {
+    document.getElementById('loginError').style.display = 'block';
   }
+}
 
-  document.getElementById('loginBtn').addEventListener('click', validateLogin);
-  document.getElementById('loginPassword').addEventListener('keyup', function(event) {
-    if (event.key === 'Enter') {
-      validateLogin();
-    }
-  });
+document.getElementById('loginBtn').addEventListener('click', validateLogin);
 
-  window.addEventListener('DOMContentLoaded', () => {
-    if (localStorage.getItem('authenticated') === 'true') {
-      unlockSystem();
-    }
-  });
+document.getElementById('loginPassword').addEventListener('keyup', function(event) {
+  if (event.key === 'Enter') {
+    validateLogin();
+  }
+});
+
+document.getElementById('loginUsername').addEventListener('keyup', function(event) {
+  if (event.key === 'Enter') {
+    document.getElementById('loginPassword').focus();
+  }
+});
+
+window.addEventListener('DOMContentLoaded', () => {
+  if (localStorage.getItem('authenticated') === 'true' || sessionStorage.getItem('authenticated') === 'true') {
+    unlockSystem();
+  }
+  document.getElementById('loginUsername').focus();
+});
 </script>
   <div id="map"></div>
   <div id="gpsBtn" title="Center on GPS">[GPS]</div>
