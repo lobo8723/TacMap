@@ -26,7 +26,51 @@
   </style>
 </head>
 <body>
-  
+  <!-- LOADING OVERLAY -->
+<div id="loadingOverlay" style="position:fixed;top:0;left:0;width:100%;height:100%;
+background:black;color:#00ff00;z-index:3000;display:flex;flex-direction:column;
+justify-content:center;align-items:center;font-family:monospace;">
+  <h2 id="loadingText" style="font-size:20px;margin-bottom:20px;">SYSTEM INITIALIZING</h2>
+  <div id="dots" style="display:flex;gap:6px;margin-top:20px;"></div>
+</div>
+
+<style>
+@keyframes blink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.2; }
+}
+.dot {
+  width: 12px;
+  height: 12px;
+  background: #00ff00;
+  border-radius: 50%;
+  animation: blink 1.5s infinite;
+}
+.dot:nth-child(2) { animation-delay: 0.3s; }
+.dot:nth-child(3) { animation-delay: 0.6s; }
+.dot:nth-child(4) { animation-delay: 0.9s; }
+</style>
+
+<script>
+window.addEventListener('DOMContentLoaded', () => {
+  // Create animated dots
+  const dotsContainer = document.getElementById('dots');
+  for (let i = 0; i < 4; i++) {
+    const dot = document.createElement('div');
+    dot.classList.add('dot');
+    dotsContainer.appendChild(dot);
+  }
+
+  // Simulate system boot
+  setTimeout(() => {
+    document.getElementById('loadingOverlay').style.transition = "opacity 1s ease";
+    document.getElementById('loadingOverlay').style.opacity = 0;
+    setTimeout(() => {
+      document.getElementById('loadingOverlay').style.display = 'none';
+    }, 1000);
+  }, 4000); // Display loading screen for 4 seconds
+});
+</script>
   <div id="map"></div>
   <div id="gpsBtn" title="Center on GPS">[GPS]</div>
   <button id="toggleMapType" style="position:absolute;top:50px;left:10px;z-index:999;background:black;color:#00ff00;border:1px solid #00ff00;padding:5px;font-size:12px;">SATELLITE VIEW</button>
