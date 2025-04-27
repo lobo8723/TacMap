@@ -1,41 +1,37 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Project 1 - Final Stable Version (v1.1R15 - Patrol Report Small)</title>
-  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-  <script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"></script>
-  <style>
-    html, body { margin: 0; padding: 0; height: 100%; font-family: monospace; background: #111; color: #00ff00; }
-    #map { width: 100%; height: 100%; z-index: 1; position: absolute; top: 0; left: 0; }
-    .hud { position: absolute; width: 100%; bottom: 0; background: rgba(0,0,0,0.85); padding: 8px; box-sizing: border-box; z-index: 999; }
-    .hud-row { display: flex; justify-content: space-between; flex-wrap: wrap; font-size: 12px; }
-    #gpsBtn { position: absolute; right: 10px; top: 60px; background: black; border: 1px solid #00ff00; color: #00ff00; padding: 4px 8px; font-size: 12px; z-index: 1001; }
-    #address { position: absolute; top: 0; left: 0; padding: 5px 10px; font-size: 12px; background: rgba(0,0,0,0.8); color: #00ff00; z-index: 999; }
-    #timer { position:absolute;top:115px;left:10px;z-index:999;font-size:12px;background:rgba(0,0,0,0.7);padding:4px 6px;font-weight:bold;border:1px solid #00ff00; }
-    #photoDropdown { display: none; flex-wrap: wrap; gap: 6px; margin-top: 6px; padding-top: 4px; border-top: 1px solid #00ff00; }
-    #photoDropdown img { width: 120px; height: auto; object-fit: contain; border: 1px solid #00ff00; }
-    #actionMenuWrapper { text-align: center; margin-top: 6px; }
-    #actionDropdownBtn { background:black;color:#00ff00;border:1px solid #00ff00;padding:5px 12px;cursor:pointer;font-size:12px;min-width:150px; }
-    #actionDropdownContent { display: none; flex-wrap: wrap; gap: 6px; justify-content: center; padding: 6px 0; }
-    #actionDropdownContent button { background: black; color: #00ff00; border: 1px solid #00ff00; padding: 5px 12px; cursor: pointer; font-size: 12px; min-width: 140px; }
-    #reportCard { width:320px; background:black; color:#00ff00; padding:10px; font-family:monospace; border:1px solid #00ff00; text-align:center; display:none; font-size:11px; }
-    #helpModal { display: none; position: fixed; top: 10%; left: 50%; transform: translateX(-50%); background: black; border: 1px solid #00ff00; color: #00ff00; padding: 15px; width: 90%; max-width: 500px; z-index: 2000; overflow-y: auto; max-height: 80vh; }
-    #helpModal h2 { font-size: 16px; margin-top: 0; }
-    #helpModal ul { padding-left: 20px; font-size: 12px; }
-    #closeHelp { background: black; color: #00ff00; border: 1px solid #00ff00; padding: 4px 10px; cursor: pointer; float: right; font-size: 12px; }
-  </style>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Patrol Project - Full Correct Version</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"></script>
+<style>
+html, body { margin: 0; padding: 0; height: 100%; font-family: monospace; background: #111; color: #00ff00; }
+#map { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 1; }
+.hud { position: absolute; width: 100%; bottom: 0; background: rgba(0,0,0,0.85); padding: 8px; box-sizing: border-box; z-index: 999; }
+.hud-row { display: flex; justify-content: space-between; flex-wrap: wrap; font-size: 12px; }
+#gpsBtn { position: absolute; right: 10px; top: 60px; background: black; border: 1px solid #00ff00; color: #00ff00; padding: 4px 8px; font-size: 12px; z-index: 1001; }
+#address { position: absolute; top: 0; left: 0; padding: 5px 10px; font-size: 12px; background: rgba(0,0,0,0.8); color: #00ff00; z-index: 999; }
+#timer { position: absolute; top: 115px; left: 10px; background: rgba(0,0,0,0.7); border: 1px solid #00ff00; padding: 4px 6px; font-weight: bold; font-size: 12px; z-index: 999; }
+#photoDropdown { display: none; flex-wrap: wrap; gap: 6px; margin-top: 6px; padding-top: 4px; border-top: 1px solid #00ff00; }
+#photoDropdown img { width: 120px; height: auto; object-fit: contain; border: 1px solid #00ff00; }
+#actionMenuWrapper { text-align: center; margin-top: 6px; }
+#actionDropdownBtn { background: black; color: #00ff00; border: 1px solid #00ff00; padding: 5px 12px; cursor: pointer; font-size: 12px; min-width: 150px; }
+#actionDropdownContent { display: none; flex-wrap: wrap; gap: 6px; justify-content: center; padding: 6px 0; }
+#actionDropdownContent button { background: black; color: #00ff00; border: 1px solid #00ff00; padding: 5px 12px; cursor: pointer; font-size: 12px; min-width: 140px; }
+#reportCard { width: 320px; background: black; color: #00ff00; padding: 10px; font-family: monospace; border: 1px solid #00ff00; text-align: center; display: none; font-size: 11px; }
+#helpModal { display: none; position: fixed; top: 10%; left: 50%; transform: translateX(-50%); background: black; border: 1px solid #00ff00; padding: 15px; width: 90%; max-width: 500px; overflow-y: auto; max-height: 80vh; color: #00ff00; z-index: 2000; }
+#closeHelp { background: black; color: #00ff00; border: 1px solid #00ff00; padding: 4px 10px; cursor: pointer; float: right; font-size: 12px; }
+</style>
 </head>
 <body>
-
 <div id="map"></div>
 <div id="gpsBtn" title="Center on GPS">[GPS]</div>
 <button id="toggleMapType" style="position:absolute;top:50px;left:10px;z-index:999;background:black;color:#00ff00;border:1px solid #00ff00;padding:5px;font-size:12px;">SATELLITE VIEW</button>
 <div id="timer">Active Time: 00:00:00</div>
 <div id="address">LOCATING...</div>
-
 <div class="hud">
   <div class="hud-row">
     <div>OFFICER: <input id="officer" type="text" placeholder="Enter Officer Name" style="background:black;color:#00ff00;border:none;" inputmode="text" /></div>
@@ -90,7 +86,6 @@
 </div>
 
 <input id="photoInput" type="file" accept="image/*" capture="environment" style="display:none;" />
-
 <script>
 let map = L.map('map').setView([33.4484, -112.0740], 19);
 const street = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png');
@@ -120,6 +115,12 @@ document.getElementById('toggleMapType').onclick = () => {
 };
 
 map.on('click', function (e) {
+  if (breadcrumbMode) {
+    const m = L.circleMarker(e.latlng, {
+      radius: 2, color: '#00ff00', fillColor: '#00ff00', fillOpacity: 1
+    }).bindTooltip("BREADCRUMB").addTo(markerGroup);
+    return;
+  }
   if (!markerMode) return;
   let label = markerMode.toUpperCase();
   let color = markerMode === 'clear' ? 'green' :
@@ -137,7 +138,6 @@ map.on('click', function (e) {
   document.getElementById('markerCount').textContent = `MARKERS: ${markerCount}`;
   markerMode = null;
 });
-
 function clearAll() {
   markerGroup.clearLayers();
   markerCount = 0;
@@ -176,6 +176,16 @@ document.getElementById('actionDropdownBtn').onclick = () => {
   menu.style.display = (menu.style.display === 'none' || menu.style.display === '') ? 'flex' : 'none';
 };
 
+document.getElementById('officer').addEventListener('change', function () {
+  const value = this.value.trim().toLowerCase();
+  if (value === 'deltaon') {
+    breadcrumbMode = true;
+    alert('🟢 Breadcrumb Mode Activated');
+  } else if (value === 'deltaoff') {
+    breadcrumbMode = false;
+    alert('🔴 Breadcrumb Mode Deactivated');
+  }
+});
 function initGPS() {
   navigator.geolocation.watchPosition(pos => {
     const { latitude, longitude, accuracy } = pos.coords;
@@ -186,15 +196,25 @@ function initGPS() {
     document.getElementById('gpsStatus').textContent = `GPS: LOCKED (${Math.round(accuracy)}m)`;
     const latlng = [latitude, longitude];
     trail.push(latlng);
-    L.circleMarker(latlng, {radius:2, color:'#00ff00', fillColor:'#00ff00', fillOpacity:1}).addTo(markerGroup);
+    L.circleMarker(latlng, {
+      radius: 2, color: '#00ff00', fillColor: '#00ff00', fillOpacity: 1
+    }).addTo(markerGroup);
     fetch(`https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${latitude}&lon=${longitude}`)
       .then(res => res.json())
-      .then(data => {document.getElementById('address').textContent = data.display_name || `Lat: ${latitude.toFixed(5)}, Lon: ${longitude.toFixed(5)}`;})
-      .catch(() => {document.getElementById('address').textContent = `Lat: ${latitude.toFixed(5)}, Lon: ${longitude.toFixed(5)}`;});
+      .then(data => {
+        document.getElementById('address').textContent = data.display_name || `Lat: ${latitude.toFixed(5)}, Lon: ${longitude.toFixed(5)}`;
+      }).catch(() => {
+        document.getElementById('address').textContent = `Lat: ${latitude.toFixed(5)}, Lon: ${longitude.toFixed(5)}`;
+      });
   }, err => {
     document.getElementById('gpsStatus').textContent = "GPS: ERROR";
-  }, {enableHighAccuracy:true, maximumAge:0, timeout:5000});
+  }, {
+    enableHighAccuracy: true,
+    maximumAge: 0,
+    timeout: 5000
+  });
 }
+
 initGPS();
 
 setInterval(() => {
@@ -212,31 +232,40 @@ setInterval(() => {
   const now = new Date();
   document.getElementById('clock').textContent = "TIME: " + now.toLocaleString();
 }, 1000);
-
 function generateReport() {
   const now = new Date();
-  const officer = document.getElementById('officer').value || 'Unknown';
-  const address = document.getElementById('address').textContent || 'Unknown';
-  const gpsStatus = document.getElementById('gpsStatus').textContent.replace('GPS: ', '') || 'Unavailable';
-  const activeTime = document.getElementById('timer').textContent.replace('Active Time: ', '') || '00:00:00';
+  const patrolEnd = now;
+  const activeMs = patrolEnd - patrolStart;
+  const activeHrs = Math.floor(activeMs / 3600000);
+  const activeMins = Math.floor((activeMs % 3600000) / 60000);
+  const activeSecs = Math.floor((activeMs % 60000) / 1000);
+  const activeFormatted = 
+    String(activeHrs).padStart(2, '0') + ":" +
+    String(activeMins).padStart(2, '0') + ":" +
+    String(activeSecs).padStart(2, '0');
+
+  const address = document.getElementById('address').textContent.trim();
+  const officerName = document.getElementById('officer').value.trim() || "Unknown Officer";
+  const gpsStatus = document.getElementById('gpsStatus').textContent.trim();
+  const breadcrumbCount = trail.length;
 
   document.getElementById('reportBody').innerHTML = `
     Date: ${now.toLocaleDateString()}<br>
-    Patrol Start: ${patrolStart.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}<br>
-    Patrol End: ${now.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}<br>
-    Active Time: ${activeTime}<br>
-    Officer: ${officer}<br>
+    Patrol Start: ${patrolStart.toLocaleTimeString()}<br>
+    Patrol End: ${patrolEnd.toLocaleTimeString()}<br>
+    Active Time: ${activeFormatted}<br>
+    Officer: ${officerName}<br>
     Location: ${address}<br>
     GPS Status: ${gpsStatus}<br>
-    Breadcrumbs: ${markerCount}<br><br>
-    Generated: ${now.toLocaleDateString()} ${now.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
+    Breadcrumbs: ${breadcrumbCount}<br>
+    Generated: ${now.toLocaleString()}
   `;
 
   document.getElementById('reportCard').style.display = 'block';
 
   html2canvas(document.getElementById('reportCard')).then(canvas => {
     const link = document.createElement('a');
-    link.download = `Patrol_Report_${now.toISOString().replace(/[:.]/g,'-')}.png`;
+    link.download = 'Patrol_Report.png';
     link.href = canvas.toDataURL();
     link.click();
     document.getElementById('reportCard').style.display = 'none';
