@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
-<title>Patrol Project - Mini Map Update</title>
+<title>Patrol Project - Tight Report + Mini Map</title>
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"></script>
@@ -21,8 +21,9 @@ html, body { margin: 0; padding: 0; height: 100%; font-family: monospace; backgr
 #actionDropdownBtn { background: black; color: #00ff00; border: 1px solid #00ff00; padding: 5px 12px; cursor: pointer; font-size: 12px; min-width: 150px; }
 #actionDropdownContent { display: none; flex-wrap: wrap; gap: 6px; justify-content: center; padding: 6px 0; }
 #actionDropdownContent button { background: black; color: #00ff00; border: 1px solid #00ff00; padding: 5px 12px; cursor: pointer; font-size: 12px; min-width: 140px; }
-#reportCard { width: 320px; background: black; color: #00ff00; padding: 10px; font-family: monospace; border: 1px solid #00ff00; text-align: center; display: none; font-size: 11px; }
-#mapSnapshot { width: 150px; height: 150px; margin-top: 10px; border: 1px solid #00ff00; object-fit: cover; }
+#reportCard { width: 300px; background: black; color: #00ff00; padding: 8px; font-family: monospace; border: 1px solid #00ff00; text-align: center; display: none; font-size: 11px; margin: 0 auto; }
+#reportBody { margin-bottom: 8px; }
+#mapSnapshot { width: 140px; height: 140px; margin-top: 5px; border: 1px solid #00ff00; object-fit: cover; }
 #helpModal { display: none; position: fixed; top: 10%; left: 50%; transform: translateX(-50%); background: black; border: 1px solid #00ff00; padding: 15px; width: 90%; max-width: 500px; overflow-y: auto; max-height: 80vh; color: #00ff00; z-index: 2000; }
 #closeHelp { background: black; color: #00ff00; border: 1px solid #00ff00; padding: 4px 10px; cursor: pointer; float: right; font-size: 12px; }
 </style>
@@ -69,8 +70,8 @@ html, body { margin: 0; padding: 0; height: 100%; font-family: monospace; backgr
 </div>
 
 <div id="reportCard">
-  <h2>PATROL REPORT</h2>
-  <div id="reportBody" style="font-size:11px;"></div>
+  <h2 style="margin:4px 0;">PATROL REPORT</h2>
+  <div id="reportBody"></div>
   <img id="mapSnapshot" src="" alt="Map Snapshot" />
 </div>
 
