@@ -2,8 +2,8 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>Patrol Project - Full Correct Version</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
+<title>Patrol Project - Updated Version</title>
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"></script>
@@ -34,7 +34,16 @@ html, body { margin: 0; padding: 0; height: 100%; font-family: monospace; backgr
 <div id="address">LOCATING...</div>
 <div class="hud">
   <div class="hud-row">
-    <div>OFFICER: <input id="officer" type="text" placeholder="Enter Officer Name" style="background:black;color:#00ff00;border:none;" inputmode="text" /></div>
+    <div>OFFICER: 
+      <input id="officer" type="text" placeholder="Enter Officer Name" 
+        style="background:black;color:#00ff00;border:none;" 
+        inputmode="text" 
+        autocomplete="off" 
+        autocorrect="off" 
+        autocapitalize="off" 
+        spellcheck="false"
+      />
+    </div>
     <div id="clock">TIME: --:--:--</div>
     <div id="gpsStatus">GPS: WAITING...</div>
     <div id="markerCount">MARKERS: 0</div>
@@ -89,13 +98,16 @@ html, body { margin: 0; padding: 0; height: 100%; font-family: monospace; backgr
 <script>
 let map = L.map('map').setView([33.4484, -112.0740], 19);
 const street = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png');
-const satellite = L.tileLayer('https://{s}.google.com/vt/lyrs=s&x={x}&y={y}&z={z}', {subdomains: ['mt0', 'mt1', 'mt2', 'mt3'], maxZoom: 20});
+const satellite = L.tileLayer('https://{s}.google.com/vt/lyrs=s&x={x}&y={y}&z={z}', {
+  subdomains: ['mt0', 'mt1', 'mt2', 'mt3'], maxZoom: 20
+});
 let currentLayer = street;
 street.addTo(map);
 
 let markerGroup = L.layerGroup().addTo(map);
 let trail = [], markerCount = 0, markerMode = null, startTime = Date.now();
 let breadcrumbMode = false;
+let manualBreadcrumbCounter = 0;
 let patrolStart = new Date();
 
 function setMarkerMode(type) {
@@ -119,6 +131,8 @@ map.on('click', function (e) {
     const m = L.circleMarker(e.latlng, {
       radius: 2, color: '#00ff00', fillColor: '#00ff00', fillOpacity: 1
     }).bindTooltip("BREADCRUMB").addTo(markerGroup);
+    manualBreadcrumbCounter++;
+    document.getElementById('markerCount').textContent = `MARKERS: ${markerCount + manualBreadcrumbCounter + trail.length}`;
     return;
   }
   if (!markerMode) return;
@@ -135,12 +149,13 @@ map.on('click', function (e) {
     radius: 6, color: color, fillColor: color, fillOpacity: 1
   }).bindTooltip(label).addTo(markerGroup);
   markerCount++;
-  document.getElementById('markerCount').textContent = `MARKERS: ${markerCount}`;
+  document.getElementById('markerCount').textContent = `MARKERS: ${markerCount + manualBreadcrumbCounter + trail.length}`;
   markerMode = null;
 });
 function clearAll() {
   markerGroup.clearLayers();
   markerCount = 0;
+  manualBreadcrumbCounter = 0;
   trail = [];
   document.getElementById('markerCount').textContent = "MARKERS: 0";
 }
@@ -206,6 +221,8 @@ function initGPS() {
       }).catch(() => {
         document.getElementById('address').textContent = `Lat: ${latitude.toFixed(5)}, Lon: ${longitude.toFixed(5)}`;
       });
+
+    document.getElementById('markerCount').textContent = `MARKERS: ${markerCount + manualBreadcrumbCounter + trail.length}`;
   }, err => {
     document.getElementById('gpsStatus').textContent = "GPS: ERROR";
   }, {
@@ -247,7 +264,7 @@ function generateReport() {
   const address = document.getElementById('address').textContent.trim();
   const officerName = document.getElementById('officer').value.trim() || "Unknown Officer";
   const gpsStatus = document.getElementById('gpsStatus').textContent.trim();
-  const breadcrumbCount = trail.length;
+  const totalBreadcrumbs = trail.length + manualBreadcrumbCounter;
 
   document.getElementById('reportBody').innerHTML = `
     Date: ${now.toLocaleDateString()}<br>
@@ -257,7 +274,7 @@ function generateReport() {
     Officer: ${officerName}<br>
     Location: ${address}<br>
     GPS Status: ${gpsStatus}<br>
-    Breadcrumbs: ${breadcrumbCount}<br>
+    Breadcrumbs: ${totalBreadcrumbs}<br>
     Generated: ${now.toLocaleString()}
   `;
 
