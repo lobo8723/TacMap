@@ -1,5 +1,5 @@
-<!-- ✅ MASTER INTEGRATED FILE (PART 1 OF 10) -->
-<!-- TACMAP + FULL WAVE PTT MODULE | PART 1: <head> and initial layout -->
+<!-- ✅ FIXED & UPDATED FILE (PART 1 OF 10) -->
+<!-- TacMap + Fixed WavePTT | PART 1: <head>, Firebase, and updated styling -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -34,6 +34,15 @@
       background: black; color: #00ff00; border: 1px solid #00ff00;
       padding: 4px 10px; cursor: pointer; float: right; font-size: 12px;
     }
+    /* ✅ FIXED: Circular PTT Button Styling */
+    #pttTalk {
+      width: 120px; height: 120px; border-radius: 60px;
+      font-weight: bold; font-size: 14px;
+      background: red; color: white;
+      border: 2px solid #00ff00;
+      margin: 10px auto; display: block;
+      cursor: pointer;
+    }
   </style>
 </head>
 <body>
@@ -42,64 +51,64 @@
   <button id="toggleMapType" style="position:absolute;top:50px;left:10px;z-index:999;background:black;color:#00ff00;border:1px solid #00ff00;padding:5px;font-size:12px;">SATELLITE VIEW</button>
   <div id="timer">Active Time: 00:00:00</div>
   <div id="address">LOCATING...</div>
-<!-- ✅ MASTER INTEGRATED FILE (PART 2 OF 10) -->
-<!-- TACMAP + FULL WAVE PTT MODULE | PART 2: HUD controls, action menu, and WavePTT modal UI -->
-  <div class="hud">
-    <div class="hud-row">
-      <div>OFFICER: <input id="officer" type="text" placeholder="Enter Officer Name" style="background:black;color:#00ff00;border:none;" inputmode="text" /></div>
-      <div id="clock">TIME: --:--:--</div>
-      <div id="gpsStatus">GPS: WAITING...</div>
-      <div id="markerCount">MARKERS: 0</div>
+  <!-- ✅ FIXED & UPDATED FILE (PART 2 OF 10) -->
+<!-- TacMap + Fixed WavePTT | PART 2: HUD, Action Menu, Modal UI -->
+<div class="hud">
+  <div class="hud-row">
+    <div>OFFICER: <input id="officer" type="text" placeholder="Enter Officer Name" style="background:black;color:#00ff00;border:none;" inputmode="text" /></div>
+    <div id="clock">TIME: --:--:--</div>
+    <div id="gpsStatus">GPS: WAITING...</div>
+    <div id="markerCount">MARKERS: 0</div>
+  </div>
+  <div id="actionMenuWrapper">
+    <button id="actionDropdownBtn">[ ACTION MENU ]</button>
+    <div id="actionDropdownContent">
+      <button onclick="setMarkerMode('clear')">[SECURE]</button>
+      <button onclick="setMarkerMode('incident')">[INCIDENT]</button>
+      <button onclick="setMarkerMode('move')">[MOVEMENT]</button>
+      <button onclick="setMarkerMode('custom')">[ADD CUSTOM]</button>
+      <button onclick="clearAll()">[CLEAR MARKERS]</button>
+      <button onclick="takePhoto()">[CAPTURE]</button>
+      <button onclick="toggleDropdown()">[VIEW PHOTOS]</button>
+      <button onclick="showHelp()">[HELP]</button>
+      <button onclick="document.getElementById('pttModal').style.display='block'">[WAVE PTT]</button>
     </div>
-    <div id="actionMenuWrapper">
-      <button id="actionDropdownBtn">[ ACTION MENU ]</button>
-      <div id="actionDropdownContent">
-        <button onclick="setMarkerMode('clear')">[SECURE]</button>
-        <button onclick="setMarkerMode('incident')">[INCIDENT]</button>
-        <button onclick="setMarkerMode('move')">[MOVEMENT]</button>
-        <button onclick="setMarkerMode('custom')">[ADD CUSTOM]</button>
-        <button onclick="clearAll()">[CLEAR MARKERS]</button>
-        <button onclick="takePhoto()">[CAPTURE]</button>
-        <button onclick="toggleDropdown()">[VIEW PHOTOS]</button>
-        <button onclick="showHelp()">[HELP]</button>
-        <button onclick="document.getElementById('pttModal').style.display='block'">[WAVE PTT]</button>
-      </div>
-    </div>
-    <div id="photoDropdown"></div>
   </div>
-  <div id="helpModal">
-    <button id="closeHelp" onclick="document.getElementById('helpModal').style.display='none'">CLOSE</button>
-    <h2>Help Reference Guide</h2>
-    <ul>
-      <li><strong>[SECURE]</strong>: Green marker for secured areas.</li>
-      <li><strong>[INCIDENT]</strong>: Red marker to flag incidents.</li>
-      <li><strong>[MOVEMENT]</strong>: Orange marker for movement tracking.</li>
-      <li><strong>[ADD CUSTOM]</strong>: Enter a label to create a custom marker.</li>
-      <li><strong>[CLEAR MARKERS]</strong>: Remove all placed markers.</li>
-      <li><strong>[CAPTURE]</strong>: Opens the camera to take a photo.</li>
-      <li><strong>[VIEW PHOTOS]</strong>: Shows uploaded or captured photos.</li>
-      <li><strong>[SATELLITE VIEW]</strong>: Switch between satellite/street map.</li>
-      <li><strong>[Active Time]</strong>: Timer showing operation duration.</li>
-      <li><strong>[GPS]</strong>: Zooms to current GPS location.</li>
-      <li><strong>[Address]</strong>: Reverse geocoded physical address.</li>
-      <li><strong>[OFFICER]</strong>: Enter officer name.</li>
-      <li><strong>[GPS LOCKED]</strong>: Displays GPS signal accuracy.</li>
-      <li><strong>[TIME]</strong>: Shows system time in real-time.</li>
-      <li><strong>[MARKERS]</strong>: Active marker counter.</li>
-    </ul>
-  </div>
-  <div id="pttModal">
-    <button id="closePTT" onclick="document.getElementById('pttModal').style.display='none'">CLOSE</button>
-    <h2>WavePTT Radio</h2>
-    <input type="text" id="pttUser" placeholder="Enter Name" style="width:100%;margin-bottom:6px;background:black;color:#00ff00;border:1px solid #00ff00;padding:4px;">
-    <button id="pttTalk" style="width:100%;height:60px;font-weight:bold;background:red;color:white;border:1px solid #00ff00;margin-top:6px;">Hold to Talk</button>
-    <button id="pttPriority" style="width:100%;margin-top:4px;background:black;color:#00ff00;border:1px solid #00ff00;">PRIORITY: OFF</button>
-    <div id="pttStatus" style="margin-top:10px;font-size:12px;">Status: Idle</div>
-    <div id="pttUsers" style="margin-top:10px;font-size:12px;max-height:150px;overflow-y:auto;border:1px solid #00ff00;padding:4px;">Connected Users:<br/></div>
-  </div>
-  <input id="photoInput" type="file" accept="image/*" capture="environment" style="display:none;" />
-<!-- ✅ MASTER INTEGRATED FILE (PART 3 OF 10) -->
-<!-- TACMAP + FULL WAVE PTT MODULE | PART 3: Marker logic, breadcrumb trail, and map click interactions -->
+  <div id="photoDropdown"></div>
+</div>
+<div id="helpModal">
+  <button id="closeHelp" onclick="document.getElementById('helpModal').style.display='none'">CLOSE</button>
+  <h2>Help Reference Guide</h2>
+  <ul>
+    <li><strong>[SECURE]</strong>: Green marker for secured areas.</li>
+    <li><strong>[INCIDENT]</strong>: Red marker to flag incidents.</li>
+    <li><strong>[MOVEMENT]</strong>: Orange marker for movement tracking.</li>
+    <li><strong>[ADD CUSTOM]</strong>: Enter a label to create a custom marker.</li>
+    <li><strong>[CLEAR MARKERS]</strong>: Remove all placed markers.</li>
+    <li><strong>[CAPTURE]</strong>: Opens the camera to take a photo.</li>
+    <li><strong>[VIEW PHOTOS]</strong>: Shows uploaded or captured photos.</li>
+    <li><strong>[SATELLITE VIEW]</strong>: Switch between satellite/street map.</li>
+    <li><strong>[Active Time]</strong>: Timer showing operation duration.</li>
+    <li><strong>[GPS]</strong>: Zooms to current GPS location.</li>
+    <li><strong>[Address]</strong>: Reverse geocoded physical address.</li>
+    <li><strong>[OFFICER]</strong>: Enter officer name.</li>
+    <li><strong>[GPS LOCKED]</strong>: Displays GPS signal accuracy.</li>
+    <li><strong>[TIME]</strong>: Shows system time in real-time.</li>
+    <li><strong>[MARKERS]</strong>: Active marker counter.</li>
+  </ul>
+</div>
+<div id="pttModal">
+  <button id="closePTT" onclick="document.getElementById('pttModal').style.display='none'">CLOSE</button>
+  <h2>WavePTT Radio</h2>
+  <input type="text" id="pttUser" placeholder="Enter Name" style="width:100%;margin-bottom:6px;background:black;color:#00ff00;border:1px solid #00ff00;padding:4px;">
+  <button id="pttTalk">Hold to Talk</button>
+  <button id="pttPriority" style="width:100%;margin-top:4px;background:black;color:#00ff00;border:1px solid #00ff00;">PRIORITY: OFF</button>
+  <div id="pttStatus" style="margin-top:10px;font-size:12px;">Status: Idle</div>
+  <div id="pttUsers" style="margin-top:10px;font-size:12px;max-height:150px;overflow-y:auto;border:1px solid #00ff00;padding:4px;">Connected Users:<br/></div>
+</div>
+<input id="photoInput" type="file" accept="image/*" capture="environment" style="display:none;" />
+<!-- ✅ FIXED & UPDATED FILE (PART 3 OF 10) -->
+<!-- TacMap + Fixed WavePTT | PART 3: Marker logic, breadcrumb, photo capture -->
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script>
 let map = L.map('map').setView([33.4484, -112.0740], 19);
@@ -184,8 +193,8 @@ document.getElementById('officer').addEventListener('change', function () {
   }
 });
 </script>
-<!-- ✅ MASTER INTEGRATED FILE (PART 4 OF 10) -->
-<!-- TACMAP + FULL WAVE PTT MODULE | PART 4: GPS logic, reverse geocoding, timer, and system clock -->
+<!-- ✅ FIXED & UPDATED FILE (PART 4 OF 10) -->
+<!-- TacMap + Fixed WavePTT | PART 4: GPS, reverse geocoding, timer, and clock -->
 <script>
 function initGPS() {
   navigator.geolocation.watchPosition(pos => {
@@ -243,8 +252,8 @@ setInterval(() => {
   document.getElementById('clock').textContent = "TIME: " + now.toLocaleString();
 }, 1000);
 </script>
-<!-- ✅ MASTER INTEGRATED FILE (PART 5 OF 10) -->
-<!-- TACMAP + FULL WAVE PTT MODULE | PART 5: Firebase PTT logic, mic access, talk state, priority toggle -->
+<!-- ✅ FIXED & UPDATED FILE (PART 5 OF 10) -->
+<!-- TacMap + Fixed WavePTT | PART 5: Mic access, Firebase sync, talk logic, and priority override -->
 <script>
 // =================== WAVE PTT MODULE BEGIN ===================
 const firebaseConfig = {
@@ -277,54 +286,60 @@ pttUserInput.addEventListener('change', async () => {
   try {
     localStream = await navigator.mediaDevices.getUserMedia({ audio: true });
   } catch (err) {
-    alert("Microphone access denied.");
+    alert("Microphone access denied or not available.");
     return;
   }
   db.ref('channels/main/' + pttUser).onDisconnect().remove();
   db.ref('channels/main/' + pttUser).set({ talking: false, priority: false });
 });
 
-pttTalkBtn.onmousedown = async () => {
+pttTalkBtn.addEventListener('mousedown', async () => {
   if (!pttUser || !localStream) {
     alert("Enter your name and allow mic access first.");
     return;
   }
-  const snap = await db.ref('channels/main').once('value');
-  let blocked = false;
-  snap.forEach(child => {
-    if (child.key !== pttUser && child.val().talking && !priority) blocked = true;
+  const snapshot = await db.ref('channels/main').once('value');
+  let someoneElseTalking = false;
+
+  snapshot.forEach(child => {
+    if (child.key !== pttUser && child.val().talking && !priority) {
+      someoneElseTalking = true;
+    }
   });
-  if (blocked) {
-    alert("Someone else is talking. Enable priority to override.");
+
+  if (someoneElseTalking) {
+    alert("Someone else is talking. Turn on PRIORITY to override.");
     return;
   }
+
   isTalking = true;
   pttTalkBtn.style.backgroundColor = 'green';
   pttStatus.textContent = 'Status: Transmitting...';
   db.ref('channels/main/' + pttUser).update({ talking: true, priority });
-};
+});
 
-pttTalkBtn.onmouseup = () => {
+pttTalkBtn.addEventListener('mouseup', () => {
   if (!isTalking) return;
   isTalking = false;
   pttTalkBtn.style.backgroundColor = 'red';
   pttStatus.textContent = 'Status: Idle';
   if (pttUser) db.ref('channels/main/' + pttUser).update({ talking: false });
-};
+});
 
-pttPriorityBtn.onclick = () => {
+pttPriorityBtn.addEventListener('click', () => {
   priority = !priority;
   pttPriorityBtn.textContent = `PRIORITY: ${priority ? 'ON' : 'OFF'}`;
   pttPriorityBtn.style.color = priority ? 'yellow' : '#00ff00';
-};
+});
 // =================== WAVE PTT MODULE END ===================
 </script>
-<!-- ✅ MASTER INTEGRATED FILE (PART 6 OF 10) -->
-<!-- TACMAP + FULL WAVE PTT MODULE | PART 6: Real-time user list inside WavePTT modal -->
+<!-- ✅ FIXED & UPDATED FILE (PART 6 OF 10) -->
+<!-- TacMap + Fixed WavePTT | PART 6: Live user list rendering inside modal -->
 <script>
 // ========== WAVE PTT USER LIST MODULE BEGIN ==========
 db.ref("channels/main").on("value", snapshot => {
   const list = document.getElementById("pttUsers");
+  if (!list) return;
   list.innerHTML = "Connected Users:<br/>";
   snapshot.forEach(child => {
     const user = child.key;
@@ -344,8 +359,8 @@ db.ref("channels/main").on("value", snapshot => {
 });
 // ========== WAVE PTT USER LIST MODULE END ==========
 </script>
-<!-- ✅ MASTER INTEGRATED FILE (PART 7 OF 10) -->
-<!-- TACMAP + FULL WAVE PTT MODULE | PART 7: Disconnect Cleanup Logic -->
+<!-- ✅ FIXED & UPDATED FILE (PART 7 OF 10) -->
+<!-- TacMap + Fixed WavePTT | PART 7: Disconnect cleanup and tab-close removal -->
 <script>
 // ========== WAVE PTT DISCONNECT CLEANUP MODULE BEGIN ==========
 window.addEventListener("beforeunload", () => {
@@ -355,10 +370,9 @@ window.addEventListener("beforeunload", () => {
 });
 // ========== WAVE PTT DISCONNECT CLEANUP MODULE END ==========
 </script>
-<!-- ✅ MASTER INTEGRATED FILE (PART 8 OF 10) -->
-<!-- TACMAP + FULL WAVE PTT MODULE | PART 8: Final HUD logic wrap-up and interface safety -->
+<!-- ✅ FIXED & UPDATED FILE (PART 8 OF 10) -->
+<!-- TacMap + Fixed WavePTT | PART 8: Satellite view toggle and modal safeguard behavior -->
 <script>
-// Toggle satellite view
 map.on('load', () => currentLayer.addTo(map));
 document.getElementById('toggleMapType').onclick = () => {
   map.removeLayer(currentLayer);
@@ -367,16 +381,16 @@ document.getElementById('toggleMapType').onclick = () => {
   document.getElementById('toggleMapType').textContent = currentLayer === street ? 'SATELLITE VIEW' : 'MAP VIEW';
 };
 
-// Prevent double modal stacking
+// Prevent event bleed-through on modal interactions
 ['pttModal', 'helpModal'].forEach(id => {
   const el = document.getElementById(id);
-  el.addEventListener('click', e => e.stopPropagation());
+  if (el) {
+    el.addEventListener('click', e => e.stopPropagation());
+  }
 });
 </script>
-<!-- ✅ MASTER INTEGRATED FILE (PART 9 OF 10) -->
-<!-- TACMAP + FULL WAVE PTT MODULE | PART 9: Close out structure and body -->
-<!-- This part completes your interface by finishing the HTML structure safely -->
-<!-- All modals, buttons, logic, and layers are now integrated -->
-<!-- Your map, HUD, GPS, and PTT functions remain modular and isolated. -->
+<!-- ✅ FIXED & UPDATED FILE (PART 9 OF 10) -->
+<!-- TacMap + Fixed WavePTT | PART 9: Final structural HTML closure -->
 </body>
 </html>
+
