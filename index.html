@@ -2,11 +2,9 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Project 1 - TacMap + WavePTT</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Project 1 - Final Stable Version (v1.1R13 - Fully Functional)</title>
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-  <script src="https://www.gstatic.com/firebasejs/10.9.0/firebase-app.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.9.0/firebase-database.js"></script>
   <style>
     html, body { margin: 0; padding: 0; height: 100%; font-family: monospace; background: #111; color: #00ff00; }
     #map { width: 100%; height: 100%; z-index: 1; position: absolute; top: 0; left: 0; }
@@ -21,355 +19,212 @@
     #actionDropdownBtn { background:black;color:#00ff00;border:1px solid #00ff00;padding:5px 12px;cursor:pointer;font-size:12px;min-width:150px; }
     #actionDropdownContent { display: none; flex-wrap: wrap; gap: 6px; justify-content: center; padding: 6px 0; }
     #actionDropdownContent button { background: black; color: #00ff00; border: 1px solid #00ff00; padding: 5px 12px; cursor: pointer; font-size: 12px; min-width: 140px; }
-    #helpModal, #pttModal { display: none; position: fixed; top: 10%; left: 50%; transform: translateX(-50%); background: black; border: 1px solid #00ff00; color: #00ff00; padding: 15px; width: 90%; max-width: 500px; z-index: 2000; overflow-y: auto; max-height: 80vh; }
-    #helpModal h2, #pttModal h2 { font-size: 16px; margin-top: 0; }
+    #helpModal { display: none; position: fixed; top: 10%; left: 50%; transform: translateX(-50%); background: black; border: 1px solid #00ff00; color: #00ff00; padding: 15px; width: 90%; max-width: 500px; z-index: 2000; overflow-y: auto; max-height: 80vh; }
+    #helpModal h2 { font-size: 16px; margin-top: 0; }
     #helpModal ul { padding-left: 20px; font-size: 12px; }
-    #closeHelp, #closePTT { background: black; color: #00ff00; border: 1px solid #00ff00; padding: 4px 10px; cursor: pointer; float: right; font-size: 12px; }
-    #pttTalk { width: 120px; height: 120px; border-radius: 60px; font-weight: bold; font-size: 14px; background: red; color: white; border: 2px solid #00ff00; margin: 10px auto; display: block; cursor: pointer; }
+    #closeHelp { background: black; color: #00ff00; border: 1px solid #00ff00; padding: 4px 10px; cursor: pointer; float: right; font-size: 12px; }
   </style>
 </head>
 <body>
-<div id="map"></div>
-<div id="gpsBtn" title="Center on GPS">[GPS]</div>
-<button id="toggleMapType" style="position:absolute;top:50px;left:10px;z-index:999;background:black;color:#00ff00;border:1px solid #00ff00;padding:5px;font-size:12px;">SATELLITE VIEW</button>
-<div id="timer">Active Time: 00:00:00</div>
-<div id="address">LOCATING...</div>
-<div class="hud">
-  <div class="hud-row">
-    <div>OFFICER: <input id="officer" type="text" placeholder="Enter Officer Name" style="background:black;color:#00ff00;border:none;" inputmode="text" /></div>
-    <div id="clock">TIME: --:--:--</div>
-    <div id="gpsStatus">GPS: WAITING...</div>
-    <div id="markerCount">MARKERS: 0</div>
-  </div>
-  <div id="actionMenuWrapper">
-    <button id="actionDropdownBtn">[ ACTION MENU ]</button>
-    <div id="actionDropdownContent">
-      <button onclick="setMarkerMode('clear')">[SECURE]</button>
-      <button onclick="setMarkerMode('incident')">[INCIDENT]</button>
-      <button onclick="setMarkerMode('move')">[MOVEMENT]</button>
-      <button onclick="setMarkerMode('custom')">[ADD CUSTOM]</button>
-      <button onclick="clearAll()">[CLEAR MARKERS]</button>
-      <button onclick="takePhoto()">[CAPTURE]</button>
-      <button onclick="toggleDropdown()">[VIEW PHOTOS]</button>
-      <button onclick="showHelp()">[HELP]</button>
-      <button onclick="document.getElementById('pttModal').style.display='block'">[WAVE PTT]</button>
+  <div id="map"></div>
+  <div id="gpsBtn" title="Center on GPS">[GPS]</div>
+  <button id="toggleMapType" style="position:absolute;top:50px;left:10px;z-index:999;background:black;color:#00ff00;border:1px solid #00ff00;padding:5px;font-size:12px;">SATELLITE VIEW</button>
+  <div id="timer">Active Time: 00:00:00</div>
+  <div id="address">LOCATING...</div>
+  <div class="hud">
+    <div class="hud-row">
+      <div>OFFICER: <input id="officer" type="text" placeholder="Enter Officer Name" style="background:black;color:#00ff00;border:none;" inputmode="text" /></div>
+      <div id="clock">TIME: --:--:--</div>
+      <div id="gpsStatus">GPS: WAITING...</div>
+      <div id="markerCount">MARKERS: 0</div>
     </div>
+    <div id="actionMenuWrapper">
+      <button id="actionDropdownBtn">[ ACTION MENU ]</button>
+      <div id="actionDropdownContent">
+        <button onclick="setMarkerMode('clear')">[SECURE]</button>
+        <button onclick="setMarkerMode('incident')">[INCIDENT]</button>
+        <button onclick="setMarkerMode('move')">[MOVEMENT]</button>
+        <button onclick="setMarkerMode('custom')">[ADD CUSTOM]</button>
+        <button onclick="clearAll()">[CLEAR MARKERS]</button>
+        <button onclick="takePhoto()">[CAPTURE]</button>
+        <button onclick="toggleDropdown()">[VIEW PHOTOS]</button>
+        <button onclick="showHelp()">[HELP]</button>
+      </div>
+    </div>
+    <div id="photoDropdown"></div>
   </div>
-  <div id="photoDropdown"></div>
-</div>
-<div id="helpModal">
-  <button id="closeHelp" onclick="document.getElementById('helpModal').style.display='none'">CLOSE</button>
-  <h2>Help Reference Guide</h2>
-  <ul>
-    <li><strong>[SECURE]</strong>: Green marker for secured areas.</li>
-    <li><strong>[INCIDENT]</strong>: Red marker to flag incidents.</li>
-    <li><strong>[MOVEMENT]</strong>: Orange marker for movement tracking.</li>
-    <li><strong>[ADD CUSTOM]</strong>: Enter a label to create a custom marker.</li>
-    <li><strong>[CLEAR MARKERS]</strong>: Remove all placed markers.</li>
-    <li><strong>[CAPTURE]</strong>: Opens the camera to take a photo.</li>
-    <li><strong>[VIEW PHOTOS]</strong>: Shows uploaded or captured photos.</li>
-    <li><strong>[SATELLITE VIEW]</strong>: Switch between satellite/street map.</li>
-    <li><strong>[Active Time]</strong>: Timer showing operation duration.</li>
-    <li><strong>[GPS]</strong>: Zooms to current GPS location.</li>
-    <li><strong>[Address]</strong>: Reverse geocoded physical address.</li>
-    <li><strong>[OFFICER]</strong>: Enter officer name.</li>
-    <li><strong>[GPS LOCKED]</strong>: Displays GPS signal accuracy.</li>
-    <li><strong>[TIME]</strong>: Shows system time in real-time.</li>
-    <li><strong>[MARKERS]</strong>: Active marker counter.</li>
-  </ul>
-</div>
-<div id="pttModal">
-  <button id="closePTT" onclick="document.getElementById('pttModal').style.display='none'">CLOSE</button>
-  <h2>WavePTT Radio</h2>
-  <input type="text" id="pttUser" placeholder="Enter Name" style="width:100%;margin-bottom:6px;background:black;color:#00ff00;border:1px solid #00ff00;padding:4px;">
-  <button id="pttLogin" style="width:100%;margin-bottom:10px;background:black;color:#00ff00;border:1px solid #00ff00;padding:4px;">LOGIN + CONNECT MIC</button>
-  <button id="pttTalk">Hold to Talk</button>
-  <button id="pttPriority" style="width:100%;margin-top:4px;background:black;color:#00ff00;border:1px solid #00ff00;">PRIORITY: OFF</button>
-  <div id="pttStatus" style="margin-top:10px;font-size:12px;">Status: Idle</div>
-  <div id="pttUsers" style="margin-top:10px;font-size:12px;max-height:150px;overflow-y:auto;border:1px solid #00ff00;padding:4px;">Connected Users:<br/></div>
-</div>
-<input id="photoInput" type="file" accept="image/*" capture="environment" style="display:none;" />
-<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-<script>
-window.onload = function () {
-  const firebaseConfig = {
-    apiKey: "AIzaSyArtPgL-hdUarqWYb0PWrVLNATs2pVCAMM",
-    authDomain: "webpttapp.firebaseapp.com",
-    databaseURL: "https://webpttapp-default-rtdb.firebaseio.com",
-    projectId: "webpttapp",
-    storageBucket: "webpttapp.appspot.com",
-    messagingSenderId: "518216343714",
-    appId: "1:518216343714:web:912e0ee9627f57431fb7fb"
-  };
-  firebase.initializeApp(firebaseConfig);
-  const db = firebase.database();
+  <div id="helpModal">
+    <button id="closeHelp" onclick="document.getElementById('helpModal').style.display='none'">CLOSE</button>
+    <h2>Help Reference Guide</h2>
+    <ul>
+      <li><strong>[SECURE]</strong>: Green marker for secured areas.</li>
+      <li><strong>[INCIDENT]</strong>: Red marker to flag incidents.</li>
+      <li><strong>[MOVEMENT]</strong>: Orange marker for movement tracking.</li>
+      <li><strong>[ADD CUSTOM]</strong>: Enter a label to create a custom marker.</li>
+      <li><strong>[CLEAR MARKERS]</strong>: Remove all placed markers.</li>
+      <li><strong>[CAPTURE]</strong>: Opens the camera to take a photo.</li>
+      <li><strong>[VIEW PHOTOS]</strong>: Shows uploaded or captured photos.</li>
+      <li><strong>[SATELLITE VIEW]</strong>: Switch between satellite/street map.</li>
+      <li><strong>[Active Time]</strong>: Timer showing operation duration.</li>
+      <li><strong>[GPS]</strong>: Zooms to current GPS location.</li>
+      <li><strong>[Address]</strong>: Reverse geocoded physical address.</li>
+      <li><strong>[OFFICER]</strong>: Enter officer name.</li>
+      <li><strong>[GPS LOCKED]</strong>: Displays GPS signal accuracy.</li>
+      <li><strong>[TIME]</strong>: Shows system time in real-time.</li>
+      <li><strong>[MARKERS]</strong>: Active marker counter.</li>
+    </ul>
+  </div>
+  <input id="photoInput" type="file" accept="image/*" capture="environment" style="display:none;" />
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script>
+    let map = L.map('map').setView([33.4484, -112.0740], 19);
+    const street = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png');
+    const satellite = L.tileLayer('https://{s}.google.com/vt/lyrs=s&x={x}&y={y}&z={z}', {
+  subdomains: ['mt0', 'mt1', 'mt2', 'mt3'],
+  maxZoom: 20
+});
+    let currentLayer = street;
+    street.addTo(map);
+    let markerGroup = L.layerGroup().addTo(map);
+    let trail = [], markerCount = 0, markerMode = null, startTime = Date.now();
+    let breadcrumbMode = false;
 
-  let map = L.map('map').setView([33.4484, -112.0740], 19);
-  const street = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png');
-  const satellite = L.tileLayer('https://{s}.google.com/vt/lyrs=s&x={x}&y={y}&z={z}', {
-    subdomains: ['mt0', 'mt1', 'mt2', 'mt3'], maxZoom: 20
-  });
-  let currentLayer = street;
-  street.addTo(map);
-
-  document.getElementById('toggleMapType').onclick = () => {
-    map.removeLayer(currentLayer);
-    currentLayer = currentLayer === street ? satellite : street;
-    currentLayer.addTo(map);
-    document.getElementById('toggleMapType').textContent = currentLayer === street ? 'SATELLITE VIEW' : 'MAP VIEW';
-  };
-
-  let markerGroup = L.layerGroup().addTo(map);
-  let trail = [], markerCount = 0, markerMode = null, startTime = Date.now();
-  let breadcrumbMode = false;
-
-  function setMarkerMode(type) {
-    markerMode = type;
-    alert("Tap on the map to place marker.");
-  }
-
-  map.on('click', function (e) {
-    if (breadcrumbMode) {
-      L.circleMarker(e.latlng, {
-        radius: 2, color: '#00ff00', fillColor: '#00ff00', fillOpacity: 1
-      }).bindTooltip("BREADCRUMB").addTo(markerGroup);
-      return;
+    function setMarkerMode(type) {
+      markerMode = type;
+      alert("Tap on the map to place marker.");
     }
-    if (!markerMode) return;
-    let label = markerMode.toUpperCase();
-    let color = markerMode === 'clear' ? 'green' :
-                markerMode === 'incident' ? 'red' :
-                markerMode === 'move' ? '#ffaa00' : 'cyan';
-    if (markerMode === 'custom') {
-      const custom = prompt("Enter custom label:");
-      if (!custom) return;
-      label = custom;
+
+    function showHelp() {
+      document.getElementById('helpModal').style.display = 'block';
     }
-    L.circleMarker(e.latlng, {
-      radius: 6, color: color, fillColor: color, fillOpacity: 1
-    }).bindTooltip(label).addTo(markerGroup);
-    markerCount++;
-    document.getElementById('markerCount').textContent = `MARKERS: ${markerCount}`;
-    markerMode = null;
-  });
 
-  function clearAll() {
-    markerGroup.clearLayers();
-    markerCount = 0;
-    trail = [];
-    document.getElementById('markerCount').textContent = "MARKERS: 0";
-  }
+    document.getElementById('toggleMapType').onclick = () => {
+      map.removeLayer(currentLayer);
+      currentLayer = currentLayer === street ? satellite : street;
+      currentLayer.addTo(map);
+      document.getElementById('toggleMapType').textContent = currentLayer === street ? 'SATELLITE VIEW' : 'MAP VIEW';
+    };
 
-  function takePhoto() {
-    document.getElementById('photoInput').click();
-  }
-
-  document.getElementById('photoInput').addEventListener('change', function () {
-    const file = this.files[0];
-    if (!file) return;
-    const img = document.createElement('img');
-    img.src = URL.createObjectURL(file);
-    document.getElementById('photoDropdown').appendChild(img);
-  });
-
-  function toggleDropdown() {
-    const panel = document.getElementById('photoDropdown');
-    panel.style.display = (panel.style.display === 'none' || panel.style.display === '') ? 'flex' : 'none';
-  }
-
-  document.getElementById('actionDropdownBtn').onclick = () => {
-    const menu = document.getElementById('actionDropdownContent');
-    menu.style.display = (menu.style.display === 'none' || menu.style.display === '') ? 'flex' : 'none';
-  };
-    document.getElementById('officer').addEventListener('change', function () {
-    const value = this.value.trim().toLowerCase();
-    if (value === 'deltaon') {
-      breadcrumbMode = true;
-      alert('🟢 Breadcrumb Mode Activated');
-    } else if (value === 'deltaoff') {
-      breadcrumbMode = false;
-      alert('🔴 Breadcrumb Mode Deactivated');
-    }
-  });
-
-  function initGPS() {
-    navigator.geolocation.watchPosition(pos => {
-      const { latitude, longitude, accuracy } = pos.coords;
-      if (accuracy > 20) {
-        document.getElementById('gpsStatus').textContent = `GPS: REJECTED (${Math.round(accuracy)}m)`;
+    map.on('click', function (e) {
+      if (breadcrumbMode) {
+        const m = L.circleMarker(e.latlng, {
+          radius: 2, color: '#00ff00', fillColor: '#00ff00', fillOpacity: 1
+        }).bindTooltip("BREADCRUMB").addTo(markerGroup);
         return;
       }
-      document.getElementById('gpsStatus').textContent = `GPS: LOCKED (${Math.round(accuracy)}m)`;
-      const latlng = [latitude, longitude];
-      trail.push(latlng);
-      L.circleMarker(latlng, {
-        radius: 2, color: '#00ff00', fillColor: '#00ff00', fillOpacity: 1
-      }).addTo(markerGroup);
-      fetch(`https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${latitude}&lon=${longitude}`)
-        .then(res => res.json())
-        .then(data => {
-          document.getElementById('address').textContent = data.display_name || `Lat: ${latitude.toFixed(5)}, Lon: ${longitude.toFixed(5)}`;
-        }).catch(() => {
-          document.getElementById('address').textContent = `Lat: ${latitude.toFixed(5)}, Lon: ${longitude.toFixed(5)}`;
-        });
-    }, err => {
-      document.getElementById('gpsStatus').textContent = "GPS: ERROR";
-    }, {
-      enableHighAccuracy: true,
-      maximumAge: 0,
-      timeout: 5000
+      if (!markerMode) return;
+      let label = markerMode.toUpperCase();
+      let color = markerMode === 'clear' ? 'green' :
+                  markerMode === 'incident' ? 'red' :
+                  markerMode === 'move' ? '#ffaa00' : 'cyan';
+      if (markerMode === 'custom') {
+        const custom = prompt("Enter custom label:");
+        if (!custom) return;
+        label = custom;
+      }
+      const m = L.circleMarker(e.latlng, {
+        radius: 6, color: color, fillColor: color, fillOpacity: 1
+      }).bindTooltip(label).addTo(markerGroup);
+      markerCount++;
+      document.getElementById('markerCount').textContent = `MARKERS: ${markerCount}`;
+      markerMode = null;
     });
-  }
 
-  initGPS();
-
-  document.getElementById('gpsBtn').onclick = () => {
-    if (trail.length > 0) {
-      const last = trail[trail.length - 1];
-      map.setView(last, map.getZoom());
-    } else {
-      alert("GPS location not yet available.");
+    function clearAll() {
+      markerGroup.clearLayers();
+      markerCount = 0;
+      trail = [];
+      document.getElementById('markerCount').textContent = "MARKERS: 0";
     }
-  };
 
-  setInterval(() => {
-    let now = Date.now() - startTime;
-    let hrs = Math.floor(now / 3600000);
-    let mins = Math.floor((now % 3600000) / 60000);
-    let secs = Math.floor((now % 60000) / 1000);
-    document.getElementById('timer').textContent = "Active Time: " +
-      String(hrs).padStart(2, '0') + ":" +
-      String(mins).padStart(2, '0') + ":" +
-      String(secs).padStart(2, '0');
-  }, 1000);
-
-  setInterval(() => {
-    const now = new Date();
-    document.getElementById('clock').textContent = "TIME: " + now.toLocaleString();
-  }, 1000);
-    // WavePTT logic
-  let pttUser = "";
-  let localStream = null;
-  let isTalking = false;
-  let priority = false;
-
-  const pttLoginBtn = document.getElementById("pttLogin");
-  const pttUserInput = document.getElementById("pttUser");
-  const pttStatus = document.getElementById("pttStatus");
-  const pttTalkBtn = document.getElementById("pttTalk");
-  const pttPriorityBtn = document.getElementById("pttPriority");
-
-  pttLoginBtn.onclick = async () => {
-    const name = pttUserInput.value.trim();
-    if (!name) return alert("Enter a name first.");
-    try {
-      localStream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      pttUser = name;
-      db.ref('channels/main/' + pttUser).onDisconnect().remove();
-      db.ref('channels/main/' + pttUser).set({ talking: false, priority: false });
-      pttStatus.textContent = "Status: Ready";
-    } catch (e) {
-      alert("Microphone access denied or unavailable.");
+    function takePhoto() {
+      document.getElementById('photoInput').click();
     }
-  };
 
-  pttTalkBtn.addEventListener('mousedown', async () => {
-    if (!pttUser || !localStream) {
-      alert("Login and allow mic access first.");
-      return;
+    document.getElementById('photoInput').addEventListener('change', function() {
+      const file = this.files[0];
+      if (!file) return;
+      const img = document.createElement('img');
+      img.src = URL.createObjectURL(file);
+      document.getElementById('photoDropdown').appendChild(img);
+    });
+
+    function toggleDropdown() {
+      const panel = document.getElementById('photoDropdown');
+      panel.style.display = (panel.style.display === 'none' || panel.style.display === '') ? 'flex' : 'none';
     }
-    const snap = await db.ref('channels/main').once('value');
-    let blocked = false;
-    snap.forEach(child => {
-      if (child.key !== pttUser && child.val().talking && !priority) {
-        blocked = true;
+
+    document.getElementById('gpsBtn').onclick = () => {
+      if (trail.length > 0) {
+        const last = trail[trail.length - 1];
+        map.setView(last, map.getZoom());
+      } else {
+        alert("GPS location not yet available.");
+      }
+    };
+
+    document.getElementById('actionDropdownBtn').onclick = () => {
+      const menu = document.getElementById('actionDropdownContent');
+      menu.style.display = (menu.style.display === 'none' || menu.style.display === '') ? 'flex' : 'none';
+    };
+
+    document.getElementById('officer').addEventListener('change', function () {
+      const value = this.value.trim().toLowerCase();
+      if (value === 'deltaon') {
+        breadcrumbMode = true;
+        alert('🟢 Breadcrumb Mode Activated');
+      } else if (value === 'deltaoff') {
+        breadcrumbMode = false;
+        alert('🔴 Breadcrumb Mode Deactivated');
       }
     });
-    if (blocked) {
-      alert("Someone else is talking. Turn on PRIORITY to override.");
-      return;
-    }
-    isTalking = true;
-    pttTalkBtn.style.backgroundColor = 'green';
-    pttStatus.textContent = 'Status: Transmitting';
-    db.ref('channels/main/' + pttUser).update({ talking: true, priority });
-  });
 
-  pttTalkBtn.addEventListener('mouseup', () => {
-    if (!isTalking) return;
-    isTalking = false;
-    pttTalkBtn.style.backgroundColor = 'red';
-    pttStatus.textContent = 'Status: Idle';
-    db.ref('channels/main/' + pttUser).update({ talking: false });
-  });
-
-  pttPriorityBtn.addEventListener('click', () => {
-    priority = !priority;
-    pttPriorityBtn.textContent = `PRIORITY: ${priority ? 'ON' : 'OFF'}`;
-    pttPriorityBtn.style.color = priority ? 'yellow' : '#00ff00';
-  });
-    // Live user list refresh
-  setInterval(() => {
-    db.ref("channels/main").once("value").then(snapshot => {
-      let html = "Connected Users:<br/>";
-      snapshot.forEach(child => {
-        const user = child.key;
-        const { talking, priority } = child.val();
-        const style = talking ? "color:lime;font-weight:bold;"
-                    : priority ? "color:yellow;"
-                    : "color:#00ff00;";
-        const label = `${user} ${talking ? '[TALKING]' : ''} ${priority ? '(PRIORITY)' : ''}`;
-        html += `<span style='${style}'>${label}</span><br/>`;
+    function initGPS() {
+      navigator.geolocation.watchPosition(pos => {
+        const { latitude, longitude, accuracy } = pos.coords;
+        if (accuracy > 20) {
+          document.getElementById('gpsStatus').textContent = `GPS: REJECTED (${Math.round(accuracy)}m)`;
+          return;
+        }
+        document.getElementById('gpsStatus').textContent = `GPS: LOCKED (${Math.round(accuracy)}m)`;
+        const latlng = [latitude, longitude];
+        trail.push(latlng);
+        L.circleMarker(latlng, {
+          radius: 2, color: '#00ff00', fillColor: '#00ff00', fillOpacity: 1
+        }).addTo(markerGroup);
+        fetch(`https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${latitude}&lon=${longitude}`)
+          .then(res => res.json())
+          .then(data => {
+            document.getElementById('address').textContent = data.display_name || `Lat: ${latitude.toFixed(5)}, Lon: ${longitude.toFixed(5)}`;
+          }).catch(() => {
+            document.getElementById('address').textContent = `Lat: ${latitude.toFixed(5)}, Lon: ${longitude.toFixed(5)}`;
+          });
+      }, err => {
+        document.getElementById('gpsStatus').textContent = "GPS: ERROR";
+      }, {
+        enableHighAccuracy: true,
+        maximumAge: 0,
+        timeout: 5000
       });
-      document.getElementById("pttUsers").innerHTML = html;
-    });
-  }, 2000);
-
-  // Cleanup on tab close
-  window.addEventListener("beforeunload", () => {
-    if (pttUser) {
-      db.ref('channels/main/' + pttUser).remove();
     }
-  });
-};
-</script>
+
+    initGPS();
+
+    setInterval(() => {
+      let now = Date.now() - startTime;
+      let hrs = Math.floor(now / 3600000);
+      let mins = Math.floor((now % 3600000) / 60000);
+      let secs = Math.floor((now % 60000) / 1000);
+      document.getElementById('timer').textContent = "Active Time: " +
+        String(hrs).padStart(2, '0') + ":" +
+        String(mins).padStart(2, '0') + ":" +
+        String(secs).padStart(2, '0');
+    }, 1000);
+
+    setInterval(() => {
+      const now = new Date();
+      document.getElementById('clock').textContent = "TIME: " + now.toLocaleString();
+    }, 1000);
+  </script>
 </body>
 </html>
-<!-- ✅ PART 7: FUNCTIONALITY RECAP AND FINAL CHECKLIST -->
-<!--
-✅ HTML Structure:
-  - Fully defined Leaflet map canvas
-  - HUD bar with officer input, GPS, timer, clock, and marker counter
-  - Action menu with dropdown controls
-  - Modals for Help and WavePTT voice radio
-
-✅ TacMap Core:
-  - Map loads with default center and zoom
-  - Street/satellite toggle
-  - Marker placement modes (secure, incident, movement, custom)
-  - Custom label prompt on custom marker
-  - Clear all markers button
-  - Breadcrumb mode via officer input (deltaon / deltaoff)
-
-✅ GPS + Timing:
-  - GPS trail with accuracy filter and reverse geocoding
-  - Current GPS position button re-centers the map
-  - Real-time military-style timer since load
-  - System clock in full format
-
-✅ Photo Tools:
-  - Upload button triggers camera/file input
-  - Uploaded photos appear in responsive grid dropdown
-
-✅ WavePTT:
-  - Firebase login and presence tracking
-  - Mic access request (only when clicking login)
-  - Push-to-talk button changes color and status
-  - Priority override button toggles and overrides blocking
-  - Live list of all active users with status color codes
-  - Disconnection cleanup when user exits tab
-
-All logic wrapped inside `window.onload` to ensure DOM is ready.
-No interference with original HTML structure.
-No overlapping functions or variable conflicts.
--->
