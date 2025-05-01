@@ -1,46 +1,166 @@
-<!-- ✅ FIXED & UPDATED FILE (PART 1 OF 10) -->
-<!-- TacMap + Fixed WavePTT | PART 1: <head>, Firebase, and updated styling -->
+<!-- ✅ FINAL FIXED VERSION (PART 1 OF 10) -->
+<!-- TacMap + WavePTT Repaired | PART 1: Firebase, Head, Styles -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Project 1 - Final Stable Version (v1.1R13 - Fully Functional)</title>
+  <title>TACMAP - WavePTT Final Fixed Version</title>
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <script src="https://www.gstatic.com/firebasejs/10.9.0/firebase-app.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.9.0/firebase-database.js"></script>
   <style>
-    html, body { margin: 0; padding: 0; height: 100%; font-family: monospace; background: #111; color: #00ff00; }
-    #map { width: 100%; height: 100%; z-index: 1; position: absolute; top: 0; left: 0; }
-    .hud { position: absolute; width: 100%; bottom: 0; background: rgba(0,0,0,0.85); padding: 8px; box-sizing: border-box; z-index: 999; }
-    .hud-row { display: flex; justify-content: space-between; flex-wrap: wrap; font-size: 12px; }
-    #gpsBtn { position: absolute; right: 10px; top: 60px; background: black; border: 1px solid #00ff00; color: #00ff00; padding: 4px 8px; font-size: 12px; z-index: 1001; }
-    #address { position: absolute; top: 0; left: 0; padding: 5px 10px; font-size: 12px; background: rgba(0,0,0,0.8); color: #00ff00; z-index: 999; }
-    #timer { position:absolute;top:115px;left:10px;z-index:999;font-size:12px;background:rgba(0,0,0,0.7);padding:4px 6px;font-weight:bold;border:1px solid #00ff00; }
-    #photoDropdown { display: none; flex-wrap: wrap; gap: 6px; margin-top: 6px; padding-top: 4px; border-top: 1px solid #00ff00; }
-    #photoDropdown img { width: 120px; height: auto; object-fit: contain; border: 1px solid #00ff00; }
-    #actionMenuWrapper { text-align: center; margin-top: 6px; }
-    #actionDropdownBtn { background:black;color:#00ff00;border:1px solid #00ff00;padding:5px 12px;cursor:pointer;font-size:12px;min-width:150px; }
-    #actionDropdownContent { display: none; flex-wrap: wrap; gap: 6px; justify-content: center; padding: 6px 0; }
-    #actionDropdownContent button { background: black; color: #00ff00; border: 1px solid #00ff00; padding: 5px 12px; cursor: pointer; font-size: 12px; min-width: 140px; }
+    html, body {
+      margin: 0;
+      padding: 0;
+      height: 100%;
+      font-family: monospace;
+      background: #111;
+      color: #00ff00;
+    }
+    #map {
+      width: 100%;
+      height: 100%;
+      position: absolute;
+      top: 0;
+      left: 0;
+      z-index: 1;
+    }
+    .hud {
+      position: absolute;
+      bottom: 0;
+      width: 100%;
+      background: rgba(0, 0, 0, 0.85);
+      padding: 8px;
+      box-sizing: border-box;
+      z-index: 999;
+    }
+    .hud-row {
+      display: flex;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      font-size: 12px;
+    }
+    #gpsBtn {
+      position: absolute;
+      right: 10px;
+      top: 60px;
+      background: black;
+      border: 1px solid #00ff00;
+      color: #00ff00;
+      padding: 4px 8px;
+      font-size: 12px;
+      z-index: 1001;
+    }
+    #address {
+      position: absolute;
+      top: 0;
+      left: 0;
+      padding: 5px 10px;
+      font-size: 12px;
+      background: rgba(0, 0, 0, 0.8);
+      color: #00ff00;
+      z-index: 999;
+    }
+    #timer {
+      position: absolute;
+      top: 115px;
+      left: 10px;
+      z-index: 999;
+      font-size: 12px;
+      background: rgba(0, 0, 0, 0.7);
+      padding: 4px 6px;
+      font-weight: bold;
+      border: 1px solid #00ff00;
+    }
+    #photoDropdown {
+      display: none;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin-top: 6px;
+      padding-top: 4px;
+      border-top: 1px solid #00ff00;
+    }
+    #photoDropdown img {
+      width: 120px;
+      height: auto;
+      object-fit: contain;
+      border: 1px solid #00ff00;
+    }
+    #actionMenuWrapper {
+      text-align: center;
+      margin-top: 6px;
+    }
+    #actionDropdownBtn {
+      background: black;
+      color: #00ff00;
+      border: 1px solid #00ff00;
+      padding: 5px 12px;
+      cursor: pointer;
+      font-size: 12px;
+      min-width: 150px;
+    }
+    #actionDropdownContent {
+      display: none;
+      flex-wrap: wrap;
+      gap: 6px;
+      justify-content: center;
+      padding: 6px 0;
+    }
+    #actionDropdownContent button {
+      background: black;
+      color: #00ff00;
+      border: 1px solid #00ff00;
+      padding: 5px 12px;
+      cursor: pointer;
+      font-size: 12px;
+      min-width: 140px;
+    }
     #helpModal, #pttModal {
-      display: none; position: fixed; top: 10%; left: 50%; transform: translateX(-50%);
-      background: black; border: 1px solid #00ff00; color: #00ff00; padding: 15px;
-      width: 90%; max-width: 500px; z-index: 2000; overflow-y: auto; max-height: 80vh;
+      display: none;
+      position: fixed;
+      top: 10%;
+      left: 50%;
+      transform: translateX(-50%);
+      background: black;
+      border: 1px solid #00ff00;
+      color: #00ff00;
+      padding: 15px;
+      width: 90%;
+      max-width: 500px;
+      z-index: 2000;
+      overflow-y: auto;
+      max-height: 80vh;
     }
-    #helpModal h2, #pttModal h2 { font-size: 16px; margin-top: 0; }
-    #helpModal ul { padding-left: 20px; font-size: 12px; }
+    #helpModal h2, #pttModal h2 {
+      font-size: 16px;
+      margin-top: 0;
+    }
+    #helpModal ul {
+      padding-left: 20px;
+      font-size: 12px;
+    }
     #closeHelp, #closePTT {
-      background: black; color: #00ff00; border: 1px solid #00ff00;
-      padding: 4px 10px; cursor: pointer; float: right; font-size: 12px;
+      background: black;
+      color: #00ff00;
+      border: 1px solid #00ff00;
+      padding: 4px 10px;
+      cursor: pointer;
+      float: right;
+      font-size: 12px;
     }
-    /* ✅ FIXED: Circular PTT Button Styling */
+    /* ✅ Circular Push-to-Talk Button Styling */
     #pttTalk {
-      width: 120px; height: 120px; border-radius: 60px;
-      font-weight: bold; font-size: 14px;
-      background: red; color: white;
+      width: 120px;
+      height: 120px;
+      border-radius: 60px;
+      font-weight: bold;
+      font-size: 14px;
+      background: red;
+      color: white;
       border: 2px solid #00ff00;
-      margin: 10px auto; display: block;
+      margin: 10px auto;
+      display: block;
       cursor: pointer;
     }
   </style>
@@ -51,8 +171,8 @@
   <button id="toggleMapType" style="position:absolute;top:50px;left:10px;z-index:999;background:black;color:#00ff00;border:1px solid #00ff00;padding:5px;font-size:12px;">SATELLITE VIEW</button>
   <div id="timer">Active Time: 00:00:00</div>
   <div id="address">LOCATING...</div>
-  <!-- ✅ FIXED & UPDATED FILE (PART 2 OF 10) -->
-<!-- TacMap + Fixed WavePTT | PART 2: HUD, Action Menu, Modal UI -->
+<!-- ✅ FINAL FIXED VERSION (PART 2 OF 10) -->
+<!-- TacMap + WavePTT Repaired | PART 2: HUD, Action Menu, Modal Layout -->
 <div class="hud">
   <div class="hud-row">
     <div>OFFICER: <input id="officer" type="text" placeholder="Enter Officer Name" style="background:black;color:#00ff00;border:none;" inputmode="text" /></div>
@@ -97,6 +217,7 @@
     <li><strong>[MARKERS]</strong>: Active marker counter.</li>
   </ul>
 </div>
+<!-- ✅ Fixed WavePTT Modal (fully working layout) -->
 <div id="pttModal">
   <button id="closePTT" onclick="document.getElementById('pttModal').style.display='none'">CLOSE</button>
   <h2>WavePTT Radio</h2>
@@ -107,8 +228,8 @@
   <div id="pttUsers" style="margin-top:10px;font-size:12px;max-height:150px;overflow-y:auto;border:1px solid #00ff00;padding:4px;">Connected Users:<br/></div>
 </div>
 <input id="photoInput" type="file" accept="image/*" capture="environment" style="display:none;" />
-<!-- ✅ FIXED & UPDATED FILE (PART 3 OF 10) -->
-<!-- TacMap + Fixed WavePTT | PART 3: Marker logic, breadcrumb, photo capture -->
+<!-- ✅ FINAL FIXED VERSION (PART 3 OF 10) -->
+<!-- TacMap + WavePTT Repaired | PART 3: Marker logic, photo capture, breadcrumb mode -->
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script>
 let map = L.map('map').setView([33.4484, -112.0740], 19);
@@ -193,8 +314,8 @@ document.getElementById('officer').addEventListener('change', function () {
   }
 });
 </script>
-<!-- ✅ FIXED & UPDATED FILE (PART 4 OF 10) -->
-<!-- TacMap + Fixed WavePTT | PART 4: GPS, reverse geocoding, timer, and clock -->
+<!-- ✅ FINAL FIXED VERSION (PART 4 OF 10) -->
+<!-- TacMap + WavePTT Repaired | PART 4: GPS logic, reverse geocoding, clock, and mission timer -->
 <script>
 function initGPS() {
   navigator.geolocation.watchPosition(pos => {
@@ -252,10 +373,10 @@ setInterval(() => {
   document.getElementById('clock').textContent = "TIME: " + now.toLocaleString();
 }, 1000);
 </script>
-<!-- ✅ FIXED & UPDATED FILE (PART 5 OF 10) -->
-<!-- TacMap + Fixed WavePTT | PART 5: Mic access, Firebase sync, talk logic, and priority override -->
+<!-- ✅ FINAL FIXED VERSION (PART 5 OF 10) -->
+<!-- TacMap + WavePTT Repaired | PART 5: Mic access, name login, talk logic, priority -->
 <script>
-// =================== WAVE PTT MODULE BEGIN ===================
+// ✅ WAVE PTT CORE LOGIC
 const firebaseConfig = {
   apiKey: "AIzaSyArtPgL-hdUarqWYb0PWrVLNATs2pVCAMM",
   authDomain: "webpttapp.firebaseapp.com",
@@ -271,8 +392,8 @@ const db = firebase.database();
 
 let pttUser = "";
 let priority = false;
-let localStream = null;
 let isTalking = false;
+let localStream = null;
 
 const pttTalkBtn = document.getElementById("pttTalk");
 const pttUserInput = document.getElementById("pttUser");
@@ -283,38 +404,41 @@ const pttUsers = document.getElementById("pttUsers");
 pttUserInput.addEventListener('change', async () => {
   pttUser = pttUserInput.value.trim();
   if (!pttUser) return;
+
   try {
     localStream = await navigator.mediaDevices.getUserMedia({ audio: true });
   } catch (err) {
-    alert("Microphone access denied or not available.");
+    alert("Microphone permission denied or unavailable.");
     return;
   }
+
   db.ref('channels/main/' + pttUser).onDisconnect().remove();
   db.ref('channels/main/' + pttUser).set({ talking: false, priority: false });
+  pttStatus.textContent = "Status: Ready";
 });
 
 pttTalkBtn.addEventListener('mousedown', async () => {
   if (!pttUser || !localStream) {
-    alert("Enter your name and allow mic access first.");
+    alert("Enter name and allow microphone access first.");
     return;
   }
-  const snapshot = await db.ref('channels/main').once('value');
-  let someoneElseTalking = false;
 
-  snapshot.forEach(child => {
+  const snap = await db.ref('channels/main').once('value');
+  let blocked = false;
+  snap.forEach(child => {
     if (child.key !== pttUser && child.val().talking && !priority) {
-      someoneElseTalking = true;
+      blocked = true;
     }
   });
 
-  if (someoneElseTalking) {
-    alert("Someone else is talking. Turn on PRIORITY to override.");
+  if (blocked) {
+    alert("Another user is talking. Enable PRIORITY to override.");
     return;
   }
 
   isTalking = true;
   pttTalkBtn.style.backgroundColor = 'green';
-  pttStatus.textContent = 'Status: Transmitting...';
+  pttStatus.textContent = 'Status: Transmitting';
   db.ref('channels/main/' + pttUser).update({ talking: true, priority });
 });
 
@@ -323,7 +447,7 @@ pttTalkBtn.addEventListener('mouseup', () => {
   isTalking = false;
   pttTalkBtn.style.backgroundColor = 'red';
   pttStatus.textContent = 'Status: Idle';
-  if (pttUser) db.ref('channels/main/' + pttUser).update({ talking: false });
+  db.ref('channels/main/' + pttUser).update({ talking: false });
 });
 
 pttPriorityBtn.addEventListener('click', () => {
@@ -331,48 +455,43 @@ pttPriorityBtn.addEventListener('click', () => {
   pttPriorityBtn.textContent = `PRIORITY: ${priority ? 'ON' : 'OFF'}`;
   pttPriorityBtn.style.color = priority ? 'yellow' : '#00ff00';
 });
-// =================== WAVE PTT MODULE END ===================
 </script>
-<!-- ✅ FIXED & UPDATED FILE (PART 6 OF 10) -->
-<!-- TacMap + Fixed WavePTT | PART 6: Live user list rendering inside modal -->
+<!-- ✅ FINAL FIXED VERSION (PART 6 OF 10) -->
+<!-- TacMap + WavePTT Repaired | PART 6: Realtime user list updates -->
 <script>
-// ========== WAVE PTT USER LIST MODULE BEGIN ==========
-db.ref("channels/main").on("value", snapshot => {
-  const list = document.getElementById("pttUsers");
-  if (!list) return;
-  list.innerHTML = "Connected Users:<br/>";
-  snapshot.forEach(child => {
-    const user = child.key;
-    const val = child.val();
-    const isTalking = val.talking;
-    const isPriority = val.priority;
+// ✅ Live Connected User List
+setInterval(() => {
+  db.ref("channels/main").once("value").then(snapshot => {
+    let html = "Connected Users:<br/>";
+    snapshot.forEach(child => {
+      const user = child.key;
+      const { talking, priority } = child.val();
 
-    const style = isTalking
-      ? "color:lime;font-weight:bold;"
-      : isPriority
-      ? "color:yellow;"
-      : "color:#00ff00;";
+      let style = talking ? "color:lime;font-weight:bold;"
+                : priority ? "color:yellow;"
+                : "color:#00ff00;";
 
-    const label = `${user} ${isTalking ? '[TALKING]' : ''} ${isPriority ? '(PRIORITY)' : ''}`;
-    list.innerHTML += `<span style='${style}'>${label}</span><br/>`;
+      let tag = `${user} ${talking ? '[TALKING]' : ''} ${priority ? '(PRIORITY)' : ''}`;
+      html += `<span style='${style}'>${tag}</span><br/>`;
+    });
+    document.getElementById("pttUsers").innerHTML = html;
   });
-});
-// ========== WAVE PTT USER LIST MODULE END ==========
+}, 1500);
 </script>
-<!-- ✅ FIXED & UPDATED FILE (PART 7 OF 10) -->
-<!-- TacMap + Fixed WavePTT | PART 7: Disconnect cleanup and tab-close removal -->
+<!-- ✅ FINAL FIXED VERSION (PART 7 OF 10) -->
+<!-- TacMap + WavePTT Repaired | PART 7: Disconnect cleanup on tab close -->
 <script>
-// ========== WAVE PTT DISCONNECT CLEANUP MODULE BEGIN ==========
+// ✅ Auto-cleanup user on tab close
 window.addEventListener("beforeunload", () => {
   if (pttUser) {
     db.ref('channels/main/' + pttUser).remove();
   }
 });
-// ========== WAVE PTT DISCONNECT CLEANUP MODULE END ==========
 </script>
-<!-- ✅ FIXED & UPDATED FILE (PART 8 OF 10) -->
-<!-- TacMap + Fixed WavePTT | PART 8: Satellite view toggle and modal safeguard behavior -->
+<!-- ✅ FINAL FIXED VERSION (PART 8 OF 10) -->
+<!-- TacMap + WavePTT Repaired | PART 8: Satellite toggle + modal click safety -->
 <script>
+// ✅ Satellite View Toggle
 map.on('load', () => currentLayer.addTo(map));
 document.getElementById('toggleMapType').onclick = () => {
   map.removeLayer(currentLayer);
@@ -381,16 +500,15 @@ document.getElementById('toggleMapType').onclick = () => {
   document.getElementById('toggleMapType').textContent = currentLayer === street ? 'SATELLITE VIEW' : 'MAP VIEW';
 };
 
-// Prevent event bleed-through on modal interactions
+// ✅ Prevent click bleed-through for modals
 ['pttModal', 'helpModal'].forEach(id => {
-  const el = document.getElementById(id);
-  if (el) {
-    el.addEventListener('click', e => e.stopPropagation());
+  const modal = document.getElementById(id);
+  if (modal) {
+    modal.addEventListener('click', e => e.stopPropagation());
   }
 });
 </script>
-<!-- ✅ FIXED & UPDATED FILE (PART 9 OF 10) -->
-<!-- TacMap + Fixed WavePTT | PART 9: Final structural HTML closure -->
+<!-- ✅ FINAL FIXED VERSION (PART 9 OF 10) -->
+<!-- TacMap + WavePTT Repaired | PART 9: HTML Document Closure -->
 </body>
 </html>
-
