@@ -9,28 +9,26 @@
     html, body { margin: 0; padding: 0; height: 100%; background: #111; font-family: monospace; color: #00ff00; }
     #map { height: 100%; width: 100%; z-index: 0; }
 
-    /* // ADDRESS BAR FIX */
+    /* // ADDRESS BAR FIX - FLUSH FULL WIDTH */
     #address {
       position: absolute;
       top: 0;
-      left: 50%;
-      transform: translateX(-50%);
+      left: 0;
+      right: 0;
       padding: 6px 10px;
       font-size: 12px;
       background: rgba(0, 0, 0, 0.85);
       color: #00ff00;
       z-index: 999;
-      text-align: center;
+      text-align: left;
       white-space: normal;
       word-wrap: break-word;
       overflow-wrap: break-word;
       line-height: 1.4em;
-      max-width: 95vw;
       max-height: 3.6em;
       overflow-y: auto;
     }
 
-    /* // POSITION TWEAKS */
     #satBtn {
       position: absolute;
       top: 54px;
@@ -220,10 +218,8 @@
           steps++;
           totalDist += dist;
           updateStats();
-
-          /* // BREADCRUMB STYLE ADJUSTMENT */
           const mark = L.circleMarker(latlng, {
-            radius: 3,                  // smaller dot
+            radius: 3,
             color: '#00ff00',
             fillColor: '#00ff00',
             fillOpacity: 1
