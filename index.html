@@ -56,7 +56,7 @@
       top: 54px;
       right: 10px;
       z-index: 999;
-            background: black;
+      background: black;
       color: #00ff00;
       border: 1px solid #00ff00;
       padding: 5px 12px;
@@ -105,7 +105,7 @@
       position: absolute;
       bottom: 0;
       width: 100%;
-            background: rgba(0,0,0,0.9);
+      background: rgba(0,0,0,0.9);
       padding: 6px 8px;
       box-sizing: border-box;
       display: flex;
@@ -140,7 +140,7 @@
     <div><strong>CHECK-INS:</strong> <span id="checkCount">0</span> | <strong>LAST:</strong> <span id="lastTime">--:--:--</span></div>
     <div><strong>MOVE:</strong> <span id="stepCount">0</span> steps | <strong>DISTANCE:</strong> <span id="distCount">0</span>m</div>
     <button id="viewLog">[VIEW LOG]</button>
-        <div id="logSection" style="display:none;">
+    <div id="logSection" style="display:none;">
       <div>LOG:</div>
       <div id="logData"></div>
       <button id="resetLog">[RESET LOG]</button>
@@ -152,7 +152,7 @@
     <button onclick="clearMarkers()">[CLEAR MARKERS]</button>
     <button onclick="doCheckIn()">[CHECK-IN]</button>
   </div>
-  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <script>
     let map = L.map('map').setView([33.4484, -112.0740], 20);
     let street = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png');
@@ -164,9 +164,11 @@
 
     let trail = [], markers = [], steps = 0, totalDist = 0;
     let checkIns = 0, checkLog = [];
+
     let lastLatLng = null;
     let roundStartTime = null;
-        // // LOCAL STORAGE BACKUP – RESTORE ON LOAD
+
+    // // LOCAL STORAGE BACKUP – RESTORE ON LOAD
     window.onload = () => {
       const saved = localStorage.getItem("tacMapData");
       if (saved) {
@@ -202,7 +204,8 @@
         lastTime: document.getElementById('lastTime').textContent
       }));
     }
-        function getElapsedTime(start, end) {
+
+    function getElapsedTime(start, end) {
       const delta = Math.floor((end - start) / 1000);
       const hrs = String(Math.floor(delta / 3600)).padStart(2, '0');
       const min = String(Math.floor((delta % 3600) / 60)).padStart(2, '0');
@@ -235,7 +238,8 @@
     function updateAddressDisplay(address) {
       document.getElementById('address').textContent = address;
     }
-        function updateStats() {
+
+    function updateStats() {
       document.getElementById('stepCount').textContent = steps;
       document.getElementById('distCount').textContent = totalDist;
     }
@@ -269,7 +273,8 @@
     function updateLog() {
       document.getElementById('logData').innerHTML = checkLog.map(line => `<div>${line}</div>`).join('');
     }
-        document.getElementById('viewLog').onclick = () => {
+
+    document.getElementById('viewLog').onclick = () => {
       const section = document.getElementById('logSection');
       section.style.display = section.style.display === 'none' ? 'block' : 'none';
     };
@@ -292,7 +297,8 @@
       const c = 2*Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
       return Math.round(R * c);
     }
-        navigator.geolocation.watchPosition(pos => {
+
+    navigator.geolocation.watchPosition(pos => {
       const { latitude, longitude, accuracy } = pos.coords;
       if (accuracy > 30) return;
 
@@ -326,7 +332,8 @@
         trail.push(latlng);
         saveData();
       }
-            fetch(`https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${latitude}&lon=${longitude}`)
+
+      fetch(`https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${latitude}&lon=${longitude}`)
         .then(res => res.json())
         .then(data => {
           if (data.display_name) updateAddressDisplay(data.display_name);
@@ -352,36 +359,6 @@
     document.addEventListener("gesturestart", e => {
       e.preventDefault();
     });
-
-    // ===============================
-    // MODULE: SCREEN WAKE LOCK
-    // ===============================
-    let wakeLock = null;
-
-    async function requestWakeLock() {
-      try {
-        if ('wakeLock' in navigator) {
-          wakeLock = await navigator.wakeLock.request('screen');
-                    console.log("Screen Wake Lock activated.");
-          wakeLock.addEventListener('release', () => {
-            console.log('Screen Wake Lock was released');
-          });
-        }
-      } catch (err) {
-        console.error(`WakeLock error: ${err.name}, ${err.message}`);
-      }
-    }
-
-    // Reacquire wake lock on tab visibility restore
-    document.addEventListener('visibilitychange', () => {
-      if (document.visibilityState === 'visible') requestWakeLock();
-    });
-
-    // Trigger wake lock after page load
-    window.addEventListener("load", () => {
-      requestWakeLock();
-    });
-
   </script>
 </body>
 </html>
