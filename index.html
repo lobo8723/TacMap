@@ -23,6 +23,23 @@
     #helpModal h2 { font-size: 16px; margin-top: 0; }
     #helpModal ul { padding-left: 20px; font-size: 12px; }
     #closeHelp { background: black; color: #00ff00; border: 1px solid #00ff00; padding: 4px 10px; cursor: pointer; float: right; font-size: 12px; }
+
+    /* // CHECK-IN MODULE STYLES */
+    #checkinHUD {
+      position: absolute;
+      bottom: 120px;
+      left: 10px;
+      font-size: 12px;
+      color: #00ff00;
+      background: rgba(0,0,0,0.7);
+      border: 1px solid #00ff00;
+      padding: 6px;
+      z-index: 999;
+      max-width: 300px;
+    }
+    #checkinHUD span { color: orange; }
+    #checkinLogPanel { display: none; margin-top: 6px; }
+    #checkinList { list-style: none; padding-left: 10px; margin: 4px 0; font-size: 12px; }
   </style>
 </head>
 <body>
@@ -31,7 +48,7 @@
   <button id="toggleMapType" style="position:absolute;top:50px;left:10px;z-index:999;background:black;color:#00ff00;border:1px solid #00ff00;padding:5px;font-size:12px;">SATELLITE VIEW</button>
   <div id="timer">Active Time: 00:00:00</div>
   <div id="address">LOCATING...</div>
-  <div class="hud">
+    <div class="hud">
     <div class="hud-row">
       <div>OFFICER: <input id="officer" type="text" placeholder="Enter Officer Name" style="background:black;color:#00ff00;border:none;" inputmode="text" /></div>
       <div id="clock">TIME: --:--:--</div>
@@ -49,69 +66,119 @@
         <button onclick="takePhoto()">[CAPTURE]</button>
         <button onclick="toggleDropdown()">[VIEW PHOTOS]</button>
         <button onclick="showHelp()">[HELP]</button>
+        <button onclick="logCheckin()">[CHECK-IN]</button> <!-- NEW CHECK-IN BUTTON -->
       </div>
     </div>
     <div id="photoDropdown"></div>
   </div>
-  <div id="helpModal">
-    <button id="closeHelp" onclick="document.getElementById('helpModal').style.display='none'">CLOSE</button>
-    <h2>Help Reference Guide</h2>
-    <ul>
-      <li><strong>[SECURE]</strong>: Green marker for secured areas.</li>
-      <li><strong>[INCIDENT]</strong>: Red marker to flag incidents.</li>
-      <li><strong>[MOVEMENT]</strong>: Orange marker for movement tracking.</li>
-      <li><strong>[ADD CUSTOM]</strong>: Enter a label to create a custom marker.</li>
-      <li><strong>[CLEAR MARKERS]</strong>: Remove all placed markers.</li>
-      <li><strong>[CAPTURE]</strong>: Opens the camera to take a photo.</li>
-      <li><strong>[VIEW PHOTOS]</strong>: Shows uploaded or captured photos.</li>
-      <li><strong>[SATELLITE VIEW]</strong>: Switch between satellite/street map.</li>
-      <li><strong>[Active Time]</strong>: Timer showing operation duration.</li>
-      <li><strong>[GPS]</strong>: Zooms to current GPS location.</li>
-      <li><strong>[Address]</strong>: Reverse geocoded physical address.</li>
-      <li><strong>[OFFICER]</strong>: Enter officer name.</li>
-      <li><strong>[GPS LOCKED]</strong>: Displays GPS signal accuracy.</li>
-      <li><strong>[TIME]</strong>: Shows system time in real-time.</li>
-      <li><strong>[MARKERS]</strong>: Active marker counter.</li>
-    </ul>
+
+  <!-- // CHECK-IN MODULE HUD -->
+  <div id="checkinHUD">
+    <div>
+      <strong>CHECK-INS:</strong> 
+      <span id="checkinCount">0</span> | 
+      <strong>LAST:</strong> 
+      <span id="lastCheckin">--:--:--</span>
+    </div>
+    <div>
+      <strong>MOVEMENT:</strong> 
+      <span id="stepCount">0</span> STEPS | 
+      <strong>DISTANCE:</strong> 
+      <span id="distanceMoved">0m</span>
+    </div>
+    <button onclick="toggleCheckinLog()" style="margin-top:4px; background:black; color:#00ff00; border:1px solid #00ff00; font-size:12px; cursor:pointer;">
+      [VIEW LOG]
+    </button>
+    <div id="checkinLogPanel">
+      <strong style="color:#00ff00;">CHECK-IN LOG:</strong>
+      <ul id="checkinList"></ul>
+      <button onclick="resetCheckins()" style="margin-top:4px; background:black; color:#00ff00; border:1px solid #00ff00; font-size:12px; cursor:pointer;">
+        [RESET LOG]
+      </button>
+    </div>
   </div>
-  <input id="photoInput" type="file" accept="image/*" capture="environment" style="display:none;" />
+    <input id="photoInput" type="file" accept="image/*" capture="environment" style="display:none;" />
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <script>
     let map = L.map('map').setView([33.4484, -112.0740], 19);
     const street = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png');
     const satellite = L.tileLayer('https://{s}.google.com/vt/lyrs=s&x={x}&y={y}&z={z}', {
-  subdomains: ['mt0', 'mt1', 'mt2', 'mt3'],
-  maxZoom: 20
-});
+      subdomains: ['mt0', 'mt1', 'mt2', 'mt3'],
+      maxZoom: 20
+    });
     let currentLayer = street;
     street.addTo(map);
     let markerGroup = L.layerGroup().addTo(map);
     let trail = [], markerCount = 0, markerMode = null, startTime = Date.now();
     let breadcrumbMode = false;
 
-    function setMarkerMode(type) {
-      markerMode = type;
-      alert("Tap on the map to place marker.");
+    // // CHECK-IN MODULE: INIT
+    let checkinLog = JSON.parse(localStorage.getItem("checkinLog")) || [];
+    let stepCount = parseInt(localStorage.getItem("stepCount")) || 0;
+    let totalDistance = parseFloat(localStorage.getItem("totalDistance")) || 0;
+    let lastLatLng = null;
+
+    function updateCheckinHUD() {
+      document.getElementById('checkinCount').textContent = checkinLog.length;
+      document.getElementById('lastCheckin').textContent = checkinLog.length > 0 ? checkinLog[checkinLog.length - 1] : "--:--:--";
+      document.getElementById('stepCount').textContent = stepCount;
+      document.getElementById('distanceMoved').textContent = Math.round(totalDistance) + "m";
+
+      const ul = document.getElementById('checkinList');
+      ul.innerHTML = "";
+      checkinLog.forEach((t, i) => {
+        const li = document.createElement("li");
+        li.innerHTML = `<span style="color:orange;">${String(i+1).padStart(2, '0')} - ${t}</span>`;
+        ul.appendChild(li);
+      });
     }
 
-    function showHelp() {
-      document.getElementById('helpModal').style.display = 'block';
+    function logCheckin() {
+      const now = new Date();
+      const timestamp = now.toTimeString().split(" ")[0]; // Military time
+      checkinLog.push(timestamp);
+      localStorage.setItem("checkinLog", JSON.stringify(checkinLog));
+      updateCheckinHUD();
     }
 
-    document.getElementById('toggleMapType').onclick = () => {
-      map.removeLayer(currentLayer);
-      currentLayer = currentLayer === street ? satellite : street;
-      currentLayer.addTo(map);
-      document.getElementById('toggleMapType').textContent = currentLayer === street ? 'SATELLITE VIEW' : 'MAP VIEW';
-    };
+    function toggleCheckinLog() {
+      const panel = document.getElementById("checkinLogPanel");
+      panel.style.display = panel.style.display === "none" || panel.style.display === "" ? "block" : "none";
+    }
 
-    map.on('click', function (e) {
+    function resetCheckins() {
+      if (!confirm("Reset all check-ins and movement data?")) return;
+      checkinLog = [];
+      stepCount = 0;
+      totalDistance = 0;
+      localStorage.removeItem("checkinLog");
+      localStorage.removeItem("stepCount");
+      localStorage.removeItem("totalDistance");
+      updateCheckinHUD();
+    }
+
+    updateCheckinHUD(); // load stored data on start
+        map.on('click', function (e) {
       if (breadcrumbMode) {
         const m = L.circleMarker(e.latlng, {
           radius: 2, color: '#00ff00', fillColor: '#00ff00', fillOpacity: 1
         }).bindTooltip("BREADCRUMB").addTo(markerGroup);
+
+        // // CHECK-IN MODULE: TRACK STEPS + DISTANCE
+        stepCount++;
+        localStorage.setItem("stepCount", stepCount);
+
+        if (lastLatLng) {
+          const d = map.distance(lastLatLng, e.latlng);
+          totalDistance += d;
+          localStorage.setItem("totalDistance", totalDistance);
+        }
+        lastLatLng = e.latlng;
+
+        updateCheckinHUD();
         return;
       }
+
       if (!markerMode) return;
       let label = markerMode.toUpperCase();
       let color = markerMode === 'clear' ? 'green' :
@@ -129,12 +196,17 @@
       document.getElementById('markerCount').textContent = `MARKERS: ${markerCount}`;
       markerMode = null;
     });
-
-    function clearAll() {
+        function clearAll() {
       markerGroup.clearLayers();
       markerCount = 0;
       trail = [];
+      lastLatLng = null;
+      localStorage.removeItem("stepCount");
+      localStorage.removeItem("totalDistance");
+      stepCount = 0;
+      totalDistance = 0;
       document.getElementById('markerCount').textContent = "MARKERS: 0";
+      updateCheckinHUD();
     }
 
     function takePhoto() {
@@ -178,8 +250,7 @@
         alert('🔴 Breadcrumb Mode Deactivated');
       }
     });
-
-    function initGPS() {
+        function initGPS() {
       navigator.geolocation.watchPosition(pos => {
         const { latitude, longitude, accuracy } = pos.coords;
         if (accuracy > 20) {
