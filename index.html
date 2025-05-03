@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Project 1 - v1.1R18 – Timer Relocated Cleanly</title>
+  <title>Project 1 - v1.1R18 – Final Build with Integrated Timer + GPS Steps</title>
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <style>
     html, body {
@@ -64,18 +64,7 @@
       z-index: 999;
     }
 
-    #timer {
-      position: absolute;
-      top: 50px;
-      left: 130px;
-      font-size: 12px;
-      background: rgba(0,0,0,0.7);
-      padding: 4px 6px;
-      font-weight: bold;
-      border: 1px solid #00ff00;
-      z-index: 1000;
-    }
-        #photoDropdown {
+    #photoDropdown {
       display: none;
       flex-wrap: wrap;
       gap: 6px;
@@ -123,8 +112,7 @@
       font-size: 12px;
       min-width: 140px;
     }
-
-    #helpModal {
+        #helpModal {
       display: none;
       position: fixed;
       top: 10%;
@@ -161,6 +149,7 @@
       font-size: 12px;
     }
 
+    /* CHECK-IN HUD MODULE */
     #checkinHUD {
       position: absolute;
       top: 85px;
@@ -199,7 +188,6 @@
   <div id="map"></div>
   <div id="gpsBtn" title="Center on GPS">[GPS]</div>
   <button id="toggleMapType" style="position:absolute;top:50px;left:10px;z-index:999;background:black;color:#00ff00;border:1px solid #00ff00;padding:5px;font-size:12px;">SATELLITE VIEW</button>
-  <div id="timer">Active Time: 00:00:00</div>
   <div id="address">LOCATING...</div>
     <!-- CHECK-IN HUD MODULE -->
   <div id="checkinHUD">
@@ -215,6 +203,10 @@
       <strong class="label">DISTANCE:</strong>
       <span id="distanceMoved">0m</span>
     </div>
+    <div>
+      <strong class="label">ACTIVE TIME:</strong>
+      <span id="activeTime">00:00:00</span>
+    </div>
     <button onclick="toggleCheckinLog()" style="margin-top:4px; background:black; color:#00ff00; border:1px solid #00ff00; font-size:12px; cursor:pointer;">
       [VIEW LOG]
     </button>
@@ -227,7 +219,6 @@
     </div>
   </div>
 
-  <!-- HUD SECTION -->
   <div class="hud">
     <div class="hud-row">
       <div>OFFICER: <input id="officer" type="text" placeholder="Enter Officer Name" style="background:black;color:#00ff00;border:none;" inputmode="text" /></div>
@@ -235,7 +226,7 @@
       <div id="gpsStatus">GPS: WAITING...</div>
       <div id="markerCount">MARKERS: 0</div>
     </div>
-    <div id="actionMenuWrapper">
+        <div id="actionMenuWrapper">
       <button id="actionDropdownBtn">[ ACTION MENU ]</button>
       <div id="actionDropdownContent">
         <button onclick="setMarkerMode('clear')">[SECURE]</button>
@@ -252,10 +243,32 @@
     <div id="photoDropdown"></div>
   </div>
 
+  <div id="helpModal">
+    <button id="closeHelp" onclick="document.getElementById('helpModal').style.display='none'">CLOSE</button>
+    <h2>Help Reference Guide</h2>
+    <ul>
+      <li><strong>[SECURE]</strong>: Green marker for secured areas.</li>
+      <li><strong>[INCIDENT]</strong>: Red marker to flag incidents.</li>
+      <li><strong>[MOVEMENT]</strong>: Orange marker for movement tracking.</li>
+      <li><strong>[ADD CUSTOM]</strong>: Enter a label to create a custom marker.</li>
+      <li><strong>[CLEAR MARKERS]</strong>: Remove all placed markers.</li>
+      <li><strong>[CAPTURE]</strong>: Opens the camera to take a photo.</li>
+      <li><strong>[VIEW PHOTOS]</strong>: Shows uploaded or captured photos.</li>
+      <li><strong>[SATELLITE VIEW]</strong>: Switch between satellite/street map.</li>
+      <li><strong>[Active Time]</strong>: Timer showing operation duration.</li>
+      <li><strong>[GPS]</strong>: Zooms to current GPS location.</li>
+      <li><strong>[Address]</strong>: Reverse geocoded physical address.</li>
+      <li><strong>[OFFICER]</strong>: Enter officer name.</li>
+      <li><strong>[GPS LOCKED]</strong>: Displays GPS signal accuracy.</li>
+      <li><strong>[TIME]</strong>: Shows system time in real-time.</li>
+      <li><strong>[MARKERS]</strong>: Active marker counter.</li>
+    </ul>
+  </div>
+
   <input id="photoInput" type="file" accept="image/*" capture="environment" style="display:none;" />
-  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <script>
-      let map = L.map('map').setView([33.4484, -112.0740], 19);
+    let map = L.map('map').setView([33.4484, -112.0740], 19);
     const street = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png');
     const satellite = L.tileLayer('https://{s}.google.com/vt/lyrs=s&x={x}&y={y}&z={z}', {
       subdomains: ['mt0', 'mt1', 'mt2', 'mt3'],
@@ -268,10 +281,12 @@
     let breadcrumbMode = false;
     let trail = [];
 
+    // Movement tracking
     let stepCount = parseInt(localStorage.getItem("stepCount")) || 0;
     let totalDistance = parseFloat(localStorage.getItem("totalDistance")) || 0;
     let lastLatLng = null;
 
+    // Check-in tracking
     let lastStepCount = stepCount;
     let lastDistance = totalDistance;
     let checkinLog = JSON.parse(localStorage.getItem("checkinLog")) || [];
@@ -290,8 +305,7 @@
         ul.appendChild(li);
       });
     }
-
-    function logCheckin() {
+        function logCheckin() {
       const now = new Date();
       const timestamp = now.toTimeString().split(" ")[0];
 
@@ -330,7 +344,7 @@
       updateCheckinHUD();
     }
 
-    updateCheckinHUD();
+    updateCheckinHUD(); // Load HUD data
         map.on('click', function (e) {
       if (breadcrumbMode) {
         const m = L.circleMarker(e.latlng, {
@@ -370,8 +384,7 @@
         markerMode = null;
       }
     });
-
-    function initGPS() {
+        function initGPS() {
       navigator.geolocation.watchPosition(pos => {
         const { latitude, longitude, accuracy } = pos.coords;
         const latlng = [latitude, longitude];
@@ -384,6 +397,7 @@
         document.getElementById('gpsStatus').textContent = `GPS: LOCKED (${Math.round(accuracy)}m)`;
         trail.push(latlng);
 
+        // Visual trail
         L.circleMarker(latlng, {
           radius: 2,
           color: '#00ff00',
@@ -391,6 +405,7 @@
           fillOpacity: 1
         }).addTo(markerGroup);
 
+        // Auto movement tracking (1 meter = 1 step)
         if (lastLatLng) {
           const d = map.distance(lastLatLng, latlng);
           if (d >= 1) {
@@ -405,6 +420,7 @@
 
         lastLatLng = latlng;
 
+        // Address label
         fetch(`https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${latitude}&lon=${longitude}`)
           .then(res => res.json())
           .then(data => {
@@ -439,21 +455,55 @@
       }
     });
 
+    function takePhoto() {
+      document.getElementById('photoInput').click();
+    }
+
+    document.getElementById('photoInput').addEventListener('change', function() {
+      const file = this.files[0];
+      if (!file) return;
+      const img = document.createElement('img');
+      img.src = URL.createObjectURL(file);
+      document.getElementById('photoDropdown').appendChild(img);
+    });
+
+    function toggleDropdown() {
+      const panel = document.getElementById('photoDropdown');
+      panel.style.display = (panel.style.display === 'none' || panel.style.display === '') ? 'flex' : 'none';
+    }
+
+    function clearAll() {
+      markerGroup.clearLayers();
+      markerCount = 0;
+      trail = [];
+      document.getElementById('markerCount').textContent = "MARKERS: 0";
+    }
+        document.getElementById('gpsBtn').onclick = () => {
+      if (trail.length > 0) {
+        const last = trail[trail.length - 1];
+        map.setView(last, map.getZoom());
+      } else {
+        alert("GPS location not yet available.");
+      }
+    };
+
+    // Real-time clock
     setInterval(() => {
       const now = new Date();
       document.getElementById('clock').textContent = "TIME: " + now.toLocaleString();
     }, 1000);
 
+    // Active shift timer inside Check-in HUD
     setInterval(() => {
       let now = Date.now() - startTime;
       let hrs = Math.floor(now / 3600000);
       let mins = Math.floor((now % 3600000) / 60000);
       let secs = Math.floor((now % 60000) / 1000);
-      document.getElementById('timer').textContent = "Active Time: " +
+      document.getElementById('activeTime').textContent =
         String(hrs).padStart(2, '0') + ":" +
         String(mins).padStart(2, '0') + ":" +
         String(secs).padStart(2, '0');
     }, 1000);
   </script>
-</body>
+  </body>
 </html>
