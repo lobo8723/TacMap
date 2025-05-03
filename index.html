@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Project 1 - v1.1R16 – Check-In + Active Time Relocated</title>
+  <title>Project 1 - v1.1R17 – Auto GPS Steps + Timer Fix</title>
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <style>
     html, body {
@@ -67,13 +67,13 @@
     #timer {
       position: absolute;
       bottom: 35px;
-      right: 10px;
-      z-index: 999;
+      right: 100px;
       font-size: 12px;
       background: rgba(0,0,0,0.7);
       padding: 4px 6px;
       font-weight: bold;
       border: 1px solid #00ff00;
+      z-index: 999;
     }
 
     #photoDropdown {
@@ -124,8 +124,7 @@
       font-size: 12px;
       min-width: 140px;
     }
-
-    #helpModal {
+        #helpModal {
       display: none;
       position: fixed;
       top: 10%;
@@ -162,7 +161,6 @@
       font-size: 12px;
     }
 
-    /* CHECK-IN HUD: top-left */
     #checkinHUD {
       position: absolute;
       top: 85px;
@@ -201,31 +199,8 @@
   <div id="map"></div>
   <div id="gpsBtn" title="Center on GPS">[GPS]</div>
   <button id="toggleMapType" style="position:absolute;top:50px;left:10px;z-index:999;background:black;color:#00ff00;border:1px solid #00ff00;padding:5px;font-size:12px;">SATELLITE VIEW</button>
-  <div id="timer">Active Time: 00:00:00</div>
   <div id="address">LOCATING...</div>
-    <div class="hud">
-    <div class="hud-row">
-      <div>OFFICER: <input id="officer" type="text" placeholder="Enter Officer Name" style="background:black;color:#00ff00;border:none;" inputmode="text" /></div>
-      <div id="clock">TIME: --:--:--</div>
-      <div id="gpsStatus">GPS: WAITING...</div>
-      <div id="markerCount">MARKERS: 0</div>
-    </div>
-    <div id="actionMenuWrapper">
-      <button id="actionDropdownBtn">[ ACTION MENU ]</button>
-      <div id="actionDropdownContent">
-        <button onclick="setMarkerMode('clear')">[SECURE]</button>
-        <button onclick="setMarkerMode('incident')">[INCIDENT]</button>
-        <button onclick="setMarkerMode('move')">[MOVEMENT]</button>
-        <button onclick="setMarkerMode('custom')">[ADD CUSTOM]</button>
-        <button onclick="clearAll()">[CLEAR MARKERS]</button>
-        <button onclick="takePhoto()">[CAPTURE]</button>
-        <button onclick="toggleDropdown()">[VIEW PHOTOS]</button>
-        <button onclick="showHelp()">[HELP]</button>
-        <button onclick="logCheckin()">[CHECK-IN]</button>
-      </div>
-    </div>
-    <div id="photoDropdown"></div>
-  </div>
+  <div id="timer">Active Time: 00:00:00</div>
 
   <!-- CHECK-IN HUD MODULE -->
   <div id="checkinHUD">
@@ -252,7 +227,31 @@
       </button>
     </div>
   </div>
-    <input id="photoInput" type="file" accept="image/*" capture="environment" style="display:none;" />
+    <div class="hud">
+    <div class="hud-row">
+      <div>OFFICER: <input id="officer" type="text" placeholder="Enter Officer Name" style="background:black;color:#00ff00;border:none;" inputmode="text" /></div>
+      <div id="clock">TIME: --:--:--</div>
+      <div id="gpsStatus">GPS: WAITING...</div>
+      <div id="markerCount">MARKERS: 0</div>
+    </div>
+    <div id="actionMenuWrapper">
+      <button id="actionDropdownBtn">[ ACTION MENU ]</button>
+      <div id="actionDropdownContent">
+        <button onclick="setMarkerMode('clear')">[SECURE]</button>
+        <button onclick="setMarkerMode('incident')">[INCIDENT]</button>
+        <button onclick="setMarkerMode('move')">[MOVEMENT]</button>
+        <button onclick="setMarkerMode('custom')">[ADD CUSTOM]</button>
+        <button onclick="clearAll()">[CLEAR MARKERS]</button>
+        <button onclick="takePhoto()">[CAPTURE]</button>
+        <button onclick="toggleDropdown()">[VIEW PHOTOS]</button>
+        <button onclick="showHelp()">[HELP]</button>
+        <button onclick="logCheckin()">[CHECK-IN]</button>
+      </div>
+    </div>
+    <div id="photoDropdown"></div>
+  </div>
+
+  <input id="photoInput" type="file" accept="image/*" capture="environment" style="display:none;" />
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <script>
     let map = L.map('map').setView([33.4484, -112.0740], 19);
@@ -264,16 +263,19 @@
     let currentLayer = street;
     street.addTo(map);
     let markerGroup = L.layerGroup().addTo(map);
-    let trail = [], markerCount = 0, markerMode = null, startTime = Date.now();
+    let markerCount = 0, markerMode = null, startTime = Date.now();
     let breadcrumbMode = false;
+    let trail = [];
 
-    // // CHECK-IN SYSTEM: INIT + LOCAL STORAGE SETUP
-    let checkinLog = JSON.parse(localStorage.getItem("checkinLog")) || [];
+    // Movement tracking
     let stepCount = parseInt(localStorage.getItem("stepCount")) || 0;
     let totalDistance = parseFloat(localStorage.getItem("totalDistance")) || 0;
     let lastLatLng = null;
+
+    // Check-in tracking
     let lastStepCount = stepCount;
     let lastDistance = totalDistance;
+    let checkinLog = JSON.parse(localStorage.getItem("checkinLog")) || [];
 
     function updateCheckinHUD() {
       document.getElementById('checkinCount').textContent = checkinLog.length;
@@ -307,12 +309,9 @@
       lastDistance = totalDistance;
 
       localStorage.setItem("checkinLog", JSON.stringify(checkinLog));
-      localStorage.setItem("stepCount", stepCount);
-      localStorage.setItem("totalDistance", totalDistance);
       updateCheckinHUD();
     }
-
-    function toggleCheckinLog() {
+        function toggleCheckinLog() {
       const panel = document.getElementById("checkinLogPanel");
       panel.style.display = panel.style.display === "none" || panel.style.display === "" ? "block" : "none";
     }
@@ -331,8 +330,10 @@
       updateCheckinHUD();
     }
 
-    updateCheckinHUD(); // Load existing logs on startup
-        map.on('click', function (e) {
+    updateCheckinHUD(); // Load HUD data
+
+    // Track manual breadcrumbs if deltaon is enabled
+    map.on('click', function (e) {
       if (breadcrumbMode) {
         const m = L.circleMarker(e.latlng, {
           radius: 2,
@@ -342,81 +343,92 @@
         }).bindTooltip("BREADCRUMB").addTo(markerGroup);
 
         stepCount++;
-        localStorage.setItem("stepCount", stepCount);
-
         if (lastLatLng) {
           const d = map.distance(lastLatLng, e.latlng);
           totalDistance += d;
-          localStorage.setItem("totalDistance", totalDistance);
+        }
+        lastLatLng = e.latlng;
+        localStorage.setItem("stepCount", stepCount);
+        localStorage.setItem("totalDistance", totalDistance);
+        updateCheckinHUD();
+      } else if (markerMode) {
+        let label = markerMode.toUpperCase();
+        let color = markerMode === 'clear' ? 'green' :
+                    markerMode === 'incident' ? 'red' :
+                    markerMode === 'move' ? '#ffaa00' : 'cyan';
+        if (markerMode === 'custom') {
+          const custom = prompt("Enter custom label:");
+          if (!custom) return;
+          label = custom;
+        }
+        const m = L.circleMarker(e.latlng, {
+          radius: 6,
+          color: color,
+          fillColor: color,
+          fillOpacity: 1
+        }).bindTooltip(label).addTo(markerGroup);
+        markerCount++;
+        document.getElementById('markerCount').textContent = `MARKERS: ${markerCount}`;
+        markerMode = null;
+      }
+    });
+        function initGPS() {
+      navigator.geolocation.watchPosition(pos => {
+        const { latitude, longitude, accuracy } = pos.coords;
+        const latlng = [latitude, longitude];
+
+        // Accuracy filter
+        if (accuracy > 20) {
+          document.getElementById('gpsStatus').textContent = `GPS: REJECTED (${Math.round(accuracy)}m)`;
+          return;
         }
 
-        lastLatLng = e.latlng;
-        updateCheckinHUD();
-        return;
-      }
+        document.getElementById('gpsStatus').textContent = `GPS: LOCKED (${Math.round(accuracy)}m)`;
+        trail.push(latlng);
 
-      if (!markerMode) return;
-      let label = markerMode.toUpperCase();
-      let color = markerMode === 'clear' ? 'green' :
-                  markerMode === 'incident' ? 'red' :
-                  markerMode === 'move' ? '#ffaa00' : 'cyan';
-      if (markerMode === 'custom') {
-        const custom = prompt("Enter custom label:");
-        if (!custom) return;
-        label = custom;
-      }
-      const m = L.circleMarker(e.latlng, {
-        radius: 6,
-        color: color,
-        fillColor: color,
-        fillOpacity: 1
-      }).bindTooltip(label).addTo(markerGroup);
-      markerCount++;
-      document.getElementById('markerCount').textContent = `MARKERS: ${markerCount}`;
-      markerMode = null;
-    });
-        function clearAll() {
-      markerGroup.clearLayers();
-      markerCount = 0;
-      trail = [];
-      lastLatLng = null;
-      stepCount = 0;
-      totalDistance = 0;
-      lastStepCount = 0;
-      lastDistance = 0;
-      localStorage.removeItem("stepCount");
-      localStorage.removeItem("totalDistance");
-      document.getElementById('markerCount').textContent = "MARKERS: 0";
-      updateCheckinHUD();
+        // Always show GPS movement as breadcrumb dot (optional visual trail)
+        L.circleMarker(latlng, {
+          radius: 2,
+          color: '#00ff00',
+          fillColor: '#00ff00',
+          fillOpacity: 1
+        }).addTo(markerGroup);
+
+        // Auto movement tracking (independent of breadcrumb mode)
+        if (lastLatLng) {
+          const d = map.distance(lastLatLng, latlng);
+          if (d >= 1) {
+            const stepsToAdd = Math.floor(d);
+            stepCount += stepsToAdd;
+            totalDistance += d;
+            localStorage.setItem("stepCount", stepCount);
+            localStorage.setItem("totalDistance", totalDistance);
+            updateCheckinHUD();
+          }
+        }
+
+        lastLatLng = latlng;
+
+        // Address label
+        fetch(`https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${latitude}&lon=${longitude}`)
+          .then(res => res.json())
+          .then(data => {
+            document.getElementById('address').textContent = data.display_name || `Lat: ${latitude.toFixed(5)}, Lon: ${longitude.toFixed(5)}`;
+          }).catch(() => {
+            document.getElementById('address').textContent = `Lat: ${latitude.toFixed(5)}, Lon: ${longitude.toFixed(5)}`;
+          });
+
+      }, err => {
+        document.getElementById('gpsStatus').textContent = "GPS: ERROR";
+      }, {
+        enableHighAccuracy: true,
+        maximumAge: 0,
+        timeout: 5000
+      });
     }
 
-    function takePhoto() {
-      document.getElementById('photoInput').click();
-    }
-
-    document.getElementById('photoInput').addEventListener('change', function () {
-      const file = this.files[0];
-      if (!file) return;
-      const img = document.createElement('img');
-      img.src = URL.createObjectURL(file);
-      document.getElementById('photoDropdown').appendChild(img);
-    });
-
-    function toggleDropdown() {
-      const panel = document.getElementById('photoDropdown');
-      panel.style.display = (panel.style.display === 'none' || panel.style.display === '') ? 'flex' : 'none';
-    }
-
-    document.getElementById('gpsBtn').onclick = () => {
-      if (trail.length > 0) {
-        const last = trail[trail.length - 1];
-        map.setView(last, map.getZoom());
-      } else {
-        alert("GPS location not yet available.");
-      }
-    };
-
-    document.getElementById('actionDropdownBtn').onclick = () => {
+    initGPS();
+        document.getElementById('actionDropdownBtn').onclick = () => {
       const menu = document.getElementById('actionDropdownContent');
       menu.style.display = (menu.style.display === 'none' || menu.style.display === '') ? 'flex' : 'none';
     };
@@ -431,40 +443,14 @@
         alert('🔴 Breadcrumb Mode Deactivated');
       }
     });
-        function initGPS() {
-      navigator.geolocation.watchPosition(pos => {
-        const { latitude, longitude, accuracy } = pos.coords;
-        if (accuracy > 20) {
-          document.getElementById('gpsStatus').textContent = `GPS: REJECTED (${Math.round(accuracy)}m)`;
-          return;
-        }
-        document.getElementById('gpsStatus').textContent = `GPS: LOCKED (${Math.round(accuracy)}m)`;
-        const latlng = [latitude, longitude];
-        trail.push(latlng);
-        L.circleMarker(latlng, {
-          radius: 2,
-          color: '#00ff00',
-          fillColor: '#00ff00',
-          fillOpacity: 1
-        }).addTo(markerGroup);
-        fetch(`https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${latitude}&lon=${longitude}`)
-          .then(res => res.json())
-          .then(data => {
-            document.getElementById('address').textContent = data.display_name || `Lat: ${latitude.toFixed(5)}, Lon: ${longitude.toFixed(5)}`;
-          }).catch(() => {
-            document.getElementById('address').textContent = `Lat: ${latitude.toFixed(5)}, Lon: ${longitude.toFixed(5)}`;
-          });
-      }, err => {
-        document.getElementById('gpsStatus').textContent = "GPS: ERROR";
-      }, {
-        enableHighAccuracy: true,
-        maximumAge: 0,
-        timeout: 5000
-      });
-    }
 
-    initGPS();
+    // Real-time clock
+    setInterval(() => {
+      const now = new Date();
+      document.getElementById('clock').textContent = "TIME: " + now.toLocaleString();
+    }, 1000);
 
+    // Active shift timer
     setInterval(() => {
       let now = Date.now() - startTime;
       let hrs = Math.floor(now / 3600000);
@@ -474,11 +460,6 @@
         String(hrs).padStart(2, '0') + ":" +
         String(mins).padStart(2, '0') + ":" +
         String(secs).padStart(2, '0');
-    }, 1000);
-
-    setInterval(() => {
-      const now = new Date();
-      document.getElementById('clock').textContent = "TIME: " + now.toLocaleString();
     }, 1000);
   </script>
 </body>
