@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Project 1 - v1.1R17 – Auto GPS Steps + Timer Fix</title>
+  <title>Project 1 - v1.1R18 – Timer Relocated Cleanly</title>
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <style>
     html, body {
@@ -66,17 +66,16 @@
 
     #timer {
       position: absolute;
-      bottom: 35px;
-      right: 100px;
+      top: 50px;
+      left: 130px;
       font-size: 12px;
       background: rgba(0,0,0,0.7);
       padding: 4px 6px;
       font-weight: bold;
       border: 1px solid #00ff00;
-      z-index: 999;
+      z-index: 1000;
     }
-
-    #photoDropdown {
+        #photoDropdown {
       display: none;
       flex-wrap: wrap;
       gap: 6px;
@@ -124,7 +123,8 @@
       font-size: 12px;
       min-width: 140px;
     }
-        #helpModal {
+
+    #helpModal {
       display: none;
       position: fixed;
       top: 10%;
@@ -199,10 +199,9 @@
   <div id="map"></div>
   <div id="gpsBtn" title="Center on GPS">[GPS]</div>
   <button id="toggleMapType" style="position:absolute;top:50px;left:10px;z-index:999;background:black;color:#00ff00;border:1px solid #00ff00;padding:5px;font-size:12px;">SATELLITE VIEW</button>
-  <div id="address">LOCATING...</div>
   <div id="timer">Active Time: 00:00:00</div>
-
-  <!-- CHECK-IN HUD MODULE -->
+  <div id="address">LOCATING...</div>
+    <!-- CHECK-IN HUD MODULE -->
   <div id="checkinHUD">
     <div>
       <strong class="label">CHECK-INS:</strong>
@@ -227,7 +226,9 @@
       </button>
     </div>
   </div>
-    <div class="hud">
+
+  <!-- HUD SECTION -->
+  <div class="hud">
     <div class="hud-row">
       <div>OFFICER: <input id="officer" type="text" placeholder="Enter Officer Name" style="background:black;color:#00ff00;border:none;" inputmode="text" /></div>
       <div id="clock">TIME: --:--:--</div>
@@ -254,7 +255,7 @@
   <input id="photoInput" type="file" accept="image/*" capture="environment" style="display:none;" />
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <script>
-    let map = L.map('map').setView([33.4484, -112.0740], 19);
+      let map = L.map('map').setView([33.4484, -112.0740], 19);
     const street = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png');
     const satellite = L.tileLayer('https://{s}.google.com/vt/lyrs=s&x={x}&y={y}&z={z}', {
       subdomains: ['mt0', 'mt1', 'mt2', 'mt3'],
@@ -267,12 +268,10 @@
     let breadcrumbMode = false;
     let trail = [];
 
-    // Movement tracking
     let stepCount = parseInt(localStorage.getItem("stepCount")) || 0;
     let totalDistance = parseFloat(localStorage.getItem("totalDistance")) || 0;
     let lastLatLng = null;
 
-    // Check-in tracking
     let lastStepCount = stepCount;
     let lastDistance = totalDistance;
     let checkinLog = JSON.parse(localStorage.getItem("checkinLog")) || [];
@@ -311,7 +310,8 @@
       localStorage.setItem("checkinLog", JSON.stringify(checkinLog));
       updateCheckinHUD();
     }
-        function toggleCheckinLog() {
+
+    function toggleCheckinLog() {
       const panel = document.getElementById("checkinLogPanel");
       panel.style.display = panel.style.display === "none" || panel.style.display === "" ? "block" : "none";
     }
@@ -330,10 +330,8 @@
       updateCheckinHUD();
     }
 
-    updateCheckinHUD(); // Load HUD data
-
-    // Track manual breadcrumbs if deltaon is enabled
-    map.on('click', function (e) {
+    updateCheckinHUD();
+        map.on('click', function (e) {
       if (breadcrumbMode) {
         const m = L.circleMarker(e.latlng, {
           radius: 2,
@@ -372,12 +370,12 @@
         markerMode = null;
       }
     });
-        function initGPS() {
+
+    function initGPS() {
       navigator.geolocation.watchPosition(pos => {
         const { latitude, longitude, accuracy } = pos.coords;
         const latlng = [latitude, longitude];
 
-        // Accuracy filter
         if (accuracy > 20) {
           document.getElementById('gpsStatus').textContent = `GPS: REJECTED (${Math.round(accuracy)}m)`;
           return;
@@ -386,7 +384,6 @@
         document.getElementById('gpsStatus').textContent = `GPS: LOCKED (${Math.round(accuracy)}m)`;
         trail.push(latlng);
 
-        // Always show GPS movement as breadcrumb dot (optional visual trail)
         L.circleMarker(latlng, {
           radius: 2,
           color: '#00ff00',
@@ -394,7 +391,6 @@
           fillOpacity: 1
         }).addTo(markerGroup);
 
-        // Auto movement tracking (independent of breadcrumb mode)
         if (lastLatLng) {
           const d = map.distance(lastLatLng, latlng);
           if (d >= 1) {
@@ -409,7 +405,6 @@
 
         lastLatLng = latlng;
 
-        // Address label
         fetch(`https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${latitude}&lon=${longitude}`)
           .then(res => res.json())
           .then(data => {
@@ -444,13 +439,11 @@
       }
     });
 
-    // Real-time clock
     setInterval(() => {
       const now = new Date();
       document.getElementById('clock').textContent = "TIME: " + now.toLocaleString();
     }, 1000);
 
-    // Active shift timer
     setInterval(() => {
       let now = Date.now() - startTime;
       let hrs = Math.floor(now / 3600000);
