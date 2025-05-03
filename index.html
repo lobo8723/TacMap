@@ -8,6 +8,8 @@
   <style>
     html, body { margin: 0; padding: 0; height: 100%; background: #111; font-family: monospace; color: #00ff00; }
     #map { height: 100%; width: 100%; z-index: 0; }
+
+    /* // ADDRESS BAR FIX */
     #address {
       position: absolute;
       top: 0;
@@ -18,12 +20,15 @@
       background: rgba(0, 0, 0, 0.85);
       color: #00ff00;
       z-index: 999;
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      max-width: 100%;
       text-align: center;
+      white-space: normal;
+      word-wrap: break-word;
+      overflow-wrap: break-word;
+      line-height: 1.4em;
+      max-height: 3.2em;
+      overflow-y: auto;
     }
+
     #satBtn {
       position: absolute;
       top: 32px;
@@ -111,13 +116,6 @@
     <button onclick="clearMarkers()">[CLEAR MARKERS]</button>
     <button onclick="doCheckIn()">[CHECK-IN]</button>
   </div>
-    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-  <script>
-    let map = L.map('map').setView([
-
-Here's **PART 2 of 2** (JavaScript logic and full functionality):
-
-```html
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <script>
     let map = L.map('map').setView([33.4484, -112.0740], 20);
@@ -130,7 +128,6 @@ Here's **PART 2 of 2** (JavaScript logic and full functionality):
 
     let trail = [], markers = [], steps = 0, totalDist = 0;
     let checkIns = 0, checkLog = [];
-    let gpsTimeout = null;
 
     function updateClock() {
       const now = new Date();
