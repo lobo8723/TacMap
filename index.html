@@ -41,6 +41,7 @@
       font-size: 12px;
       cursor: pointer;
     }
+
     #checkinBox {
       position: absolute;
       top: 92px;
@@ -56,6 +57,7 @@
     #checkinBox div {
       margin-bottom: 4px;
     }
+
     #viewLog, #resetLog {
       background: black;
       color: #00ff00;
@@ -65,11 +67,13 @@
       cursor: pointer;
       margin-top: 4px;
     }
+
     #logData {
       color: orange;
       font-size: 10px;
       margin-top: 4px;
     }
+
     .hud {
       position: absolute;
       bottom: 0;
@@ -84,9 +88,11 @@
       flex-wrap: wrap;
       font-size: 12px;
     }
+
     .hud span, .hud button {
       margin: 2px 6px;
     }
+
     .hud button {
       background: black;
       color: #00ff00;
@@ -130,6 +136,18 @@
     let trail = [], markers = [], steps = 0, totalDist = 0;
     let checkIns = 0, checkLog = [];
 
+    /* // ACTIVE TIME TRACKING */
+    let activeStart = null;
+    function getActiveTime() {
+      if (!activeStart) return "--:--:--";
+      const now = new Date();
+      let delta = Math.floor((now - activeStart) / 1000);
+      const hrs = String(Math.floor(delta / 3600)).padStart(2, '0');
+      const min = String(Math.floor((delta % 3600) / 60)).padStart(2, '0');
+      const sec = String(delta % 60).padStart(2, '0');
+      return `${hrs}:${min}:${sec}`;
+    }
+
     function updateClock() {
       const now = new Date();
       document.getElementById("clock").textContent = "TIME: " + now.toLocaleString();
@@ -149,8 +167,7 @@
     }
 
     function updateAddressDisplay(address) {
-      const addressBox = document.getElementById('address');
-      addressBox.textContent = address;
+      document.getElementById('address').textContent = address;
     }
 
     function updateStats() {
@@ -169,7 +186,9 @@
     function doCheckIn() {
       const now = new Date();
       const t = now.toLocaleTimeString();
-      const logEntry = `${(checkIns+1).toString().padStart(2,'0')} – ${t} — ${steps} steps — ${totalDist}m`;
+      const activeTime = getActiveTime();
+      const entryNum = (checkIns+1).toString().padStart(2,'0');
+      const logEntry = `${entryNum} – ${t}<br>Steps: ${steps} | Distance: ${totalDist}m | Time: ${activeTime}`;
       checkIns++;
       document.getElementById('checkCount').textContent = checkIns;
       document.getElementById('lastTime').textContent = t;
@@ -211,6 +230,8 @@
       updateGPSStatus(`GPS: LOCKED (${Math.round(accuracy)}m)`);
 
       const latlng = { lat: latitude, lng: longitude };
+      if (!activeStart) activeStart = new Date(); // start active time once GPS locks
+
       if (trail.length > 0) {
         const last = trail[trail.length-1];
         const dist = calcDistance(last, latlng);
@@ -219,7 +240,6 @@
           totalDist += dist;
           updateStats();
 
-          /* // BREADCRUMB SIZE TWEAK */
           const mark = L.circleMarker(latlng, {
             radius: 2,
             color: '#00ff00',
@@ -229,7 +249,6 @@
           markers.push(mark);
         }
       } else {
-        /* // GPS AUTO-CENTER FIX */
         map.setView(latlng, 20, { animate: true });
       }
 
