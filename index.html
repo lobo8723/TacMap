@@ -151,13 +151,11 @@
     let trail = [], markers = [], steps = 0, totalDist = 0;
     let checkIns = 0, checkLog = [];
 
-    let activeStart = null;
-    let lastLatLng = null; // // GPS RECENTER BUTTON SUPPORT
+    let lastLatLng = null;
+    let lastCheckInTime = null; // // PER-ROUND ACTIVE TIME
 
-    function getActiveTime() {
-      if (!activeStart) return "--:--:--";
-      const now = new Date();
-      let delta = Math.floor((now - activeStart) / 1000);
+    function getElapsedTime(start, end) {
+      const delta = Math.floor((end - start) / 1000);
       const hrs = String(Math.floor(delta / 3600)).padStart(2, '0');
       const min = String(Math.floor((delta % 3600) / 60)).padStart(2, '0');
       const sec = String(delta % 60).padStart(2, '0');
@@ -178,7 +176,6 @@
       document.getElementById('satBtn').textContent = currentLayer === street ? "SATELLITE VIEW" : "MAP VIEW";
     };
 
-    /* // GPS RECENTER BUTTON HANDLER */
     document.getElementById('gpsBtn').onclick = () => {
       if (lastLatLng) {
         map.setView(lastLatLng, 20, { animate: true });
@@ -209,7 +206,14 @@
     function doCheckIn() {
       const now = new Date();
       const t = now.toLocaleTimeString();
-      const activeTime = getActiveTime();
+
+      // // PER-ROUND ACTIVE TIME
+      let activeTime = "--:--:--";
+      if (lastCheckInTime) {
+        activeTime = getElapsedTime(lastCheckInTime, now);
+      }
+      lastCheckInTime = now;
+
       const entryNum = (checkIns+1).toString().padStart(2,'0');
       const logEntry = `${entryNum} – ${t}<br>Steps: ${steps} | Distance: ${totalDist}m | Time: ${activeTime}`;
       checkIns++;
@@ -235,6 +239,7 @@
       document.getElementById('checkCount').textContent = 0;
       document.getElementById('lastTime').textContent = '--:--:--';
       document.getElementById('logData').innerHTML = '';
+      lastCheckInTime = null; // // PER-ROUND ACTIVE TIME RESET
     };
 
     function calcDistance(latlng1, latlng2) {
@@ -253,9 +258,7 @@
       updateGPSStatus(`GPS: LOCKED (${Math.round(accuracy)}m)`);
 
       const latlng = { lat: latitude, lng: longitude };
-      lastLatLng = latlng; // // GPS RECENTER BUTTON TRACKING
-
-      if (!activeStart) activeStart = new Date();
+      lastLatLng = latlng;
 
       if (trail.length > 0) {
         const last = trail[trail.length-1];
