@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Project 1 - Final Stable Version (v1.1R15 – Check-In HUD Relocated)</title>
+  <title>Project 1 - v1.1R16 – Check-In + Active Time Relocated</title>
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <style>
     html, body {
@@ -66,8 +66,8 @@
 
     #timer {
       position: absolute;
-      top: 115px;
-      left: 10px;
+      bottom: 35px;
+      right: 10px;
       z-index: 999;
       font-size: 12px;
       background: rgba(0,0,0,0.7);
@@ -162,10 +162,10 @@
       font-size: 12px;
     }
 
-    /* // CHECK-IN MODULE STYLES – NEW LOCATION */
+    /* CHECK-IN HUD: top-left */
     #checkinHUD {
       position: absolute;
-      top: 85px; /* Positioned just below SATELLITE VIEW */
+      top: 85px;
       left: 10px;
       font-size: 12px;
       color: #00ff00;
@@ -173,11 +173,15 @@
       border: 1px solid #00ff00;
       padding: 6px;
       z-index: 999;
-      max-width: 300px;
+      max-width: 320px;
     }
 
     #checkinHUD span {
       color: orange;
+    }
+
+    #checkinHUD .label {
+      color: #00ff00;
     }
 
     #checkinLogPanel {
@@ -217,31 +221,31 @@
         <button onclick="takePhoto()">[CAPTURE]</button>
         <button onclick="toggleDropdown()">[VIEW PHOTOS]</button>
         <button onclick="showHelp()">[HELP]</button>
-        <button onclick="logCheckin()">[CHECK-IN]</button> <!-- NEW BUTTON -->
+        <button onclick="logCheckin()">[CHECK-IN]</button>
       </div>
     </div>
     <div id="photoDropdown"></div>
   </div>
 
-  <!-- // CHECK-IN MODULE HUD (POSITIONED TOP-LEFT) -->
+  <!-- CHECK-IN HUD MODULE -->
   <div id="checkinHUD">
     <div>
-      <strong>CHECK-INS:</strong>
+      <strong class="label">CHECK-INS:</strong>
       <span id="checkinCount">0</span> |
-      <strong>LAST:</strong>
+      <strong class="label">LAST:</strong>
       <span id="lastCheckin">--:--:--</span>
     </div>
     <div>
-      <strong>MOVEMENT:</strong>
-      <span id="stepCount">0</span> STEPS |
-      <strong>DISTANCE:</strong>
+      <strong class="label">MOVEMENT:</strong>
+      <span id="stepCount">0</span> <span class="label">STEPS</span> |
+      <strong class="label">DISTANCE:</strong>
       <span id="distanceMoved">0m</span>
     </div>
     <button onclick="toggleCheckinLog()" style="margin-top:4px; background:black; color:#00ff00; border:1px solid #00ff00; font-size:12px; cursor:pointer;">
       [VIEW LOG]
     </button>
     <div id="checkinLogPanel">
-      <strong style="color:#00ff00;">CHECK-IN LOG:</strong>
+      <strong class="label">CHECK-IN LOG:</strong>
       <ul id="checkinList"></ul>
       <button onclick="resetCheckins()" style="margin-top:4px; background:black; color:#00ff00; border:1px solid #00ff00; font-size:12px; cursor:pointer;">
         [RESET LOG]
@@ -263,23 +267,25 @@
     let trail = [], markerCount = 0, markerMode = null, startTime = Date.now();
     let breadcrumbMode = false;
 
-    // // CHECK-IN MODULE: INIT + STORAGE
+    // // CHECK-IN SYSTEM: INIT + LOCAL STORAGE SETUP
     let checkinLog = JSON.parse(localStorage.getItem("checkinLog")) || [];
     let stepCount = parseInt(localStorage.getItem("stepCount")) || 0;
     let totalDistance = parseFloat(localStorage.getItem("totalDistance")) || 0;
     let lastLatLng = null;
+    let lastStepCount = stepCount;
+    let lastDistance = totalDistance;
 
     function updateCheckinHUD() {
       document.getElementById('checkinCount').textContent = checkinLog.length;
-      document.getElementById('lastCheckin').textContent = checkinLog.length > 0 ? checkinLog[checkinLog.length - 1] : "--:--:--";
+      document.getElementById('lastCheckin').textContent = checkinLog.length > 0 ? checkinLog[checkinLog.length - 1].time : "--:--:--";
       document.getElementById('stepCount').textContent = stepCount;
       document.getElementById('distanceMoved').textContent = Math.round(totalDistance) + "m";
 
       const ul = document.getElementById('checkinList');
       ul.innerHTML = "";
-      checkinLog.forEach((t, i) => {
+      checkinLog.forEach((entry, i) => {
         const li = document.createElement("li");
-        li.innerHTML = `<span style="color:orange;">${String(i+1).padStart(2, '0')} - ${t}</span>`;
+        li.innerHTML = `<span style="color:orange;">${String(i+1).padStart(2, '0')} – ${entry.time} – ${entry.steps}</span> <span style="color:#00ff00;">steps</span> – <span style="color:orange;">${Math.round(entry.distance)}</span><span style="color:#00ff00;">m</span>`;
         ul.appendChild(li);
       });
     }
@@ -287,8 +293,22 @@
     function logCheckin() {
       const now = new Date();
       const timestamp = now.toTimeString().split(" ")[0];
-      checkinLog.push(timestamp);
+
+      const stepsThisCheckin = stepCount - lastStepCount;
+      const distThisCheckin = totalDistance - lastDistance;
+
+      checkinLog.push({
+        time: timestamp,
+        steps: stepsThisCheckin,
+        distance: distThisCheckin
+      });
+
+      lastStepCount = stepCount;
+      lastDistance = totalDistance;
+
       localStorage.setItem("checkinLog", JSON.stringify(checkinLog));
+      localStorage.setItem("stepCount", stepCount);
+      localStorage.setItem("totalDistance", totalDistance);
       updateCheckinHUD();
     }
 
@@ -302,6 +322,8 @@
       checkinLog = [];
       stepCount = 0;
       totalDistance = 0;
+      lastStepCount = 0;
+      lastDistance = 0;
       lastLatLng = null;
       localStorage.removeItem("checkinLog");
       localStorage.removeItem("stepCount");
@@ -309,7 +331,7 @@
       updateCheckinHUD();
     }
 
-    updateCheckinHUD(); // Load existing data if present
+    updateCheckinHUD(); // Load existing logs on startup
         map.on('click', function (e) {
       if (breadcrumbMode) {
         const m = L.circleMarker(e.latlng, {
@@ -319,7 +341,6 @@
           fillOpacity: 1
         }).bindTooltip("BREADCRUMB").addTo(markerGroup);
 
-        // CHECK-IN MODULE: Track steps + distance
         stepCount++;
         localStorage.setItem("stepCount", stepCount);
 
@@ -328,8 +349,8 @@
           totalDistance += d;
           localStorage.setItem("totalDistance", totalDistance);
         }
-        lastLatLng = e.latlng;
 
+        lastLatLng = e.latlng;
         updateCheckinHUD();
         return;
       }
@@ -361,6 +382,8 @@
       lastLatLng = null;
       stepCount = 0;
       totalDistance = 0;
+      lastStepCount = 0;
+      lastDistance = 0;
       localStorage.removeItem("stepCount");
       localStorage.removeItem("totalDistance");
       document.getElementById('markerCount').textContent = "MARKERS: 0";
@@ -371,7 +394,7 @@
       document.getElementById('photoInput').click();
     }
 
-    document.getElementById('photoInput').addEventListener('change', function() {
+    document.getElementById('photoInput').addEventListener('change', function () {
       const file = this.files[0];
       if (!file) return;
       const img = document.createElement('img');
@@ -460,4 +483,3 @@
   </script>
 </body>
 </html>
-  
