@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Project 1 - v1.1R21 – GPS Auto-Center + Check-In Fix</title>
+  <title>Project 1 - v1.1R21 – Final Clean Build</title>
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <style>
     html, body {
@@ -64,22 +64,6 @@
       border:1px solid #00ff00;
     }
 
-    #photoDropdown {
-      display: none;
-      flex-wrap: wrap;
-      gap: 6px;
-      margin-top: 6px;
-      padding-top: 4px;
-      border-top: 1px solid #00ff00;
-    }
-
-    #photoDropdown img {
-      width: 120px;
-      height: auto;
-      object-fit: contain;
-      border: 1px solid #00ff00;
-    }
-
     #checkinHUD {
       position: absolute;
       top: 85px;
@@ -120,14 +104,13 @@
       padding: 5px 12px;
       font-size: 12px;
       cursor: pointer;
-      margin-right: 4px;
-      margin-top: 6px;
+      margin: 4px;
+      min-width: 120px;
     }
   </style>
 </head>
 <body>
   <div id="map"></div>
-  <button id="toggleMapType" style="position:absolute;top:50px;left:10px;z-index:999;" class="mainBtn">SATELLITE VIEW</button>
   <div id="address">LOCATING...</div>
   <div id="timer">Active Time: 00:00:00</div>
     <!-- CHECK-IN HUD MODULE -->
@@ -165,28 +148,13 @@
     </div>
     <div style="text-align:center;">
       <button onclick="clearAll()" class="mainBtn">[CLEAR MARKERS]</button>
-      <button onclick="takePhoto()" class="mainBtn">[CAPTURE]</button>
-      <button onclick="toggleDropdown()" class="mainBtn">[VIEW PHOTOS]</button>
       <button onclick="logCheckin()" class="mainBtn">[CHECK-IN]</button>
     </div>
-    <div id="photoDropdown"></div>
   </div>
-
-  <input id="photoInput" type="file" accept="image/*" capture="environment" style="display:none;" />
-  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <script>
   window.onload = function () {
-    let map = L.map('map');
-    let trail = [], markerGroup = L.layerGroup().addTo(map);
-    let markerCount = 0, markerMode = null, startTime = Date.now();
-    let breadcrumbMode = false;
-    let stepCount = parseInt(localStorage.getItem("stepCount")) || 0;
-    let totalDistance = parseFloat(localStorage.getItem("totalDistance")) || 0;
-    let lastStepCount = stepCount;
-    let lastDistance = totalDistance;
-    let lastLatLng = null;
-    let checkinLog = JSON.parse(localStorage.getItem("checkinLog")) || [];
-
+    let map = L.map('map').setView([33.4484, -112.0740], 19);
     const street = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png');
     const satellite = L.tileLayer('https://{s}.google.com/vt/lyrs=s&x={x}&y={y}&z={z}', {
       subdomains: ['mt0', 'mt1', 'mt2', 'mt3'],
@@ -194,312 +162,21 @@
     });
     let currentLayer = street;
     street.addTo(map);
-        // Automatically center map on GPS location
-    navigator.geolocation.watchPosition(pos => {
-      const { latitude, longitude, accuracy } = pos.coords;
+    let markerGroup = L.layerGroup().addTo(map);
+    let trail = [], markerCount = 0, markerMode = null, startTime = Date.now();
+    let breadcrumbMode = false;
 
-      if (accuracy > 20) {
-        document.getElementById('gpsStatus').textContent = `GPS: REJECTED (${Math.round(accuracy)}m)`;
-        return;
-      }
-
-      document.getElementById('gpsStatus').textContent = `GPS: LOCKED (${Math.round(accuracy)}m)`;
-      const latlng = [latitude, longitude];
-      map.setView(latlng, 19);
-      trail.push(latlng);
-
-      L.circleMarker(latlng, {
-        radius: 2,
-        color: '#00ff00',
-        fillColor: '#00ff00',
-        fillOpacity: 1
-      }).addTo(markerGroup);
-
-      if (lastLatLng) {
-        const d = map.distance(lastLatLng, latlng);
-        if (d >= 1) {
-          const stepsToAdd = Math.floor(d);
-          stepCount += stepsToAdd;
-          totalDistance += d;
-          localStorage.setItem("stepCount", stepCount);
-          localStorage.setItem("totalDistance", totalDistance);
-          updateCheckinHUD();
-        }
-      }
-
-      lastLatLng = latlng;
-
-      fetch(`https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${latitude}&lon=${longitude}`)
-        .then(res => res.json())
-        .then(data => {
-          document.getElementById('address').textContent = data.display_name || `Lat: ${latitude.toFixed(5)}, Lon: ${longitude.toFixed(5)}`;
-        }).catch(() => {
-          document.getElementById('address').textContent = `Lat: ${latitude.toFixed(5)}, Lon: ${longitude.toFixed(5)}`;
-        });
-
-    }, err => {
-      document.getElementById('gpsStatus').textContent = "GPS: ERROR";
-    }, {
-      enableHighAccuracy: true,
-      maximumAge: 0,
-      timeout: 5000
-    });
-
-    updateCheckinHUD();
-        function logCheckin() {
-      const now = new Date();
-      const timestamp = now.toTimeString().split(" ")[0];
-
-      const stepsThisCheckin = stepCount - lastStepCount;
-      const distThisCheckin = totalDistance - lastDistance;
-
-      checkinLog.push({
-        time: timestamp,
-        steps: stepsThisCheckin,
-        distance: distThisCheckin
-      });
-
-      lastStepCount = stepCount;
-      lastDistance = totalDistance;
-
-      localStorage.setItem("checkinLog", JSON.stringify(checkinLog));
-      updateCheckinHUD();
-    }
-
-    function toggleCheckinLog() {
-      const panel = document.getElementById("checkinLogPanel");
-      panel.style.display = panel.style.display === "none" || panel.style.display === "" ? "block" : "none";
-    }
-
-    function resetCheckins() {
-      if (!confirm("Reset all check-ins and movement data?")) return;
-      checkinLog = [];
-      stepCount = 0;
-      totalDistance = 0;
-      lastStepCount = 0;
-      lastDistance = 0;
-      lastLatLng = null;
-      localStorage.removeItem("checkinLog");
-      localStorage.removeItem("stepCount");
-      localStorage.removeItem("totalDistance");
-      updateCheckinHUD();
-    }
-
-    function updateCheckinHUD() {
-      document.getElementById('checkinCount').textContent = checkinLog.length;
-      document.getElementById('lastCheckin').textContent = checkinLog.length > 0 ? checkinLog[checkinLog.length - 1].time : "--:--:--";
-      document.getElementById('stepCount').textContent = stepCount;
-      document.getElementById('distanceMoved').textContent = Math.round(totalDistance) + "m";
-
-      const ul = document.getElementById('checkinList');
-      ul.innerHTML = "";
-      checkinLog.forEach((entry, i) => {
-        const li = document.createElement("li");
-        li.innerHTML = `<span style="color:orange;">${String(i + 1).padStart(2, '0')} – ${entry.time} – ${entry.steps}</span> <span style="color:#00ff00;">steps</span> – <span style="color:orange;">${Math.round(entry.distance)}</span><span style="color:#00ff00;">m</span>`;
-        ul.appendChild(li);
-      });
-    }
-        updateCheckinHUD();
-
-    function initGPS() {
-      navigator.geolocation.watchPosition(pos => {
-        const { latitude, longitude, accuracy } = pos.coords;
-
-        if (accuracy > 20) {
-          document.getElementById('gpsStatus').textContent = `GPS: REJECTED (${Math.round(accuracy)}m)`;
-          return;
-        }
-
-        document.getElementById('gpsStatus').textContent = `GPS: LOCKED (${Math.round(accuracy)}m)`;
-        const latlng = [latitude, longitude];
-        trail.push(latlng);
-
-        map.setView(latlng, map.getZoom()); // AUTO CENTERING
-
-        L.circleMarker(latlng, {
+    map.on('click', function (e) {
+      if (breadcrumbMode) {
+        const m = L.circleMarker(e.latlng, {
           radius: 2,
           color: '#00ff00',
           fillColor: '#00ff00',
           fillOpacity: 1
-        }).addTo(markerGroup);
-
-        if (lastLatLng) {
-          const d = map.distance(lastLatLng, latlng);
-          if (d >= 1) {
-            const stepsToAdd = Math.floor(d);
-            stepCount += stepsToAdd;
-            totalDistance += d;
-            localStorage.setItem("stepCount", stepCount);
-            localStorage.setItem("totalDistance", totalDistance);
-            updateCheckinHUD();
-          }
-        }
-
-        lastLatLng = latlng;
-
-        fetch(`https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${latitude}&lon=${longitude}`)
-          .then(res => res.json())
-          .then(data => {
-            document.getElementById('address').textContent = data.display_name || `Lat: ${latitude.toFixed(5)}, Lon: ${longitude.toFixed(5)}`;
-          }).catch(() => {
-            document.getElementById('address').textContent = `Lat: ${latitude.toFixed(5)}, Lon: ${longitude.toFixed(5)}`;
-          });
-
-      }, err => {
-        document.getElementById('gpsStatus').textContent = "GPS: ERROR";
-      }, {
-        enableHighAccuracy: true,
-        maximumAge: 0,
-        timeout: 5000
-      });
-    }
-
-    initGPS();
-        // Real-time shift duration timer
-    setInterval(() => {
-      let now = Date.now() - startTime;
-      let hrs = Math.floor(now / 3600000);
-      let mins = Math.floor((now % 3600000) / 60000);
-      let secs = Math.floor((now % 60000) / 1000);
-      document.getElementById('activeTime').textContent =
-        String(hrs).padStart(2, '0') + ":" +
-        String(mins).padStart(2, '0') + ":" +
-        String(secs).padStart(2, '0');
-    }, 1000);
-
-    // Real-time digital clock display
-    setInterval(() => {
-      const now = new Date();
-      document.getElementById('clock').textContent = "TIME: " + now.toLocaleString();
-    }, 1000);
-
-    // Toggle breadcrumb mode via officer input field
-    document.getElementById('officer').addEventListener('change', function () {
-      const value = this.value.trim().toLowerCase();
-      if (value === 'deltaon') {
-        breadcrumbMode = true;
-        alert('🟢 Breadcrumb Mode Activated');
-      } else if (value === 'deltaoff') {
-        breadcrumbMode = false;
-        alert('🔴 Breadcrumb Mode Deactivated');
+        }).bindTooltip("BREADCRUMB").addTo(markerGroup);
+        return;
       }
-    });
-
-  }; // End of window.onload
-  </script>
-  </body>
-</html>
-<input id="photoInput" type="file" accept="image/*" capture="environment" style="display:none;" />
-
-<!-- Removed HELP modal per user request -->
-<!-- GPS button removed; map now auto-centers via GPS on load -->
-
-<!-- Leaflet Library -->
-<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-
-<!-- Reserved for future features -->
-<script>
-  // All initialization runs inside window.onload
-</script>
-<script>
-window.onload = function () {
-  let map = L.map('map').setView([33.4484, -112.0740], 19);
-  const street = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png');
-  const satellite = L.tileLayer('https://{s}.google.com/vt/lyrs=s&x={x}&y={y}&z={z}', {
-    subdomains: ['mt0', 'mt1', 'mt2', 'mt3'],
-    maxZoom: 20
-  });
-  let currentLayer = street;
-  street.addTo(map);
-
-  let markerGroup = L.layerGroup().addTo(map);
-  let markerCount = 0;
-  let markerMode = null;
-  let startTime = Date.now();
-  let breadcrumbMode = false;
-
-  let trail = [];
-  let stepCount = parseInt(localStorage.getItem("stepCount")) || 0;
-  let totalDistance = parseFloat(localStorage.getItem("totalDistance")) || 0;
-  let lastStepCount = stepCount;
-  let lastDistance = totalDistance;
-  let lastLatLng = null;
-  let checkinLog = JSON.parse(localStorage.getItem("checkinLog")) || [];
-
-  function updateCheckinHUD() {
-    document.getElementById('checkinCount').textContent = checkinLog.length;
-    document.getElementById('lastCheckin').textContent = checkinLog.length > 0 ? checkinLog[checkinLog.length - 1].time : "--:--:--";
-    document.getElementById('stepCount').textContent = stepCount;
-    document.getElementById('distanceMoved').textContent = Math.round(totalDistance) + "m";
-
-    const ul = document.getElementById('checkinList');
-    ul.innerHTML = "";
-    checkinLog.forEach((entry, i) => {
-      const li = document.createElement("li");
-      li.innerHTML = `<span style="color:orange;">${String(i + 1).padStart(2, '0')} – ${entry.time} – ${entry.steps}</span> <span style="color:#00ff00;">steps</span> – <span style="color:orange;">${Math.round(entry.distance)}</span><span style="color:#00ff00;">m</span>`;
-      ul.appendChild(li);
-    });
-  }
-
-  updateCheckinHUD();
-    function logCheckin() {
-    const now = new Date();
-    const timestamp = now.toTimeString().split(" ")[0];
-
-    const stepsThisCheckin = stepCount - lastStepCount;
-    const distThisCheckin = totalDistance - lastDistance;
-
-    checkinLog.push({
-      time: timestamp,
-      steps: stepsThisCheckin,
-      distance: distThisCheckin
-    });
-
-    lastStepCount = stepCount;
-    lastDistance = totalDistance;
-
-    localStorage.setItem("checkinLog", JSON.stringify(checkinLog));
-    updateCheckinHUD();
-  }
-
-  function toggleCheckinLog() {
-    const panel = document.getElementById("checkinLogPanel");
-    panel.style.display = (panel.style.display === "none" || panel.style.display === "") ? "block" : "none";
-  }
-
-  function resetCheckins() {
-    if (!confirm("Reset all check-ins and movement data?")) return;
-    checkinLog = [];
-    stepCount = 0;
-    totalDistance = 0;
-    lastStepCount = 0;
-    lastDistance = 0;
-    lastLatLng = null;
-    localStorage.removeItem("checkinLog");
-    localStorage.removeItem("stepCount");
-    localStorage.removeItem("totalDistance");
-    updateCheckinHUD();
-  }
-
-  map.on('click', function (e) {
-    if (breadcrumbMode) {
-      const m = L.circleMarker(e.latlng, {
-        radius: 2,
-        color: '#00ff00',
-        fillColor: '#00ff00',
-        fillOpacity: 1
-      }).bindTooltip("BREADCRUMB").addTo(markerGroup);
-
-      stepCount++;
-      if (lastLatLng) {
-        const d = map.distance(lastLatLng, e.latlng);
-        totalDistance += d;
-      }
-      lastLatLng = e.latlng;
-      localStorage.setItem("stepCount", stepCount);
-      localStorage.setItem("totalDistance", totalDistance);
-      updateCheckinHUD();
-    } else if (markerMode) {
+      if (!markerMode) return;
       let label = markerMode.toUpperCase();
       let color = markerMode === 'clear' ? 'green' :
                   markerMode === 'incident' ? 'red' :
@@ -518,60 +195,117 @@ window.onload = function () {
       markerCount++;
       document.getElementById('markerCount').textContent = `MARKERS: ${markerCount}`;
       markerMode = null;
-    }
-  });
-    function updateCheckinHUD() {
-    document.getElementById('checkinCount').textContent = checkinLog.length;
-    document.getElementById('lastCheckin').textContent = checkinLog.length > 0 ? checkinLog[checkinLog.length - 1].time : "--:--:--";
-    document.getElementById('stepCount').textContent = stepCount;
-    document.getElementById('distanceMoved').textContent = Math.round(totalDistance) + "m";
-
-    const ul = document.getElementById('checkinList');
-    ul.innerHTML = "";
-    checkinLog.forEach((entry, i) => {
-      const li = document.createElement("li");
-      li.innerHTML = `<span style="color:orange;">${String(i+1).padStart(2, '0')} – ${entry.time} – ${entry.steps}</span> <span style="color:#00ff00;">steps</span> – <span style="color:orange;">${Math.round(entry.distance)}</span><span style="color:#00ff00;">m</span>`;
-      ul.appendChild(li);
     });
-  }
-
-  updateCheckinHUD();
-
-  // Active shift duration timer
-  setInterval(() => {
-    let now = Date.now() - startTime;
-    let hrs = Math.floor(now / 3600000);
-    let mins = Math.floor((now % 3600000) / 60000);
-    let secs = Math.floor((now % 60000) / 1000);
-    document.getElementById('activeTime').textContent =
-      String(hrs).padStart(2, '0') + ":" +
-      String(mins).padStart(2, '0') + ":" +
-      String(secs).padStart(2, '0');
-  }, 1000);
-
-  // Real-time digital clock display
-  setInterval(() => {
-    const now = new Date();
-    document.getElementById('clock').textContent = "TIME: " + now.toLocaleString();
-  }, 1000);
-
-  // Toggle breadcrumb mode via officer input field
-  document.getElementById('officer').addEventListener('change', function () {
-    const value = this.value.trim().toLowerCase();
-    if (value === 'deltaon') {
-      breadcrumbMode = true;
-      alert('🟢 Breadcrumb Mode Activated');
-    } else if (value === 'deltaoff') {
-      breadcrumbMode = false;
-      alert('🔴 Breadcrumb Mode Deactivated');
+        function clearAll() {
+      markerGroup.clearLayers();
+      markerCount = 0;
+      trail = [];
+      document.getElementById('markerCount').textContent = "MARKERS: 0";
     }
-  });
-}; // End of window.onload
-</script>
-</script>
 
-<!-- Final hidden photo input (already handled in JS above) -->
-<input id="photoInput" type="file" accept="image/*" capture="environment" style="display:none;" />
+    function toggleMapType() {
+      map.removeLayer(currentLayer);
+      currentLayer = currentLayer === street ? satellite : street;
+      currentLayer.addTo(map);
+      document.getElementById('toggleMapType').textContent = currentLayer === street ? 'SATELLITE VIEW' : 'MAP VIEW';
+    }
 
+    document.getElementById('toggleMapType').onclick = toggleMapType;
+
+    document.getElementById('officer').addEventListener('change', function () {
+      const value = this.value.trim().toLowerCase();
+      if (value === 'deltaon') {
+        breadcrumbMode = true;
+        alert('🟢 Breadcrumb Mode Activated');
+      } else if (value === 'deltaoff') {
+        breadcrumbMode = false;
+        alert('🔴 Breadcrumb Mode Deactivated');
+      }
+    });
+
+    function initGPSAutoCenter() {
+      navigator.geolocation.watchPosition(pos => {
+        const { latitude, longitude, accuracy } = pos.coords;
+        if (accuracy > 20) {
+          document.getElementById('gpsStatus').textContent = `GPS: REJECTED (${Math.round(accuracy)}m)`;
+          return;
+        }
+        document.getElementById('gpsStatus').textContent = `GPS: LOCKED (${Math.round(accuracy)}m)`;
+        const latlng = [latitude, longitude];
+        map.setView(latlng, 19); // auto center
+        trail.push(latlng);
+        L.circleMarker(latlng, {
+          radius: 2,
+          color: '#00ff00',
+          fillColor: '#00ff00',
+          fillOpacity: 1
+        }).addTo(markerGroup);
+                fetch(`https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${latitude}&lon=${longitude}`)
+          .then(res => res.json())
+          .then(data => {
+            document.getElementById('address').textContent = data.display_name || `Lat: ${latitude.toFixed(5)}, Lon: ${longitude.toFixed(5)}`;
+          }).catch(() => {
+            document.getElementById('address').textContent = `Lat: ${latitude.toFixed(5)}, Lon: ${longitude.toFixed(5)}`;
+          });
+
+        if (lastLatLng) {
+          const d = map.distance(lastLatLng, latlng);
+          if (d >= 1) {
+            const stepsToAdd = Math.floor(d);
+            stepCount += stepsToAdd;
+            totalDistance += d;
+            localStorage.setItem("stepCount", stepCount);
+            localStorage.setItem("totalDistance", totalDistance);
+            updateCheckinHUD();
+          }
+        }
+
+        lastLatLng = latlng;
+
+      }, err => {
+        document.getElementById('gpsStatus').textContent = "GPS: ERROR";
+      }, {
+        enableHighAccuracy: true,
+        maximumAge: 0,
+        timeout: 5000
+      });
+    }
+
+    initGPSAutoCenter();
+
+    setInterval(() => {
+      let now = Date.now() - startTime;
+      let hrs = Math.floor(now / 3600000);
+      let mins = Math.floor((now % 3600000) / 60000);
+            let secs = Math.floor((now % 60000) / 1000);
+      document.getElementById('timer').textContent = "Active Time: " +
+        String(hrs).padStart(2, '0') + ":" +
+        String(mins).padStart(2, '0') + ":" +
+        String(secs).padStart(2, '0');
+      document.getElementById('activeTime').textContent =
+        String(hrs).padStart(2, '0') + ":" +
+        String(mins).padStart(2, '0') + ":" +
+        String(secs).padStart(2, '0');
+    }, 1000);
+
+    setInterval(() => {
+      const now = new Date();
+      document.getElementById('clock').textContent = "TIME: " + now.toLocaleString();
+    }, 1000);
+
+    document.getElementById('officer').addEventListener('change', function () {
+      const value = this.value.trim().toLowerCase();
+      if (value === 'deltaon') {
+        breadcrumbMode = true;
+        alert('🟢 Breadcrumb Mode Activated');
+      } else if (value === 'deltaoff') {
+        breadcrumbMode = false;
+        alert('🔴 Breadcrumb Mode Deactivated');
+      }
+    });
+
+    updateCheckinHUD();
+  }; // End of window.onload
+  </script>
 </body>
 </html>
