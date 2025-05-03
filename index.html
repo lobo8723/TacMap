@@ -22,10 +22,11 @@
       overflow: hidden;
       text-overflow: ellipsis;
       max-width: 100%;
+      text-align: center;
     }
     #satBtn {
       position: absolute;
-      top: 28px;
+      top: 32px;
       left: 10px;
       z-index: 999;
       background: black;
@@ -37,30 +38,31 @@
     }
     #checkinBox {
       position: absolute;
-      top: 60px;
+      top: 68px;
       left: 10px;
       z-index: 999;
       background: rgba(0, 0, 0, 0.9);
-      padding: 10px;
+      padding: 8px;
       border: 2px solid #00ff00;
-      max-width: 300px;
+      max-width: 280px;
+      font-size: 11px;
     }
-    #checkinBox h3, #checkinBox p, #checkinBox button {
-      margin: 4px 0;
-      font-size: 12px;
+    #checkinBox div {
+      margin-bottom: 4px;
     }
     #viewLog, #resetLog {
       background: black;
       color: #00ff00;
       border: 1px solid #00ff00;
-      padding: 4px 8px;
-      font-size: 12px;
+      padding: 3px 6px;
+      font-size: 11px;
       cursor: pointer;
+      margin-top: 4px;
     }
     #logData {
       color: orange;
-      font-size: 11px;
-      margin-top: 6px;
+      font-size: 10px;
+      margin-top: 4px;
     }
     .hud {
       position: absolute;
@@ -109,93 +111,139 @@
     <button onclick="clearMarkers()">[CLEAR MARKERS]</button>
     <button onclick="doCheckIn()">[CHECK-IN]</button>
   </div>
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script>
+    let map = L.map('map').setView([
+
+Here's **PART 2 of 2** (JavaScript logic and full functionality):
+
+```html
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <script>
-    const map = L.map('map').setView([33.4484, -112.0740], 19);
-    const street = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
-    const sat = L.tileLayer('https://{s}.google.com/vt/lyrs=s&x={x}&y={y}&z={z}', {
-      subdomains:['mt0','mt1','mt2','mt3'], maxZoom: 20
+    let map = L.map('map').setView([33.4484, -112.0740], 20);
+    let street = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png');
+    let satellite = L.tileLayer('https://{s}.google.com/vt/lyrs=s&x={x}&y={y}&z={z}', {
+      subdomains: ['mt0','mt1','mt2','mt3'], maxZoom: 20
     });
-    let usingStreet = true;
-    document.getElementById('satBtn').onclick = () => {
-      map.removeLayer(usingStreet ? street : sat);
-      usingStreet ? sat.addTo(map) : street.addTo(map);
-      document.getElementById('satBtn').textContent = usingStreet ? 'MAP VIEW' : 'SATELLITE VIEW';
-      usingStreet = !usingStreet;
-    };
-    
-    const markerGroup = L.layerGroup().addTo(map);
-    let lastLatLng = null, checkCount = 0, totalSteps = 0, totalDistance = 0, logEntries = [];
+    let currentLayer = street;
+    street.addTo(map);
 
-    navigator.geolocation.watchPosition(pos => {
-      const { latitude, longitude, accuracy } = pos.coords;
-      const latlng = [latitude, longitude];
-      if (accuracy > 20) {
-        document.getElementById('gpsStatus').textContent = `GPS: REJECTED (${Math.round(accuracy)}m)`;
-        return;
-      }
-      document.getElementById('gpsStatus').textContent = `GPS: LOCKED (${Math.round(accuracy)}m)`;
-      document.getElementById('address').textContent = 'LOCATING...';
-      fetch(`https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${latitude}&lon=${longitude}`)
-        .then(res => res.json())
-        .then(data => {
-          document.getElementById('address').textContent = data.display_name;
-        }).catch(() => {
-          document.getElementById('address').textContent = `Lat: ${latitude.toFixed(5)}, Lon: ${longitude.toFixed(5)}`;
-        });
-      map.setView(latlng, 19);
-      if (lastLatLng) {
-        const dist = map.distance(lastLatLng, latlng);
-        if (dist >= 1) {
-          totalSteps++;
-          totalDistance += Math.round(dist);
-          document.getElementById('stepCount').textContent = totalSteps;
-          document.getElementById('distCount').textContent = totalDistance;
-          L.circleMarker(latlng, { radius: 4, color: '#00ff00', fillColor: '#00ff00', fillOpacity: 1 }).addTo(markerGroup);
-        }
-      }
-      lastLatLng = latlng;
-    }, () => {
-      document.getElementById('gpsStatus').textContent = 'GPS: ERROR';
-    }, { enableHighAccuracy: true });
+    let trail = [], markers = [], steps = 0, totalDist = 0;
+    let checkIns = 0, checkLog = [];
+    let gpsTimeout = null;
+
+    function updateClock() {
+      const now = new Date();
+      document.getElementById("clock").textContent = "TIME: " + now.toLocaleString();
+    }
+
+    setInterval(updateClock, 1000);
+
+    document.getElementById('satBtn').onclick = () => {
+      map.removeLayer(currentLayer);
+      currentLayer = currentLayer === street ? satellite : street;
+      currentLayer.addTo(map);
+      document.getElementById('satBtn').textContent = currentLayer === street ? "SATELLITE VIEW" : "MAP VIEW";
+    };
+
+    function updateGPSStatus(text) {
+      document.getElementById('gpsStatus').textContent = text;
+    }
+
+    function updateAddressDisplay(address) {
+      const addressBox = document.getElementById('address');
+      addressBox.textContent = address;
+    }
+
+    function updateStats() {
+      document.getElementById('stepCount').textContent = steps;
+      document.getElementById('distCount').textContent = totalDist;
+    }
 
     function clearMarkers() {
-      markerGroup.clearLayers();
+      markers.forEach(m => map.removeLayer(m));
+      markers = [];
+      steps = 0;
+      totalDist = 0;
+      updateStats();
     }
 
     function doCheckIn() {
-      checkCount++;
       const now = new Date();
-      const timeStr = now.toLocaleTimeString();
-      const steps = totalSteps, dist = totalDistance;
-      logEntries.push(`${String(checkCount).padStart(2, '0')} — ${timeStr} — ${steps} steps — ${dist}m`);
-      document.getElementById('checkCount').textContent = checkCount;
-      document.getElementById('lastTime').textContent = timeStr;
+      const t = now.toLocaleTimeString();
+      const logEntry = `${(checkIns+1).toString().padStart(2,'0')} – ${t} — ${steps} steps — ${totalDist}m`;
+      checkIns++;
+      document.getElementById('checkCount').textContent = checkIns;
+      document.getElementById('lastTime').textContent = t;
+      checkLog.push(logEntry);
       updateLog();
     }
 
     function updateLog() {
-      document.getElementById('logData').innerHTML = logEntries.map(entry => `<div>${entry}</div>`).join('');
+      const log = document.getElementById('logData');
+      log.innerHTML = checkLog.map(line => `<div>${line}</div>`).join('');
     }
 
     document.getElementById('viewLog').onclick = () => {
-      const logSection = document.getElementById('logSection');
-      logSection.style.display = logSection.style.display === 'none' ? 'block' : 'none';
+      const section = document.getElementById('logSection');
+      section.style.display = section.style.display === 'none' ? 'block' : 'none';
     };
 
     document.getElementById('resetLog').onclick = () => {
-      checkCount = 0; totalSteps = 0; totalDistance = 0; logEntries = [];
+      checkIns = 0;
+      checkLog = [];
       document.getElementById('checkCount').textContent = 0;
-      document.getElementById('stepCount').textContent = 0;
-      document.getElementById('distCount').textContent = 0;
       document.getElementById('lastTime').textContent = '--:--:--';
-      updateLog();
+      document.getElementById('logData').innerHTML = '';
     };
 
-    setInterval(() => {
-      const now = new Date();
-      document.getElementById('clock').textContent = "TIME: " + now.toLocaleString();
-    }, 1000);
+    function calcDistance(latlng1, latlng2) {
+      const R = 6371e3;
+      const dLat = (latlng2.lat-latlng1.lat) * Math.PI/180;
+      const dLon = (latlng2.lng-latlng1.lng) * Math.PI/180;
+      const a = Math.sin(dLat/2)**2 + Math.cos(latlng1.lat*Math.PI/180)*Math.cos(latlng2.lat*Math.PI/180)*Math.sin(dLon/2)**2;
+      const c = 2*Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+      return Math.round(R * c);
+    }
+
+    navigator.geolocation.watchPosition(pos => {
+      const { latitude, longitude, accuracy } = pos.coords;
+      if (accuracy > 30) return;
+
+      updateGPSStatus(`GPS: LOCKED (${Math.round(accuracy)}m)`);
+
+      const latlng = { lat: latitude, lng: longitude };
+      if (trail.length > 0) {
+        const last = trail[trail.length-1];
+        const dist = calcDistance(last, latlng);
+        if (dist >= 1) {
+          steps++;
+          totalDist += dist;
+          updateStats();
+          const mark = L.circleMarker(latlng, { radius: 5, color: '#00ff00', fillColor: '#00ff00', fillOpacity: 1 }).addTo(map);
+          markers.push(mark);
+        }
+      } else {
+        map.setView(latlng, 20);
+      }
+
+      trail.push(latlng);
+
+      fetch(`https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${latitude}&lon=${longitude}`)
+        .then(res => res.json())
+        .then(data => {
+          if (data.display_name) updateAddressDisplay(data.display_name);
+        })
+        .catch(() => {
+          updateAddressDisplay(`Lat: ${latitude.toFixed(5)}, Lon: ${longitude.toFixed(5)}`);
+        });
+    }, () => {
+      updateGPSStatus("GPS: ERROR");
+    }, {
+      enableHighAccuracy: true,
+      maximumAge: 0,
+      timeout: 5000
+    });
   </script>
 </body>
 </html>
