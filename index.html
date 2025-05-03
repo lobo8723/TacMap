@@ -2,11 +2,19 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
   <title>Project - Final Stable Version</title>
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <style>
-    html, body { margin: 0; padding: 0; height: 100%; background: #111; font-family: monospace; color: #00ff00; }
+    html, body {
+      margin: 0; padding: 0; height: 100%;
+      background: #111;
+      font-family: monospace;
+      color: #00ff00;
+      -ms-touch-action: manipulation;
+      touch-action: manipulation;
+    }
+
     #map { height: 100%; width: 100%; z-index: 0; }
 
     /* // ADDRESS BAR FIX - FLUSH FULL WIDTH */
@@ -40,6 +48,7 @@
       padding: 5px 12px;
       font-size: 12px;
       cursor: pointer;
+      touch-action: manipulation;
     }
 
     #gpsBtn {
@@ -53,6 +62,7 @@
       padding: 5px 12px;
       font-size: 12px;
       cursor: pointer;
+      touch-action: manipulation;
     }
 
     #checkinBox {
@@ -79,6 +89,7 @@
       font-size: 11px;
       cursor: pointer;
       margin-top: 4px;
+      touch-action: manipulation;
     }
 
     /* // SCROLLABLE CHECK-IN LOG */
@@ -116,6 +127,7 @@
       padding: 5px 12px;
       font-size: 12px;
       cursor: pointer;
+      touch-action: manipulation;
     }
   </style>
 </head>
@@ -335,6 +347,17 @@
       enableHighAccuracy: true,
       maximumAge: 0,
       timeout: 5000
+    });
+
+    // // DISABLE DOUBLE-TAP ZOOM ON BUTTONS
+    document.querySelectorAll("button").forEach(btn => {
+      btn.addEventListener("touchstart", e => {
+        if (e.touches.length > 1) e.preventDefault();
+      }, { passive: false });
+    });
+
+    document.addEventListener("gesturestart", e => {
+      e.preventDefault();
     });
   </script>
 </body>
