@@ -1,23 +1,23 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8"/>
+  <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>TACMAP</title>
-  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+  <title>Updated TacMap</title>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <style>
-    html, body { margin: 0; padding: 0; height: 100%; background: #111; font-family: monospace; color: #00ff00; }
-    #map { width: 100%; height: 100%; position: absolute; top: 0; left: 0; }
-    #address { position: absolute; top: 0; left: 0; right: 0; padding: 4px 10px; font-size: 12px; background: rgba(0,0,0,0.8); color: #00ff00; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; z-index: 999; }
-    #satBtn { position: absolute; top: 30px; left: 10px; z-index: 999; background: black; color: #00ff00; border: 1px solid #00ff00; padding: 4px 12px; font-size: 12px; }
-    #checkinBox { position: absolute; top: 70px; left: 10px; z-index: 999; background: rgba(0,0,0,0.85); border: 2px solid #00ff00; padding: 6px 10px; font-size: 12px; max-width: 300px; }
-    #checkinBox .log { font-size: 11px; margin-top: 4px; white-space: pre-line; }
-    #checkinBox button { margin-top: 6px; font-size: 11px; padding: 3px 8px; background: black; color: #00ff00; border: 1px solid #00ff00; cursor: pointer; }
-    .hud { position: absolute; width: 100%; bottom: 0; background: rgba(0,0,0,0.85); padding: 6px 10px; box-sizing: border-box; z-index: 999; font-size: 12px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; }
-    .hud-info { flex: 1; min-width: 180px; }
-    .hud-center { flex: 1; text-align: center; min-width: 180px; }
-    .hud-right { flex: 1; text-align: right; min-width: 180px; }
-    .hud button { margin: 2px; font-size: 12px; padding: 4px 12px; background: black; color: #00ff00; border: 1px solid #00ff00; cursor: pointer; }
+    html, body { margin: 0; padding: 0; height: 100%; font-family: monospace; background: #111; color: #0f0; }
+    #map { width: 100%; height: 100%; z-index: 1; position: absolute; top: 0; left: 0; }
+    #address { position: absolute; top: 0; left: 0; padding: 5px 10px; font-size: 12px; background: rgba(0,0,0,0.8); color: #0f0; z-index: 999; white-space: nowrap; max-width: 100%; overflow: hidden; text-overflow: ellipsis; }
+    #satBtn { position: absolute; top: 35px; left: 10px; z-index: 999; background: black; color: #00ff00; border: 1px solid #00ff00; padding: 5px 12px; cursor: pointer; font-size: 12px; }
+    #checkinBox { position: absolute; top: 70px; left: 10px; z-index: 999; background: rgba(0,0,0,0.85); border: 2px solid #00ff00; padding: 6px; font-size: 12px; min-width: 240px; }
+    #checkinBox span { display: inline-block; margin-bottom: 4px; }
+    #logPanel { margin-top: 4px; display: none; font-size: 11px; color: orange; }
+    .hud { position: absolute; width: 100%; bottom: 0; background: rgba(0,0,0,0.9); padding: 8px; box-sizing: border-box; z-index: 999; display: flex; justify-content: space-between; flex-wrap: wrap; font-size: 12px; }
+    .hud div { margin: 4px 0; }
+    .center-btns { flex-grow: 1; display: flex; justify-content: center; gap: 10px; }
+    button { background: black; color: #0f0; border: 1px solid #0f0; padding: 4px 10px; font-size: 12px; cursor: pointer; }
+    #logBtn, #resetLog { display: inline-block; margin: 4px 0; font-size: 12px; }
   </style>
 </head>
 <body>
@@ -26,106 +26,125 @@
   <button id="satBtn">SATELLITE VIEW</button>
   <div id="checkinBox">
     <div><strong>CHECK-INS:</strong> <span id="checkinCount">0</span> | <strong>LAST:</strong> <span id="lastCheckin">--:--:--</span></div>
-    <div><strong>MOVE:</strong> <span id="stepCount">0</span> steps | <strong>DISTANCE:</strong> <span id="distCount">0m</span></div>
-    <button onclick="toggleLog()">[VIEW LOG]</button>
-    <div class="log" id="logPanel" style="display:none;"></div>
-    <button onclick="resetLog()" style="display:none;" id="resetLogBtn">[RESET LOG]</button>
+    <div><strong>MOVE:</strong> <span id="stepCount">0</span> steps | <strong>DISTANCE:</strong> <span id="distance">0m</span></div>
+    <button id="logBtn">[VIEW LOG]</button>
+    <div id="logPanel"><strong>LOG:</strong><br/></div>
+    <button id="resetLog" style="display:none;">[RESET LOG]</button>
   </div>
   <div class="hud">
-    <div class="hud-info" id="gpsStatus">GPS: WAITING...</div>
-    <div class="hud-center">
-      <button onclick="clearMarkers()">[CLEAR MARKERS]</button>
-      <button onclick="checkIn()">[CHECK-IN]</button>
+    <div id="gpsStatus">GPS: WAITING...</div>
+    <div id="timeNow">TIME: --:--:--</div>
+    <div class="center-btns">
+      <button id="clearMarkers">[CLEAR MARKERS]</button>
+      <button id="checkinBtn">[CHECK-IN]</button>
     </div>
-    <div class="hud-right" id="timeDisplay">TIME: --:--:--</div>
   </div>
+
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <script>
-    let map, trail=[], stepCount=0, distance=0, checkinLog=[], markers=L.layerGroup(), satelliteMode=false;
+    let map, street, satellite, trail = [], markerGroup, currentLayer, checkinCount = 0, steps = 0, distance = 0;
+
     map = L.map('map').setView([33.4484, -112.0740], 19);
-    let street = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png'),
-        satellite = L.tileLayer('https://{s}.google.com/vt/lyrs=s&x={x}&y={y}&z={z}', {
-          subdomains: ['mt0','mt1','mt2','mt3'], maxZoom: 20
-        });
-    street.addTo(map); markers.addTo(map);
+    street = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
+    satellite = L.tileLayer('https://{s}.google.com/vt/lyrs=s&x={x}&y={y}&z={z}', {
+      subdomains: ['mt0','mt1','mt2','mt3'], maxZoom: 20
+    });
+    currentLayer = street;
+    markerGroup = L.layerGroup().addTo(map);
 
-    document.getElementById("satBtn").onclick = () => {
-      map.removeLayer(satelliteMode ? satellite : street);
-      (satelliteMode ? street : satellite).addTo(map);
-      satelliteMode = !satelliteMode;
-      document.getElementById("satBtn").textContent = satelliteMode ? "MAP VIEW" : "SATELLITE VIEW";
-    };
-
-    function updateTime() {
+    function updateClock() {
       const now = new Date();
-      document.getElementById("timeDisplay").textContent = "TIME: " + now.toLocaleString();
+      document.getElementById('timeNow').textContent = `TIME: ${now.toLocaleString()}`;
     }
-    setInterval(updateTime, 1000);
+    setInterval(updateClock, 1000);
 
-    function clearMarkers() {
-      markers.clearLayers();
-    }
-
-    function checkIn() {
-      const timestamp = new Date().toLocaleTimeString();
-      const log = `${String(checkinLog.length+1).padStart(2,'0')} – ${timestamp} – ${stepCount} steps – ${distance}m`;
-      checkinLog.push(log);
-      document.getElementById("checkinCount").textContent = checkinLog.length;
-      document.getElementById("lastCheckin").textContent = timestamp;
-      document.getElementById("logPanel").textContent = "LOG:\n" + checkinLog.join("\n");
-      document.getElementById("resetLogBtn").style.display = 'inline-block';
+    function centerMap(latlng) {
+      map.setView(latlng, 19);
     }
 
-    function toggleLog() {
-      const log = document.getElementById("logPanel");
-      log.style.display = log.style.display === 'none' ? 'block' : 'none';
-    }
+    function updateGPS(lat, lon, acc) {
+      const coord = [lat, lon];
+      if (trail.length === 0) centerMap(coord);
 
-    function resetLog() {
-      checkinLog = [];
-      stepCount = 0;
-      distance = 0;
-      document.getElementById("checkinCount").textContent = "0";
-      document.getElementById("stepCount").textContent = "0";
-      document.getElementById("distCount").textContent = "0m";
-      document.getElementById("lastCheckin").textContent = "--:--:--";
-      document.getElementById("logPanel").textContent = "";
-      document.getElementById("resetLogBtn").style.display = 'none';
+      if (trail.length > 0) {
+        const last = trail[trail.length - 1];
+        const dx = L.latLng(coord).distanceTo(last);
+        if (dx >= 1) {
+          steps++; distance += Math.round(dx);
+          document.getElementById('stepCount').textContent = steps;
+          document.getElementById('distance').textContent = `${distance}m`;
+        }
+      }
+
+      trail.push(coord);
+      L.circleMarker(coord, {
+        radius: 3, color: "#00ff00", fillColor: "#00ff00", fillOpacity: 1
+      }).addTo(markerGroup);
+
+      fetch(`https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${lat}&lon=${lon}`)
+        .then(res => res.json())
+        .then(data => {
+          document.getElementById('address').textContent = data.display_name || `Lat: ${lat}, Lon: ${lon}`;
+        }).catch(() => {
+          document.getElementById('address').textContent = `Lat: ${lat}, Lon: ${lon}`;
+        });
+
+      document.getElementById('gpsStatus').textContent = `GPS: LOCKED (${Math.round(acc)}m)`;
     }
 
     navigator.geolocation.watchPosition(pos => {
       const { latitude, longitude, accuracy } = pos.coords;
-      if (accuracy > 50) return;
-      const latlng = [latitude, longitude];
-      trail.push(latlng);
-      if (trail.length > 1) {
-        const [prevLat, prevLng] = trail[trail.length-2];
-        const dist = Math.floor(map.distance([prevLat, prevLng], latlng));
-        if (dist > 1) {
-          stepCount++;
-          distance += dist;
-          document.getElementById("stepCount").textContent = stepCount;
-          document.getElementById("distCount").textContent = `${distance}m`;
-        }
-      }
-      map.setView(latlng, 19);
-      L.circleMarker(latlng, {
-        radius: 2, color: '#00ff00', fillColor: '#00ff00', fillOpacity: 1
-      }).addTo(markers);
-
-      document.getElementById("gpsStatus").textContent = `GPS: LOCKED (${Math.round(accuracy)}m)`;
-      fetch(`https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${latitude}&lon=${longitude}`)
-        .then(res => res.json())
-        .then(data => {
-          document.getElementById("address").textContent = data.display_name || `Lat: ${latitude.toFixed(5)}, Lon: ${longitude.toFixed(5)}`;
-        }).catch(() => {
-          document.getElementById("address").textContent = `Lat: ${latitude.toFixed(5)}, Lon: ${longitude.toFixed(5)}`;
-        });
+      if (accuracy > 30) return;
+      updateGPS(latitude, longitude, accuracy);
     }, () => {
-      document.getElementById("gpsStatus").textContent = "GPS: ERROR";
+      document.getElementById('gpsStatus').textContent = 'GPS: ERROR';
     }, {
-      enableHighAccuracy: true, maximumAge: 0, timeout: 5000
+      enableHighAccuracy: true,
+      maximumAge: 0,
+      timeout: 5000
     });
+
+    document.getElementById('satBtn').onclick = () => {
+      map.removeLayer(currentLayer);
+      currentLayer = currentLayer === street ? satellite : street;
+      map.addLayer(currentLayer);
+      document.getElementById('satBtn').textContent = currentLayer === street ? 'SATELLITE VIEW' : 'MAP VIEW';
+    };
+
+    document.getElementById('clearMarkers').onclick = () => {
+      markerGroup.clearLayers();
+      trail = []; steps = 0; distance = 0;
+      document.getElementById('stepCount').textContent = '0';
+      document.getElementById('distance').textContent = '0m';
+    };
+
+    document.getElementById('checkinBtn').onclick = () => {
+      checkinCount++;
+      const now = new Date().toLocaleTimeString();
+      const logLine = `${String(checkinCount).padStart(2, '0')} — ${now} — ${steps} steps — ${distance}m<br/>`;
+      document.getElementById('logPanel').innerHTML += logLine;
+      document.getElementById('logPanel').style.display = 'block';
+      document.getElementById('resetLog').style.display = 'inline-block';
+      document.getElementById('checkinCount').textContent = checkinCount;
+      document.getElementById('lastCheckin').textContent = now;
+    };
+
+    document.getElementById('logBtn').onclick = () => {
+      const panel = document.getElementById('logPanel');
+      panel.style.display = panel.style.display === 'none' ? 'block' : 'none';
+      document.getElementById('resetLog').style.display = panel.style.display;
+    };
+
+    document.getElementById('resetLog').onclick = () => {
+      document.getElementById('logPanel').innerHTML = "<strong>LOG:</strong><br/>";
+      checkinCount = 0;
+      document.getElementById('checkinCount').textContent = '0';
+      document.getElementById('lastCheckin').textContent = '--:--:--';
+      steps = 0; distance = 0;
+      document.getElementById('stepCount').textContent = '0';
+      document.getElementById('distance').textContent = '0m';
+      document.getElementById('resetLog').style.display = 'none';
+    };
   </script>
 </body>
 </html>
