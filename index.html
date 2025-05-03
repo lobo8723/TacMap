@@ -218,8 +218,10 @@
           steps++;
           totalDist += dist;
           updateStats();
+
+          /* // BREADCRUMB SIZE TWEAK */
           const mark = L.circleMarker(latlng, {
-            radius: 3,
+            radius: 2,
             color: '#00ff00',
             fillColor: '#00ff00',
             fillOpacity: 1
@@ -227,7 +229,8 @@
           markers.push(mark);
         }
       } else {
-        map.setView(latlng, 20);
+        /* // GPS AUTO-CENTER FIX */
+        map.setView(latlng, 20, { animate: true });
       }
 
       trail.push(latlng);
