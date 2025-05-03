@@ -42,6 +42,20 @@
       cursor: pointer;
     }
 
+    /* // GPS RECENTER BUTTON */
+    #gpsBtn {
+      position: absolute;
+      top: 54px;
+      right: 10px;
+      z-index: 999;
+      background: black;
+      color: #00ff00;
+      border: 1px solid #00ff00;
+      padding: 5px 12px;
+      font-size: 12px;
+      cursor: pointer;
+    }
+
     #checkinBox {
       position: absolute;
       top: 92px;
@@ -107,6 +121,7 @@
   <div id="map"></div>
   <div id="address">LOCATING...</div>
   <button id="satBtn">SATELLITE VIEW</button>
+  <button id="gpsBtn">[GPS]</button> <!-- // GPS RECENTER BUTTON -->
   <div id="checkinBox">
     <div><strong>CHECK-INS:</strong> <span id="checkCount">0</span> | <strong>LAST:</strong> <span id="lastTime">--:--:--</span></div>
     <div><strong>MOVE:</strong> <span id="stepCount">0</span> steps | <strong>DISTANCE:</strong> <span id="distCount">0</span>m</div>
@@ -136,8 +151,9 @@
     let trail = [], markers = [], steps = 0, totalDist = 0;
     let checkIns = 0, checkLog = [];
 
-    /* // ACTIVE TIME TRACKING */
     let activeStart = null;
+    let lastLatLng = null; // // GPS RECENTER BUTTON SUPPORT
+
     function getActiveTime() {
       if (!activeStart) return "--:--:--";
       const now = new Date();
@@ -160,6 +176,13 @@
       currentLayer = currentLayer === street ? satellite : street;
       currentLayer.addTo(map);
       document.getElementById('satBtn').textContent = currentLayer === street ? "SATELLITE VIEW" : "MAP VIEW";
+    };
+
+    /* // GPS RECENTER BUTTON HANDLER */
+    document.getElementById('gpsBtn').onclick = () => {
+      if (lastLatLng) {
+        map.setView(lastLatLng, 20, { animate: true });
+      }
     };
 
     function updateGPSStatus(text) {
@@ -230,7 +253,9 @@
       updateGPSStatus(`GPS: LOCKED (${Math.round(accuracy)}m)`);
 
       const latlng = { lat: latitude, lng: longitude };
-      if (!activeStart) activeStart = new Date(); // start active time once GPS locks
+      lastLatLng = latlng; // // GPS RECENTER BUTTON TRACKING
+
+      if (!activeStart) activeStart = new Date();
 
       if (trail.length > 0) {
         const last = trail[trail.length-1];
