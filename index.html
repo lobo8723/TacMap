@@ -155,6 +155,7 @@
   </div>
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <script>
+    // [Core variables]
     let map = L.map('map').setView([33.4484, -112.0740], 20);
     let street = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png');
     let satellite = L.tileLayer('https://{s}.google.com/vt/lyrs=s&x={x}&y={y}&z={z}', {
@@ -164,31 +165,23 @@
     street.addTo(map);
 
     let trail = [], markers = [], steps = 0, totalDist = 0;
-    let checkIns = 0, checkLog = [];
-    let roundStartTime = null;
-    let lastLatLng = null;
+    let checkIns = 0, checkLog = [], roundStartTime = null, lastLatLng = null;
 
-    // // LOCAL STORAGE BACKUP – RESTORE ON LOAD
+    // [Local Storage Restore]
     window.onload = () => {
       const saved = localStorage.getItem("tacMapData");
       if (saved) {
-        const parsed = JSON.parse(saved);
-        steps = parsed.steps || 0;
-        totalDist = parsed.totalDist || 0;
-        checkIns = parsed.checkIns || 0;
-        checkLog = parsed.checkLog || [];
-        trail = parsed.trail || [];
+        const d = JSON.parse(saved);
+        steps = d.steps || 0; totalDist = d.totalDist || 0;
+        checkIns = d.checkIns || 0; checkLog = d.checkLog || []; trail = d.trail || [];
 
         document.getElementById('stepCount').textContent = steps;
         document.getElementById('distCount').textContent = totalDist;
         document.getElementById('checkCount').textContent = checkIns;
-        document.getElementById('lastTime').textContent = parsed.lastTime || "--:--:--";
+        document.getElementById('lastTime').textContent = d.lastTime || "--:--:--";
         updateLog();
-
         for (let p of trail) {
-          const mark = L.circleMarker(p, {
-            radius: 2, color: '#00ff00', fillColor: '#00ff00', fillOpacity: 1
-          }).addTo(map);
+          const mark = L.circleMarker(p, { radius: 2, color: '#00ff00', fillColor: '#00ff00', fillOpacity: 1 }).addTo(map);
           markers.push(mark);
         }
       }
@@ -196,11 +189,7 @@
 
     function saveData() {
       localStorage.setItem("tacMapData", JSON.stringify({
-        steps,
-        totalDist,
-        checkIns,
-        checkLog,
-        trail,
+        steps, totalDist, checkIns, checkLog, trail,
         lastTime: document.getElementById('lastTime').textContent
       }));
     }
@@ -217,68 +206,76 @@
       const now = new Date();
       document.getElementById("clock").textContent = "TIME: " + now.toLocaleString();
     }
-
     setInterval(updateClock, 1000);
 
+    // [Map Controls]
     document.getElementById('satBtn').onclick = () => {
       map.removeLayer(currentLayer);
       currentLayer = currentLayer === street ? satellite : street;
       currentLayer.addTo(map);
       document.getElementById('satBtn').textContent = currentLayer === street ? "SATELLITE VIEW" : "MAP VIEW";
     };
-
     document.getElementById('gpsBtn').onclick = () => {
       if (lastLatLng) map.setView(lastLatLng, 20, { animate: true });
     };
 
+    // [View + Reset + Export Log]
     document.getElementById('viewLog').onclick = () => {
       const section = document.getElementById('logSection');
       section.style.display = section.style.display === 'none' ? 'block' : 'none';
     };
 
     document.getElementById('resetLog').onclick = () => {
-      checkIns = 0;
-      checkLog = [];
-      roundStartTime = null;
+      checkIns = 0; checkLog = []; roundStartTime = null;
       document.getElementById('checkCount').textContent = 0;
       document.getElementById('lastTime').textContent = '--:--:--';
       document.getElementById('logData').innerHTML = '';
       saveData();
     };
 
+    // [EXPORT LOG WITH OBSERVATION]
     document.getElementById('exportLog').onclick = () => {
       if (!checkLog.length) return alert("No check-in data to export.");
       const now = new Date();
-      let summary = `TACTICAL PATROL LOG – ${now.toLocaleString()}\n\n`;
+      let summary = `PATROL LOG – ${now.toLocaleString()}\n\n`;
       summary += `Total Patrols: ${checkIns}\nTotal Distance: ${totalDist} meters\n`;
 
-      // Calculate intervals
-      let intervalTimes = [];
+      // Interval & Observation
+      let intervals = [];
       for (let i = 1; i < checkLog.length; i++) {
         const prev = checkLog[i - 1].match(/(\d{2}:\d{2}:\d{2})/)[1];
         const curr = checkLog[i].match(/(\d{2}:\d{2}:\d{2})/)[1];
         const t1 = new Date(`1970-01-01T${prev}`);
         const t2 = new Date(`1970-01-01T${curr}`);
-        const mins = Math.abs((t2 - t1) / 60000);
-        intervalTimes.push(mins);
+        intervals.push(Math.abs((t2 - t1) / 60000)); // in minutes
       }
 
-      if (intervalTimes.length) {
-        const avg = Math.round(intervalTimes.reduce((a, b) => a + b) / intervalTimes.length);
-        let trend = "";
-        if (intervalTimes.length >= 3) {
-          const first = intervalTimes[0];
-          const last = intervalTimes[intervalTimes.length - 1];
-          if (last < first - 5) trend = `Intervals accelerated from ~${first} to ~${last} min.`;
-          else if (last > first + 5) trend = `Intervals slowed from ~${first} to ~${last} min.`;
-          else trend = `Intervals remained consistent around ~${avg} minutes.`;
+      if (intervals.length) {
+        const avg = Math.round(intervals.reduce((a, b) => a + b) / intervals.length);
+        const first = Math.round(intervals[0]);
+        const last = Math.round(intervals[intervals.length - 1]);
+        if (last < first - 5) {
+          summary += `Intervals accelerated from ~${first} to ~${last} minutes.\n`;
+        } else if (last > first + 5) {
+          summary += `Intervals slowed from ~${first} to ~${last} minutes.\n`;
         } else {
-          trend = `Average patrol interval: ~${avg} minutes.`;
+          summary += `Intervals remained consistent around ~${avg} minutes.\n`;
         }
-        summary += `${trend}\n\n`;
+
+        // SMART OBSERVATION SECTION
+        summary += "\nObservation:\n";
+        if (avg <= 15 && totalDist > 100) {
+          summary += "Guard maintained high-frequency patrols with extended perimeter coverage.\n";
+        } else if (avg >= 45 && totalDist < 100) {
+          summary += "Guard performed infrequent check-ins, possibly due to a static post or extended observation duties.\n";
+        } else if (intervals.length >= 4 && Math.abs(first - last) >= 20) {
+          summary += "Guard dynamically adjusted patrol intervals mid-shift, suggesting responsive area monitoring.\n";
+        } else {
+          summary += "Guard maintained consistent patrol rhythm with adequate movement.\n";
+        }
       }
 
-      summary += "CHECK-IN DETAILS:\n";
+      summary += "\nCHECK-IN DETAILS:\n";
       checkLog.forEach((entry, i) => {
         const clean = entry.replace(/<br>/g, '\n').replace(/–/g, '-');
         summary += `${i + 1}) ${clean}\n\n`;
@@ -288,10 +285,15 @@
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = `Tactical_Log_${now.getTime()}.txt`;
+      a.download = `Patrol_Log_${now.getTime()}.txt`;
       a.click();
       URL.revokeObjectURL(url);
     };
+
+    // [LOGIC: CHECK-IN + TRACKING]
+    function updateLog() {
+      document.getElementById('logData').innerHTML = checkLog.map(line => `<div>${line}</div>`).join('');
+    }
 
     function updateAddressDisplay(address) {
       document.getElementById('address').textContent = address;
@@ -304,13 +306,8 @@
 
     function clearMarkers() {
       markers.forEach(m => map.removeLayer(m));
-      markers = [];
-      trail = [];
-      steps = 0;
-      totalDist = 0;
-      roundStartTime = null;
-      updateStats();
-      saveData();
+      markers = []; trail = []; steps = 0; totalDist = 0; roundStartTime = null;
+      updateStats(); saveData();
     }
 
     function doCheckIn() {
@@ -324,12 +321,7 @@
       document.getElementById('checkCount').textContent = checkIns;
       document.getElementById('lastTime').textContent = t;
       checkLog.push(logEntry);
-      updateLog();
-      saveData();
-    }
-
-    function updateLog() {
-      document.getElementById('logData').innerHTML = checkLog.map(line => `<div>${line}</div>`).join('');
+      updateLog(); saveData();
     }
 
     function calcDistance(latlng1, latlng2) {
@@ -346,7 +338,6 @@
       if (accuracy > 30) return;
 
       document.getElementById('gpsStatus').textContent = `GPS: LOCKED (${Math.round(accuracy)}m)`;
-
       const latlng = { lat: latitude, lng: longitude };
       lastLatLng = latlng;
 
@@ -357,15 +348,8 @@
           steps++;
           totalDist += dist;
           updateStats();
-
           if (!roundStartTime) roundStartTime = new Date();
-
-          const mark = L.circleMarker(latlng, {
-            radius: 2,
-            color: '#00ff00',
-            fillColor: '#00ff00',
-            fillOpacity: 1
-          }).addTo(map);
+          const mark = L.circleMarker(latlng, { radius: 2, color: '#00ff00', fillColor: '#00ff00', fillOpacity: 1 }).addTo(map);
           markers.push(mark);
           trail.push(latlng);
           saveData();
@@ -392,16 +376,13 @@
       timeout: 5000
     });
 
-    // DISABLE DOUBLE-TAP ZOOM ON BUTTONS
+    // [Prevent Double Tap Zoom on Buttons]
     document.querySelectorAll("button").forEach(btn => {
       btn.addEventListener("touchstart", e => {
         if (e.touches.length > 1) e.preventDefault();
       }, { passive: false });
     });
-
-    document.addEventListener("gesturestart", e => {
-      e.preventDefault();
-    });
+    document.addEventListener("gesturestart", e => e.preventDefault());
   </script>
 </body>
 </html>
