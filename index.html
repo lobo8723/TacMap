@@ -3,31 +3,169 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Project 1 - Final Stable Version (v1.1R13 - Fully Functional)</title>
+  <title>Project 1 - Final Stable Version (v1.1R15 – Check-In HUD Relocated)</title>
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <style>
-    html, body { margin: 0; padding: 0; height: 100%; font-family: monospace; background: #111; color: #00ff00; }
-    #map { width: 100%; height: 100%; z-index: 1; position: absolute; top: 0; left: 0; }
-    .hud { position: absolute; width: 100%; bottom: 0; background: rgba(0,0,0,0.85); padding: 8px; box-sizing: border-box; z-index: 999; }
-    .hud-row { display: flex; justify-content: space-between; flex-wrap: wrap; font-size: 12px; }
-    #gpsBtn { position: absolute; right: 10px; top: 60px; background: black; border: 1px solid #00ff00; color: #00ff00; padding: 4px 8px; font-size: 12px; z-index: 1001; }
-    #address { position: absolute; top: 0; left: 0; padding: 5px 10px; font-size: 12px; background: rgba(0,0,0,0.8); color: #00ff00; z-index: 999; }
-    #timer { position:absolute;top:115px;left:10px;z-index:999;font-size:12px;background:rgba(0,0,0,0.7);padding:4px 6px;font-weight:bold;border:1px solid #00ff00; }
-    #photoDropdown { display: none; flex-wrap: wrap; gap: 6px; margin-top: 6px; padding-top: 4px; border-top: 1px solid #00ff00; }
-    #photoDropdown img { width: 120px; height: auto; object-fit: contain; border: 1px solid #00ff00; }
-    #actionMenuWrapper { text-align: center; margin-top: 6px; }
-    #actionDropdownBtn { background:black;color:#00ff00;border:1px solid #00ff00;padding:5px 12px;cursor:pointer;font-size:12px;min-width:150px; }
-    #actionDropdownContent { display: none; flex-wrap: wrap; gap: 6px; justify-content: center; padding: 6px 0; }
-    #actionDropdownContent button { background: black; color: #00ff00; border: 1px solid #00ff00; padding: 5px 12px; cursor: pointer; font-size: 12px; min-width: 140px; }
-    #helpModal { display: none; position: fixed; top: 10%; left: 50%; transform: translateX(-50%); background: black; border: 1px solid #00ff00; color: #00ff00; padding: 15px; width: 90%; max-width: 500px; z-index: 2000; overflow-y: auto; max-height: 80vh; }
-    #helpModal h2 { font-size: 16px; margin-top: 0; }
-    #helpModal ul { padding-left: 20px; font-size: 12px; }
-    #closeHelp { background: black; color: #00ff00; border: 1px solid #00ff00; padding: 4px 10px; cursor: pointer; float: right; font-size: 12px; }
+    html, body {
+      margin: 0;
+      padding: 0;
+      height: 100%;
+      font-family: monospace;
+      background: #111;
+      color: #00ff00;
+    }
 
-    /* // CHECK-IN MODULE STYLES */
+    #map {
+      width: 100%;
+      height: 100%;
+      z-index: 1;
+      position: absolute;
+      top: 0;
+      left: 0;
+    }
+
+    .hud {
+      position: absolute;
+      width: 100%;
+      bottom: 0;
+      background: rgba(0,0,0,0.85);
+      padding: 8px;
+      box-sizing: border-box;
+      z-index: 999;
+    }
+
+    .hud-row {
+      display: flex;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      font-size: 12px;
+    }
+
+    #gpsBtn {
+      position: absolute;
+      right: 10px;
+      top: 60px;
+      background: black;
+      border: 1px solid #00ff00;
+      color: #00ff00;
+      padding: 4px 8px;
+      font-size: 12px;
+      z-index: 1001;
+    }
+
+    #address {
+      position: absolute;
+      top: 0;
+      left: 0;
+      padding: 5px 10px;
+      font-size: 12px;
+      background: rgba(0,0,0,0.8);
+      color: #00ff00;
+      z-index: 999;
+    }
+
+    #timer {
+      position: absolute;
+      top: 115px;
+      left: 10px;
+      z-index: 999;
+      font-size: 12px;
+      background: rgba(0,0,0,0.7);
+      padding: 4px 6px;
+      font-weight: bold;
+      border: 1px solid #00ff00;
+    }
+
+    #photoDropdown {
+      display: none;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin-top: 6px;
+      padding-top: 4px;
+      border-top: 1px solid #00ff00;
+    }
+
+    #photoDropdown img {
+      width: 120px;
+      height: auto;
+      object-fit: contain;
+      border: 1px solid #00ff00;
+    }
+
+    #actionMenuWrapper {
+      text-align: center;
+      margin-top: 6px;
+    }
+
+    #actionDropdownBtn {
+      background: black;
+      color: #00ff00;
+      border: 1px solid #00ff00;
+      padding: 5px 12px;
+      cursor: pointer;
+      font-size: 12px;
+      min-width: 150px;
+    }
+
+    #actionDropdownContent {
+      display: none;
+      flex-wrap: wrap;
+      gap: 6px;
+      justify-content: center;
+      padding: 6px 0;
+    }
+
+    #actionDropdownContent button {
+      background: black;
+      color: #00ff00;
+      border: 1px solid #00ff00;
+      padding: 5px 12px;
+      cursor: pointer;
+      font-size: 12px;
+      min-width: 140px;
+    }
+
+    #helpModal {
+      display: none;
+      position: fixed;
+      top: 10%;
+      left: 50%;
+      transform: translateX(-50%);
+      background: black;
+      border: 1px solid #00ff00;
+      color: #00ff00;
+      padding: 15px;
+      width: 90%;
+      max-width: 500px;
+      z-index: 2000;
+      overflow-y: auto;
+      max-height: 80vh;
+    }
+
+    #helpModal h2 {
+      font-size: 16px;
+      margin-top: 0;
+    }
+
+    #helpModal ul {
+      padding-left: 20px;
+      font-size: 12px;
+    }
+
+    #closeHelp {
+      background: black;
+      color: #00ff00;
+      border: 1px solid #00ff00;
+      padding: 4px 10px;
+      cursor: pointer;
+      float: right;
+      font-size: 12px;
+    }
+
+    /* // CHECK-IN MODULE STYLES – NEW LOCATION */
     #checkinHUD {
       position: absolute;
-      bottom: 120px;
+      top: 85px; /* Positioned just below SATELLITE VIEW */
       left: 10px;
       font-size: 12px;
       color: #00ff00;
@@ -37,9 +175,22 @@
       z-index: 999;
       max-width: 300px;
     }
-    #checkinHUD span { color: orange; }
-    #checkinLogPanel { display: none; margin-top: 6px; }
-    #checkinList { list-style: none; padding-left: 10px; margin: 4px 0; font-size: 12px; }
+
+    #checkinHUD span {
+      color: orange;
+    }
+
+    #checkinLogPanel {
+      display: none;
+      margin-top: 6px;
+    }
+
+    #checkinList {
+      list-style: none;
+      padding-left: 10px;
+      margin: 4px 0;
+      font-size: 12px;
+    }
   </style>
 </head>
 <body>
@@ -66,24 +217,24 @@
         <button onclick="takePhoto()">[CAPTURE]</button>
         <button onclick="toggleDropdown()">[VIEW PHOTOS]</button>
         <button onclick="showHelp()">[HELP]</button>
-        <button onclick="logCheckin()">[CHECK-IN]</button> <!-- NEW CHECK-IN BUTTON -->
+        <button onclick="logCheckin()">[CHECK-IN]</button> <!-- NEW BUTTON -->
       </div>
     </div>
     <div id="photoDropdown"></div>
   </div>
 
-  <!-- // CHECK-IN MODULE HUD -->
+  <!-- // CHECK-IN MODULE HUD (POSITIONED TOP-LEFT) -->
   <div id="checkinHUD">
     <div>
-      <strong>CHECK-INS:</strong> 
-      <span id="checkinCount">0</span> | 
-      <strong>LAST:</strong> 
+      <strong>CHECK-INS:</strong>
+      <span id="checkinCount">0</span> |
+      <strong>LAST:</strong>
       <span id="lastCheckin">--:--:--</span>
     </div>
     <div>
-      <strong>MOVEMENT:</strong> 
-      <span id="stepCount">0</span> STEPS | 
-      <strong>DISTANCE:</strong> 
+      <strong>MOVEMENT:</strong>
+      <span id="stepCount">0</span> STEPS |
+      <strong>DISTANCE:</strong>
       <span id="distanceMoved">0m</span>
     </div>
     <button onclick="toggleCheckinLog()" style="margin-top:4px; background:black; color:#00ff00; border:1px solid #00ff00; font-size:12px; cursor:pointer;">
@@ -112,7 +263,7 @@
     let trail = [], markerCount = 0, markerMode = null, startTime = Date.now();
     let breadcrumbMode = false;
 
-    // // CHECK-IN MODULE: INIT
+    // // CHECK-IN MODULE: INIT + STORAGE
     let checkinLog = JSON.parse(localStorage.getItem("checkinLog")) || [];
     let stepCount = parseInt(localStorage.getItem("stepCount")) || 0;
     let totalDistance = parseFloat(localStorage.getItem("totalDistance")) || 0;
@@ -135,7 +286,7 @@
 
     function logCheckin() {
       const now = new Date();
-      const timestamp = now.toTimeString().split(" ")[0]; // Military time
+      const timestamp = now.toTimeString().split(" ")[0];
       checkinLog.push(timestamp);
       localStorage.setItem("checkinLog", JSON.stringify(checkinLog));
       updateCheckinHUD();
@@ -151,20 +302,24 @@
       checkinLog = [];
       stepCount = 0;
       totalDistance = 0;
+      lastLatLng = null;
       localStorage.removeItem("checkinLog");
       localStorage.removeItem("stepCount");
       localStorage.removeItem("totalDistance");
       updateCheckinHUD();
     }
 
-    updateCheckinHUD(); // load stored data on start
+    updateCheckinHUD(); // Load existing data if present
         map.on('click', function (e) {
       if (breadcrumbMode) {
         const m = L.circleMarker(e.latlng, {
-          radius: 2, color: '#00ff00', fillColor: '#00ff00', fillOpacity: 1
+          radius: 2,
+          color: '#00ff00',
+          fillColor: '#00ff00',
+          fillOpacity: 1
         }).bindTooltip("BREADCRUMB").addTo(markerGroup);
 
-        // // CHECK-IN MODULE: TRACK STEPS + DISTANCE
+        // CHECK-IN MODULE: Track steps + distance
         stepCount++;
         localStorage.setItem("stepCount", stepCount);
 
@@ -190,7 +345,10 @@
         label = custom;
       }
       const m = L.circleMarker(e.latlng, {
-        radius: 6, color: color, fillColor: color, fillOpacity: 1
+        radius: 6,
+        color: color,
+        fillColor: color,
+        fillOpacity: 1
       }).bindTooltip(label).addTo(markerGroup);
       markerCount++;
       document.getElementById('markerCount').textContent = `MARKERS: ${markerCount}`;
@@ -201,10 +359,10 @@
       markerCount = 0;
       trail = [];
       lastLatLng = null;
-      localStorage.removeItem("stepCount");
-      localStorage.removeItem("totalDistance");
       stepCount = 0;
       totalDistance = 0;
+      localStorage.removeItem("stepCount");
+      localStorage.removeItem("totalDistance");
       document.getElementById('markerCount').textContent = "MARKERS: 0";
       updateCheckinHUD();
     }
@@ -261,7 +419,10 @@
         const latlng = [latitude, longitude];
         trail.push(latlng);
         L.circleMarker(latlng, {
-          radius: 2, color: '#00ff00', fillColor: '#00ff00', fillOpacity: 1
+          radius: 2,
+          color: '#00ff00',
+          fillColor: '#00ff00',
+          fillOpacity: 1
         }).addTo(markerGroup);
         fetch(`https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${latitude}&lon=${longitude}`)
           .then(res => res.json())
@@ -299,3 +460,4 @@
   </script>
 </body>
 </html>
+  
