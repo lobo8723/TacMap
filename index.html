@@ -3,21 +3,90 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Updated TacMap</title>
+  <title>Project - Final Stable Version</title>
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <style>
-    html, body { margin: 0; padding: 0; height: 100%; font-family: monospace; background: #111; color: #0f0; }
-    #map { width: 100%; height: 100%; z-index: 1; position: absolute; top: 0; left: 0; }
-    #address { position: absolute; top: 0; left: 0; padding: 5px 10px; font-size: 12px; background: rgba(0,0,0,0.8); color: #0f0; z-index: 999; white-space: nowrap; max-width: 100%; overflow: hidden; text-overflow: ellipsis; }
-    #satBtn { position: absolute; top: 35px; left: 10px; z-index: 999; background: black; color: #00ff00; border: 1px solid #00ff00; padding: 5px 12px; cursor: pointer; font-size: 12px; }
-    #checkinBox { position: absolute; top: 70px; left: 10px; z-index: 999; background: rgba(0,0,0,0.85); border: 2px solid #00ff00; padding: 6px; font-size: 12px; min-width: 240px; }
-    #checkinBox span { display: inline-block; margin-bottom: 4px; }
-    #logPanel { margin-top: 4px; display: none; font-size: 11px; color: orange; }
-    .hud { position: absolute; width: 100%; bottom: 0; background: rgba(0,0,0,0.9); padding: 8px; box-sizing: border-box; z-index: 999; display: flex; justify-content: space-between; flex-wrap: wrap; font-size: 12px; }
-    .hud div { margin: 4px 0; }
-    .center-btns { flex-grow: 1; display: flex; justify-content: center; gap: 10px; }
-    button { background: black; color: #0f0; border: 1px solid #0f0; padding: 4px 10px; font-size: 12px; cursor: pointer; }
-    #logBtn, #resetLog { display: inline-block; margin: 4px 0; font-size: 12px; }
+    html, body { margin: 0; padding: 0; height: 100%; background: #111; font-family: monospace; color: #00ff00; }
+    #map { height: 100%; width: 100%; z-index: 0; }
+    #address {
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      padding: 6px 10px;
+      font-size: 12px;
+      background: rgba(0, 0, 0, 0.85);
+      color: #00ff00;
+      z-index: 999;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      max-width: 100%;
+    }
+    #satBtn {
+      position: absolute;
+      top: 28px;
+      left: 10px;
+      z-index: 999;
+      background: black;
+      color: #00ff00;
+      border: 1px solid #00ff00;
+      padding: 5px 12px;
+      font-size: 12px;
+      cursor: pointer;
+    }
+    #checkinBox {
+      position: absolute;
+      top: 60px;
+      left: 10px;
+      z-index: 999;
+      background: rgba(0, 0, 0, 0.9);
+      padding: 10px;
+      border: 2px solid #00ff00;
+      max-width: 300px;
+    }
+    #checkinBox h3, #checkinBox p, #checkinBox button {
+      margin: 4px 0;
+      font-size: 12px;
+    }
+    #viewLog, #resetLog {
+      background: black;
+      color: #00ff00;
+      border: 1px solid #00ff00;
+      padding: 4px 8px;
+      font-size: 12px;
+      cursor: pointer;
+    }
+    #logData {
+      color: orange;
+      font-size: 11px;
+      margin-top: 6px;
+    }
+    .hud {
+      position: absolute;
+      bottom: 0;
+      width: 100%;
+      background: rgba(0,0,0,0.9);
+      padding: 6px 8px;
+      box-sizing: border-box;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      z-index: 999;
+      flex-wrap: wrap;
+      font-size: 12px;
+    }
+    .hud span, .hud button {
+      margin: 2px 6px;
+    }
+    .hud button {
+      background: black;
+      color: #00ff00;
+      border: 1px solid #00ff00;
+      padding: 5px 12px;
+      font-size: 12px;
+      cursor: pointer;
+    }
   </style>
 </head>
 <body>
@@ -25,126 +94,108 @@
   <div id="address">LOCATING...</div>
   <button id="satBtn">SATELLITE VIEW</button>
   <div id="checkinBox">
-    <div><strong>CHECK-INS:</strong> <span id="checkinCount">0</span> | <strong>LAST:</strong> <span id="lastCheckin">--:--:--</span></div>
-    <div><strong>MOVE:</strong> <span id="stepCount">0</span> steps | <strong>DISTANCE:</strong> <span id="distance">0m</span></div>
-    <button id="logBtn">[VIEW LOG]</button>
-    <div id="logPanel"><strong>LOG:</strong><br/></div>
-    <button id="resetLog" style="display:none;">[RESET LOG]</button>
-  </div>
-  <div class="hud">
-    <div id="gpsStatus">GPS: WAITING...</div>
-    <div id="timeNow">TIME: --:--:--</div>
-    <div class="center-btns">
-      <button id="clearMarkers">[CLEAR MARKERS]</button>
-      <button id="checkinBtn">[CHECK-IN]</button>
+    <div><strong>CHECK-INS:</strong> <span id="checkCount">0</span> | <strong>LAST:</strong> <span id="lastTime">--:--:--</span></div>
+    <div><strong>MOVE:</strong> <span id="stepCount">0</span> steps | <strong>DISTANCE:</strong> <span id="distCount">0</span>m</div>
+    <button id="viewLog">[VIEW LOG]</button>
+    <div id="logSection" style="display:none;">
+      <div>LOG:</div>
+      <div id="logData"></div>
+      <button id="resetLog">[RESET LOG]</button>
     </div>
   </div>
-
+  <div class="hud">
+    <span id="gpsStatus">GPS: WAITING...</span>
+    <span id="clock">TIME: --:--:--</span>
+    <button onclick="clearMarkers()">[CLEAR MARKERS]</button>
+    <button onclick="doCheckIn()">[CHECK-IN]</button>
+  </div>
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <script>
-    let map, street, satellite, trail = [], markerGroup, currentLayer, checkinCount = 0, steps = 0, distance = 0;
-
-    map = L.map('map').setView([33.4484, -112.0740], 19);
-    street = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
-    satellite = L.tileLayer('https://{s}.google.com/vt/lyrs=s&x={x}&y={y}&z={z}', {
-      subdomains: ['mt0','mt1','mt2','mt3'], maxZoom: 20
+    const map = L.map('map').setView([33.4484, -112.0740], 19);
+    const street = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
+    const sat = L.tileLayer('https://{s}.google.com/vt/lyrs=s&x={x}&y={y}&z={z}', {
+      subdomains:['mt0','mt1','mt2','mt3'], maxZoom: 20
     });
-    currentLayer = street;
-    markerGroup = L.layerGroup().addTo(map);
-
-    function updateClock() {
-      const now = new Date();
-      document.getElementById('timeNow').textContent = `TIME: ${now.toLocaleString()}`;
-    }
-    setInterval(updateClock, 1000);
-
-    function centerMap(latlng) {
-      map.setView(latlng, 19);
-    }
-
-    function updateGPS(lat, lon, acc) {
-      const coord = [lat, lon];
-      if (trail.length === 0) centerMap(coord);
-
-      if (trail.length > 0) {
-        const last = trail[trail.length - 1];
-        const dx = L.latLng(coord).distanceTo(last);
-        if (dx >= 1) {
-          steps++; distance += Math.round(dx);
-          document.getElementById('stepCount').textContent = steps;
-          document.getElementById('distance').textContent = `${distance}m`;
-        }
-      }
-
-      trail.push(coord);
-      L.circleMarker(coord, {
-        radius: 3, color: "#00ff00", fillColor: "#00ff00", fillOpacity: 1
-      }).addTo(markerGroup);
-
-      fetch(`https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${lat}&lon=${lon}`)
-        .then(res => res.json())
-        .then(data => {
-          document.getElementById('address').textContent = data.display_name || `Lat: ${lat}, Lon: ${lon}`;
-        }).catch(() => {
-          document.getElementById('address').textContent = `Lat: ${lat}, Lon: ${lon}`;
-        });
-
-      document.getElementById('gpsStatus').textContent = `GPS: LOCKED (${Math.round(acc)}m)`;
-    }
+    let usingStreet = true;
+    document.getElementById('satBtn').onclick = () => {
+      map.removeLayer(usingStreet ? street : sat);
+      usingStreet ? sat.addTo(map) : street.addTo(map);
+      document.getElementById('satBtn').textContent = usingStreet ? 'MAP VIEW' : 'SATELLITE VIEW';
+      usingStreet = !usingStreet;
+    };
+    
+    const markerGroup = L.layerGroup().addTo(map);
+    let lastLatLng = null, checkCount = 0, totalSteps = 0, totalDistance = 0, logEntries = [];
 
     navigator.geolocation.watchPosition(pos => {
       const { latitude, longitude, accuracy } = pos.coords;
-      if (accuracy > 30) return;
-      updateGPS(latitude, longitude, accuracy);
+      const latlng = [latitude, longitude];
+      if (accuracy > 20) {
+        document.getElementById('gpsStatus').textContent = `GPS: REJECTED (${Math.round(accuracy)}m)`;
+        return;
+      }
+      document.getElementById('gpsStatus').textContent = `GPS: LOCKED (${Math.round(accuracy)}m)`;
+      document.getElementById('address').textContent = 'LOCATING...';
+      fetch(`https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${latitude}&lon=${longitude}`)
+        .then(res => res.json())
+        .then(data => {
+          document.getElementById('address').textContent = data.display_name;
+        }).catch(() => {
+          document.getElementById('address').textContent = `Lat: ${latitude.toFixed(5)}, Lon: ${longitude.toFixed(5)}`;
+        });
+      map.setView(latlng, 19);
+      if (lastLatLng) {
+        const dist = map.distance(lastLatLng, latlng);
+        if (dist >= 1) {
+          totalSteps++;
+          totalDistance += Math.round(dist);
+          document.getElementById('stepCount').textContent = totalSteps;
+          document.getElementById('distCount').textContent = totalDistance;
+          L.circleMarker(latlng, { radius: 4, color: '#00ff00', fillColor: '#00ff00', fillOpacity: 1 }).addTo(markerGroup);
+        }
+      }
+      lastLatLng = latlng;
     }, () => {
       document.getElementById('gpsStatus').textContent = 'GPS: ERROR';
-    }, {
-      enableHighAccuracy: true,
-      maximumAge: 0,
-      timeout: 5000
-    });
+    }, { enableHighAccuracy: true });
 
-    document.getElementById('satBtn').onclick = () => {
-      map.removeLayer(currentLayer);
-      currentLayer = currentLayer === street ? satellite : street;
-      map.addLayer(currentLayer);
-      document.getElementById('satBtn').textContent = currentLayer === street ? 'SATELLITE VIEW' : 'MAP VIEW';
-    };
-
-    document.getElementById('clearMarkers').onclick = () => {
+    function clearMarkers() {
       markerGroup.clearLayers();
-      trail = []; steps = 0; distance = 0;
-      document.getElementById('stepCount').textContent = '0';
-      document.getElementById('distance').textContent = '0m';
-    };
+    }
 
-    document.getElementById('checkinBtn').onclick = () => {
-      checkinCount++;
-      const now = new Date().toLocaleTimeString();
-      const logLine = `${String(checkinCount).padStart(2, '0')} — ${now} — ${steps} steps — ${distance}m<br/>`;
-      document.getElementById('logPanel').innerHTML += logLine;
-      document.getElementById('logPanel').style.display = 'block';
-      document.getElementById('resetLog').style.display = 'inline-block';
-      document.getElementById('checkinCount').textContent = checkinCount;
-      document.getElementById('lastCheckin').textContent = now;
-    };
+    function doCheckIn() {
+      checkCount++;
+      const now = new Date();
+      const timeStr = now.toLocaleTimeString();
+      const steps = totalSteps, dist = totalDistance;
+      logEntries.push(`${String(checkCount).padStart(2, '0')} — ${timeStr} — ${steps} steps — ${dist}m`);
+      document.getElementById('checkCount').textContent = checkCount;
+      document.getElementById('lastTime').textContent = timeStr;
+      updateLog();
+    }
 
-    document.getElementById('logBtn').onclick = () => {
-      const panel = document.getElementById('logPanel');
-      panel.style.display = panel.style.display === 'none' ? 'block' : 'none';
-      document.getElementById('resetLog').style.display = panel.style.display;
+    function updateLog() {
+      document.getElementById('logData').innerHTML = logEntries.map(entry => `<div>${entry}</div>`).join('');
+    }
+
+    document.getElementById('viewLog').onclick = () => {
+      const logSection = document.getElementById('logSection');
+      logSection.style.display = logSection.style.display === 'none' ? 'block' : 'none';
     };
 
     document.getElementById('resetLog').onclick = () => {
-      document.getElementById('logPanel').innerHTML = "<strong>LOG:</strong><br/>";
-      checkinCount = 0;
-      document.getElementById('checkinCount').textContent = '0';
-      document.getElementById('lastCheckin').textContent = '--:--:--';
-      steps = 0; distance = 0;
-      document.getElementById('stepCount').textContent = '0';
-      document.getElementById('distance').textContent = '0m';
-      document.getElementById('resetLog').style.display = 'none';
+      checkCount = 0; totalSteps = 0; totalDistance = 0; logEntries = [];
+      document.getElementById('checkCount').textContent = 0;
+      document.getElementById('stepCount').textContent = 0;
+      document.getElementById('distCount').textContent = 0;
+      document.getElementById('lastTime').textContent = '--:--:--';
+      updateLog();
     };
+
+    setInterval(() => {
+      const now = new Date();
+      document.getElementById('clock').textContent = "TIME: " + now.toLocaleString();
+    }, 1000);
   </script>
 </body>
 </html>
