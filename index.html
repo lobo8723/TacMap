@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Project 1 - v1.1R19 – Check-In Upgrade</title>
+  <title>Project 1 - v1.1R20 – Clean Build with Check-In HUD</title>
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <style>
     html, body {
@@ -91,77 +91,6 @@
       border: 1px solid #00ff00;
     }
 
-    #actionMenuWrapper {
-      text-align: center;
-      margin-top: 6px;
-    }
-
-    #actionDropdownBtn {
-      background: black;
-      color: #00ff00;
-      border: 1px solid #00ff00;
-      padding: 5px 12px;
-      cursor: pointer;
-      font-size: 12px;
-      min-width: 150px;
-    }
-
-    #actionDropdownContent {
-      display: none;
-      flex-wrap: wrap;
-      gap: 6px;
-      justify-content: center;
-      padding: 6px 0;
-    }
-
-    #actionDropdownContent button {
-      background: black;
-      color: #00ff00;
-      border: 1px solid #00ff00;
-      padding: 5px 12px;
-      cursor: pointer;
-      font-size: 12px;
-      min-width: 140px;
-    }
-
-    #helpModal {
-      display: none;
-      position: fixed;
-      top: 10%;
-      left: 50%;
-      transform: translateX(-50%);
-      background: black;
-      border: 1px solid #00ff00;
-      color: #00ff00;
-      padding: 15px;
-      width: 90%;
-      max-width: 500px;
-      z-index: 2000;
-      overflow-y: auto;
-      max-height: 80vh;
-    }
-
-    #helpModal h2 {
-      font-size: 16px;
-      margin-top: 0;
-    }
-
-    #helpModal ul {
-      padding-left: 20px;
-      font-size: 12px;
-    }
-
-    #closeHelp {
-      background: black;
-      color: #00ff00;
-      border: 1px solid #00ff00;
-      padding: 4px 10px;
-      cursor: pointer;
-      float: right;
-      font-size: 12px;
-    }
-
-    /* CHECK-IN HUD MODULE */
     #checkinHUD {
       position: absolute;
       top: 85px;
@@ -194,15 +123,26 @@
       margin: 4px 0;
       font-size: 12px;
     }
+
+    button.mainBtn {
+      background: black;
+      color: #00ff00;
+      border: 1px solid #00ff00;
+      padding: 5px 12px;
+      font-size: 12px;
+      cursor: pointer;
+      margin-right: 4px;
+      margin-top: 6px;
+    }
   </style>
 </head>
 <body>
   <div id="map"></div>
   <div id="gpsBtn" title="Center on GPS">[GPS]</div>
-  <button id="toggleMapType" style="position:absolute;top:50px;left:10px;z-index:999;background:black;color:#00ff00;border:1px solid #00ff00;padding:5px;font-size:12px;">SATELLITE VIEW</button>
+  <button id="toggleMapType" style="position:absolute;top:50px;left:10px;z-index:999;" class="mainBtn">SATELLITE VIEW</button>
   <div id="address">LOCATING...</div>
-
-  <!-- CHECK-IN HUD MODULE -->
+  <div id="timer">Active Time: 00:00:00</div>
+    <!-- CHECK-IN HUD MODULE -->
   <div id="checkinHUD">
     <div>
       <strong class="label">CHECK-INS:</strong>
@@ -220,15 +160,11 @@
       <strong class="label">ACTIVE TIME:</strong>
       <span id="activeTime">00:00:00</span>
     </div>
-    <button onclick="toggleCheckinLog()" style="margin-top:4px; background:black; color:#00ff00; border:1px solid #00ff00; font-size:12px; cursor:pointer;">
-      [VIEW LOG]
-    </button>
+    <button onclick="toggleCheckinLog()" class="mainBtn">[VIEW LOG]</button>
     <div id="checkinLogPanel">
       <strong class="label">CHECK-IN LOG:</strong>
       <ul id="checkinList"></ul>
-      <button onclick="resetCheckins()" style="margin-top:4px; background:black; color:#00ff00; border:1px solid #00ff00; font-size:12px; cursor:pointer;">
-        [RESET LOG]
-      </button>
+      <button onclick="resetCheckins()" class="mainBtn">[RESET LOG]</button>
     </div>
   </div>
 
@@ -239,50 +175,20 @@
       <div id="gpsStatus">GPS: WAITING...</div>
       <div id="markerCount">MARKERS: 0</div>
     </div>
-    <div id="actionMenuWrapper">
-      <button id="actionDropdownBtn">[ ACTION MENU ]</button>
-      <div id="actionDropdownContent">
-        <button onclick="setMarkerMode('clear')">[SECURE]</button>
-        <button onclick="setMarkerMode('incident')">[INCIDENT]</button>
-        <button onclick="setMarkerMode('move')">[MOVEMENT]</button>
-        <button onclick="setMarkerMode('custom')">[ADD CUSTOM]</button>
-        <button onclick="clearAll()">[CLEAR MARKERS]</button>
-        <button onclick="takePhoto()">[CAPTURE]</button>
-        <button onclick="toggleDropdown()">[VIEW PHOTOS]</button>
-        <button onclick="showHelp()">[HELP]</button>
-        <button onclick="logCheckin()">[CHECK-IN]</button>
-      </div>
+    <div style="text-align:center;">
+      <button onclick="clearAll()" class="mainBtn">[CLEAR MARKERS]</button>
+      <button onclick="takePhoto()" class="mainBtn">[CAPTURE]</button>
+      <button onclick="toggleDropdown()" class="mainBtn">[VIEW PHOTOS]</button>
+      <button onclick="logCheckin()" class="mainBtn">[CHECK-IN]</button>
     </div>
     <div id="photoDropdown"></div>
   </div>
-    <div id="helpModal">
-    <button id="closeHelp" onclick="document.getElementById('helpModal').style.display='none'">CLOSE</button>
-    <h2>Help Reference Guide</h2>
-    <ul>
-      <li><strong>[SECURE]</strong>: Green marker for secured areas.</li>
-      <li><strong>[INCIDENT]</strong>: Red marker to flag incidents.</li>
-      <li><strong>[MOVEMENT]</strong>: Orange marker for movement tracking.</li>
-      <li><strong>[ADD CUSTOM]</strong>: Enter a label to create a custom marker.</li>
-      <li><strong>[CLEAR MARKERS]</strong>: Remove all placed markers.</li>
-      <li><strong>[CAPTURE]</strong>: Opens the camera to take a photo.</li>
-      <li><strong>[VIEW PHOTOS]</strong>: Shows uploaded or captured photos.</li>
-      <li><strong>[SATELLITE VIEW]</strong>: Switch between satellite/street map.</li>
-      <li><strong>[Active Time]</strong>: Timer showing operation duration.</li>
-      <li><strong>[GPS]</strong>: Zooms to current GPS location.</li>
-      <li><strong>[Address]</strong>: Reverse geocoded physical address.</li>
-      <li><strong>[OFFICER]</strong>: Enter officer name.</li>
-      <li><strong>[GPS LOCKED]</strong>: Displays GPS signal accuracy.</li>
-      <li><strong>[TIME]</strong>: Shows system time in real-time.</li>
-      <li><strong>[MARKERS]</strong>: Active marker counter.</li>
-    </ul>
-  </div>
-
-  <input id="photoInput" type="file" accept="image/*" capture="environment" style="display:none;" />
+    <input id="photoInput" type="file" accept="image/*" capture="environment" style="display:none;" />
 
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <script>
   window.onload = function () {
-      let map = L.map('map').setView([33.4484, -112.0740], 19);
+    let map = L.map('map').setView([33.4484, -112.0740], 19);
     const street = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png');
     const satellite = L.tileLayer('https://{s}.google.com/vt/lyrs=s&x={x}&y={y}&z={z}', {
       subdomains: ['mt0', 'mt1', 'mt2', 'mt3'],
@@ -297,10 +203,6 @@
     function setMarkerMode(type) {
       markerMode = type;
       alert("Tap on the map to place marker.");
-    }
-
-    function showHelp() {
-      document.getElementById('helpModal').style.display = 'block';
     }
 
     document.getElementById('toggleMapType').onclick = () => {
@@ -372,11 +274,6 @@
       }
     };
 
-    document.getElementById('actionDropdownBtn').onclick = () => {
-      const menu = document.getElementById('actionDropdownContent');
-      menu.style.display = (menu.style.display === 'none' || menu.style.display === '') ? 'flex' : 'none';
-    };
-
     document.getElementById('officer').addEventListener('change', function () {
       const value = this.value.trim().toLowerCase();
       if (value === 'deltaon') {
@@ -394,7 +291,8 @@
       currentLayer.addTo(map);
       document.getElementById('toggleMapType').textContent = currentLayer === street ? 'SATELLITE VIEW' : 'MAP VIEW';
     };
-        function initGPS() {
+
+    function initGPS() {
       navigator.geolocation.watchPosition(pos => {
         const { latitude, longitude, accuracy } = pos.coords;
 
@@ -432,6 +330,139 @@
     }
 
     initGPS();
+        function takePhoto() {
+      document.getElementById('photoInput').click();
+    }
+
+    document.getElementById('photoInput').addEventListener('change', function () {
+      const file = this.files[0];
+      if (!file) return;
+      const img = document.createElement('img');
+      img.src = URL.createObjectURL(file);
+      document.getElementById('photoDropdown').appendChild(img);
+    });
+
+    function toggleDropdown() {
+      const panel = document.getElementById('photoDropdown');
+      panel.style.display = (panel.style.display === 'none' || panel.style.display === '') ? 'flex' : 'none';
+    }
+
+    function logCheckin() {
+      const now = new Date();
+      const timestamp = now.toTimeString().split(" ")[0];
+
+      const stepsThisCheckin = stepCount - lastStepCount;
+      const distThisCheckin = totalDistance - lastDistance;
+
+      checkinLog.push({
+        time: timestamp,
+        steps: stepsThisCheckin,
+        distance: distThisCheckin
+      });
+
+      lastStepCount = stepCount;
+      lastDistance = totalDistance;
+
+      localStorage.setItem("checkinLog", JSON.stringify(checkinLog));
+      updateCheckinHUD();
+    }
+
+    function toggleCheckinLog() {
+      const panel = document.getElementById("checkinLogPanel");
+      panel.style.display = panel.style.display === "none" || panel.style.display === "" ? "block" : "none";
+    }
+
+    function resetCheckins() {
+      if (!confirm("Reset all check-ins and movement data?")) return;
+      checkinLog = [];
+      stepCount = 0;
+      totalDistance = 0;
+      lastStepCount = 0;
+      lastDistance = 0;
+      lastLatLng = null;
+      localStorage.removeItem("checkinLog");
+      localStorage.removeItem("stepCount");
+      localStorage.removeItem("totalDistance");
+      updateCheckinHUD();
+    }
+
+    function updateCheckinHUD() {
+      document.getElementById('checkinCount').textContent = checkinLog.length;
+      document.getElementById('lastCheckin').textContent = checkinLog.length > 0 ? checkinLog[checkinLog.length - 1].time : "--:--:--";
+      document.getElementById('stepCount').textContent = stepCount;
+      document.getElementById('distanceMoved').textContent = Math.round(totalDistance) + "m";
+
+      const ul = document.getElementById('checkinList');
+      ul.innerHTML = "";
+      checkinLog.forEach((entry, i) => {
+        const li = document.createElement("li");
+        li.innerHTML = `<span style="color:orange;">${String(i + 1).padStart(2, '0')} – ${entry.time} – ${entry.steps}</span> <span style="color:#00ff00;">steps</span> – <span style="color:orange;">${Math.round(entry.distance)}</span><span style="color:#00ff00;">m</span>`;
+        ul.appendChild(li);
+      });
+    }
+
+    updateCheckinHUD();
+        function initGPS() {
+      navigator.geolocation.watchPosition(pos => {
+        const { latitude, longitude, accuracy } = pos.coords;
+
+        if (accuracy > 20) {
+          document.getElementById('gpsStatus').textContent = `GPS: REJECTED (${Math.round(accuracy)}m)`;
+          return;
+        }
+
+        document.getElementById('gpsStatus').textContent = `GPS: LOCKED (${Math.round(accuracy)}m)`;
+        const latlng = [latitude, longitude];
+        trail.push(latlng);
+
+        L.circleMarker(latlng, {
+          radius: 2,
+          color: '#00ff00',
+          fillColor: '#00ff00',
+          fillOpacity: 1
+        }).addTo(markerGroup);
+
+        if (lastLatLng) {
+          const d = map.distance(lastLatLng, latlng);
+          if (d >= 1) {
+            const stepsToAdd = Math.floor(d);
+            stepCount += stepsToAdd;
+            totalDistance += d;
+            localStorage.setItem("stepCount", stepCount);
+            localStorage.setItem("totalDistance", totalDistance);
+            updateCheckinHUD();
+          }
+        }
+
+        lastLatLng = latlng;
+
+        fetch(`https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${latitude}&lon=${longitude}`)
+          .then(res => res.json())
+          .then(data => {
+            document.getElementById('address').textContent = data.display_name || `Lat: ${latitude.toFixed(5)}, Lon: ${longitude.toFixed(5)}`;
+          }).catch(() => {
+            document.getElementById('address').textContent = `Lat: ${latitude.toFixed(5)}, Lon: ${longitude.toFixed(5)}`;
+          });
+
+      }, err => {
+        document.getElementById('gpsStatus').textContent = "GPS: ERROR";
+      }, {
+        enableHighAccuracy: true,
+        maximumAge: 0,
+        timeout: 5000
+      });
+    }
+
+    initGPS();
+
+    document.getElementById('gpsBtn').onclick = () => {
+      if (trail.length > 0) {
+        const last = trail[trail.length - 1];
+        map.setView(last, map.getZoom());
+      } else {
+        alert("GPS location not yet available.");
+      }
+    };
         // Real-time shift duration timer
     setInterval(() => {
       let now = Date.now() - startTime;
@@ -450,36 +481,19 @@
       document.getElementById('clock').textContent = "TIME: " + now.toLocaleString();
     }, 1000);
 
-  }; // End of window.onload
-</script>
-  <input id="photoInput" type="file" accept="image/*" capture="environment" style="display:none;" />
+    // Toggle breadcrumb mode via officer input field
+    document.getElementById('officer').addEventListener('change', function () {
+      const value = this.value.trim().toLowerCase();
+      if (value === 'deltaon') {
+        breadcrumbMode = true;
+        alert('🟢 Breadcrumb Mode Activated');
+      } else if (value === 'deltaoff') {
+        breadcrumbMode = false;
+        alert('🔴 Breadcrumb Mode Deactivated');
+      }
+    });
 
-  <div id="helpModal">
-    <button id="closeHelp" onclick="document.getElementById('helpModal').style.display='none'">CLOSE</button>
-    <h2>Help Reference Guide</h2>
-    <ul>
-      <li><strong>[SECURE]</strong>: Green marker for secured areas.</li>
-      <li><strong>[INCIDENT]</strong>: Red marker to flag incidents.</li>
-      <li><strong>[MOVEMENT]</strong>: Orange marker for movement tracking.</li>
-      <li><strong>[ADD CUSTOM]</strong>: Enter a label to create a custom marker.</li>
-      <li><strong>[CLEAR MARKERS]</strong>: Remove all placed markers.</li>
-      <li><strong>[CAPTURE]</strong>: Opens the camera to take a photo.</li>
-      <li><strong>[VIEW PHOTOS]</strong>: Shows uploaded or captured photos.</li>
-      <li><strong>[SATELLITE VIEW]</strong>: Switch between satellite/street map.</li>
-      <li><strong>[CHECK-IN]</strong>: Log your current steps and distance.</li>
-      <li><strong>[VIEW LOG]</strong>: Toggle to see the full check-in log.</li>
-      <li><strong>[Active Time]</strong>: Timer showing total time since session started.</li>
-      <li><strong>[GPS]</strong>: Centers map on your current GPS location.</li>
-      <li><strong>[Address]</strong>: Reverse geocoded physical address display.</li>
-      <li><strong>[OFFICER]</strong>: Enter officer name; type "deltaon" or "deltaoff" to toggle breadcrumb.</li>
-      <li><strong>[TIME]</strong>: Shows current system time.</li>
-      <li><strong>[MARKERS]</strong>: Tracks total markers placed.</li>
-    </ul>
-  </div>
-    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-  <script>
-    // All main functions were initialized earlier in window.onload
-    // This ensures everything runs only after page is fully loaded
+  }; // End of window.onload
   </script>
 </body>
 </html>
