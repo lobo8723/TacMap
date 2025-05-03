@@ -81,10 +81,13 @@
       margin-top: 4px;
     }
 
+    /* // SCROLLABLE CHECK-IN LOG */
     #logData {
       color: orange;
       font-size: 10px;
       margin-top: 4px;
+      max-height: 150px;
+      overflow-y: auto;
     }
 
     .hud {
@@ -137,7 +140,7 @@
     <button onclick="clearMarkers()">[CLEAR MARKERS]</button>
     <button onclick="doCheckIn()">[CHECK-IN]</button>
   </div>
-  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <script>
     let map = L.map('map').setView([33.4484, -112.0740], 20);
     let street = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png');
@@ -170,7 +173,6 @@
         document.getElementById('lastTime').textContent = parsed.lastTime || "--:--:--";
         updateLog();
 
-        // restore breadcrumbs
         for (let p of trail) {
           const mark = L.circleMarker(p, {
             radius: 2, color: '#00ff00', fillColor: '#00ff00', fillOpacity: 1
@@ -179,7 +181,8 @@
         }
       }
     };
-        function saveData() {
+
+    function saveData() {
       localStorage.setItem("tacMapData", JSON.stringify({
         steps,
         totalDist,
