@@ -1,53 +1,186 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <script src="https://unpkg.com/suncalc@1.9.0/suncalc.js"></script>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Project 1 - Final Stable Version (v1.1R13 - Fully Functional)</title>
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <script src="https://unpkg.com/suncalc@1.9.0/suncalc.js"></script>
   <style>
+    html, body {
+      margin: 0;
+      padding: 0;
+      height: 100%;
+      font-family: monospace;
+      background: #111;
+      color: #00ff00;
+    }
+    #map {
+      width: 100%;
+      height: 100%;
+      z-index: 1;
+      position: absolute;
+      top: 0;
+      left: 0;
+    }
+    .hud {
+      position: absolute;
+      width: 100%;
+      bottom: 0;
+      background: rgba(0,0,0,0.85);
+      padding: 8px;
+      box-sizing: border-box;
+      z-index: 999;
+    }
+    .hud-row {
+      display: flex;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      font-size: 12px;
+    }
+    #gpsBtn {
+      position: absolute;
+      right: 10px;
+      top: 60px;
+      background: black;
+      border: 1px solid #00ff00;
+      color: #00ff00;
+      padding: 4px 8px;
+      font-size: 12px;
+      z-index: 1001;
+    }
+    #address {
+      position: absolute;
+      top: 0;
+      left: 0;
+      padding: 5px 10px;
+      font-size: 12px;
+      background: rgba(0,0,0,0.8);
+      color: #00ff00;
+      z-index: 999;
+    }
+    #timer {
+      position:absolute;
+      top:115px;
+      left:10px;
+      z-index:999;
+      font-size:12px;
+      background:rgba(0,0,0,0.7);
+      padding:4px 6px;
+      font-weight:bold;
+      border:1px solid #00ff00;
+    }
+    #photoDropdown {
+      display: none;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin-top: 6px;
+      padding-top: 4px;
+      border-top: 1px solid #00ff00;
+    }
+    #photoDropdown img {
+      width: 120px;
+      height: auto;
+      object-fit: contain;
+      border: 1px solid #00ff00;
+    }
+    #actionMenuWrapper {
+      text-align: center;
+      margin-top: 6px;
+    }
+    #actionDropdownBtn {
+      background:black;
+      color:#00ff00;
+      border:1px solid #00ff00;
+      padding:5px 12px;
+      cursor:pointer;
+      font-size:12px;
+      min-width:150px;
+    }
+    #actionDropdownContent {
+      display: none;
+      flex-wrap: wrap;
+      gap: 6px;
+      justify-content: center;
+      padding: 6px 0;
+    }
+    #actionDropdownContent button {
+      background: black;
+      color: #00ff00;
+      border: 1px solid #00ff00;
+      padding: 5px 12px;
+      cursor: pointer;
+      font-size: 12px;
+      min-width: 140px;
+    }
+    #helpModal {
+      display: none;
+      position: fixed;
+      top: 10%;
+      left: 50%;
+      transform: translateX(-50%);
+      background: black;
+      border: 1px solid #00ff00;
+      color: #00ff00;
+      padding: 15px;
+      width: 90%;
+      max-width: 500px;
+      z-index: 2000;
+      overflow-y: auto;
+      max-height: 80vh;
+    }
+    #helpModal h2 {
+      font-size: 16px;
+      margin-top: 0;
+    }
+    #helpModal ul {
+      padding-left: 20px;
+      font-size: 12px;
+    }
+    #closeHelp {
+      background: black;
+      color: #00ff00;
+      border: 1px solid #00ff00;
+      padding: 4px 10px;
+      cursor: pointer;
+      float: right;
+      font-size: 12px;
+    }
     #sunDialHUD {
-  position: fixed;
-  top: 5px;
-  left: 5px;
-  background: black;
-  border: 1px solid #0f0;
-  padding: 10px;
-  font-family: monospace;
-  font-size: 12px;
-  color: #0f0;
-  z-index: 9999;
-}
-    html, body { margin: 0; padding: 0; height: 100%; font-family: monospace; background: #111; color: #00ff00; }
-    #map { width: 100%; height: 100%; z-index: 1; position: absolute; top: 0; left: 0; }
-    .hud { position: absolute; width: 100%; bottom: 0; background: rgba(0,0,0,0.85); padding: 8px; box-sizing: border-box; z-index: 999; }
-    .hud-row { display: flex; justify-content: space-between; flex-wrap: wrap; font-size: 12px; }
-    #gpsBtn { position: absolute; right: 10px; top: 60px; background: black; border: 1px solid #00ff00; color: #00ff00; padding: 4px 8px; font-size: 12px; z-index: 1001; }
-    #address { position: absolute; top: 0; left: 0; padding: 5px 10px; font-size: 12px; background: rgba(0,0,0,0.8); color: #00ff00; z-index: 999; }
-    #timer { position:absolute;top:115px;left:10px;z-index:999;font-size:12px;background:rgba(0,0,0,0.7);padding:4px 6px;font-weight:bold;border:1px solid #00ff00; }
-    #photoDropdown { display: none; flex-wrap: wrap; gap: 6px; margin-top: 6px; padding-top: 4px; border-top: 1px solid #00ff00; }
-    #photoDropdown img { width: 120px; height: auto; object-fit: contain; border: 1px solid #00ff00; }
-    #actionMenuWrapper { text-align: center; margin-top: 6px; }
-    #actionDropdownBtn { background:black;color:#00ff00;border:1px solid #00ff00;padding:5px 12px;cursor:pointer;font-size:12px;min-width:150px; }
-    #actionDropdownContent { display: none; flex-wrap: wrap; gap: 6px; justify-content: center; padding: 6px 0; }
-    #actionDropdownContent button { background: black; color: #00ff00; border: 1px solid #00ff00; padding: 5px 12px; cursor: pointer; font-size: 12px; min-width: 140px; }
-    #helpModal { display: none; position: fixed; top: 10%; left: 50%; transform: translateX(-50%); background: black; border: 1px solid #00ff00; color: #00ff00; padding: 15px; width: 90%; max-width: 500px; z-index: 2000; overflow-y: auto; max-height: 80vh; }
-    #helpModal h2 { font-size: 16px; margin-top: 0; }
-    #helpModal ul { padding-left: 20px; font-size: 12px; }
-    #closeHelp { background: black; color: #00ff00; border: 1px solid #00ff00; padding: 4px 10px; cursor: pointer; float: right; font-size: 12px; }
+      position: absolute;
+      bottom: 105px;
+      right: 10px;
+      background: rgba(0,0,0,0.8);
+      border: 1px solid #00ff00;
+      padding: 8px;
+      z-index: 1000;
+      font-family: monospace;
+      font-size: 12px;
+      color: #00ff00;
+      width: 160px;
+      text-align: center;
+    }
+    #sunCanvas {
+      display: block;
+      margin: 0 auto 6px auto;
+      background: black;
+      border: 1px solid #00ff00;
+    }
   </style>
 </head>
 <body>
-  <div id="sunDialHUD">
-  <canvas id="sunCanvas" width="150" height="150"></canvas>
-  <div id="sunInfo"></div>
-</div>
   <div id="map"></div>
   <div id="gpsBtn" title="Center on GPS">[GPS]</div>
   <button id="toggleMapType" style="position:absolute;top:50px;left:10px;z-index:999;background:black;color:#00ff00;border:1px solid #00ff00;padding:5px;font-size:12px;">SATELLITE VIEW</button>
   <div id="timer">Active Time: 00:00:00</div>
   <div id="address">LOCATING...</div>
+
+  <!-- SUN DIAL TACTICAL HUD -->
+  <div id="sunDialHUD">
+    <canvas id="sunCanvas" width="140" height="140"></canvas>
+    <div id="sunInfo">Loading Sun Data...</div>
+  </div>
+
   <div class="hud">
     <div class="hud-row">
       <div>OFFICER: <input id="officer" type="text" placeholder="Enter Officer Name" style="background:black;color:#00ff00;border:none;" inputmode="text" /></div>
@@ -70,6 +203,7 @@
     </div>
     <div id="photoDropdown"></div>
   </div>
+
   <div id="helpModal">
     <button id="closeHelp" onclick="document.getElementById('helpModal').style.display='none'">CLOSE</button>
     <h2>Help Reference Guide</h2>
@@ -91,71 +225,19 @@
       <li><strong>[MARKERS]</strong>: Active marker counter.</li>
     </ul>
   </div>
+
   <input id="photoInput" type="file" accept="image/*" capture="environment" style="display:none;" />
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-  <script>
     <script>
-function drawSunHUD(lat, lon) {
-  const times = SunCalc.getTimes(new Date(), lat, lon);
-  const now = new Date();
-  const canvas = document.getElementById("sunCanvas");
-  const ctx = canvas.getContext("2d");
-  const width = canvas.width, height = canvas.height;
-  const centerX = width / 2, centerY = height / 2, radius = 60;
-
-  ctx.clearRect(0, 0, width, height);
-
-  // Draw base ring
-  ctx.strokeStyle = "#0f0";
-  ctx.lineWidth = 2;
-  ctx.beginPath();
-  ctx.arc(centerX, centerY, radius, 0, 2 * Math.PI);
-  ctx.stroke();
-
-  // Compute sun position in degrees (0 = midnight, 180 = noon)
-  const secondsInDay = 86400;
-  const nowSec = now.getHours() * 3600 + now.getMinutes() * 60 + now.getSeconds();
-  const angle = (nowSec / secondsInDay) * 2 * Math.PI;
-
-  // Draw sun position
-  const sunX = centerX + radius * Math.cos(angle - Math.PI / 2);
-  const sunY = centerY + radius * Math.sin(angle - Math.PI / 2);
-  ctx.fillStyle = "#ff0";
-  ctx.beginPath();
-  ctx.arc(sunX, sunY, 5, 0, 2 * Math.PI);
-  ctx.fill();
-
-  // Update info
-  document.getElementById("sunInfo").innerHTML = `
-    <span style="color:#0f0;">SUNRISE:</span> ${times.sunrise.toLocaleTimeString()}<br>
-    <span style="color:#0f0;">SUNSET:</span> ${times.sunset.toLocaleTimeString()}<br>
-    <span style="color:#0f0;">NOW:</span> ${now.toLocaleTimeString()}
-  `;
-}
-
-// Get GPS if available
-if (navigator.geolocation) {
-  navigator.geolocation.getCurrentPosition(pos => {
-    drawSunHUD(pos.coords.latitude, pos.coords.longitude);
-    setInterval(() => {
-      drawSunHUD(pos.coords.latitude, pos.coords.longitude);
-    }, 60000); // update every minute
-  }, err => {
-    // fallback (Phoenix)
-    drawSunHUD(33.4484, -112.0740);
-  });
-} else {
-  drawSunHUD(33.4484, -112.0740);
-}
-</script>
     let map = L.map('map').setView([33.4484, -112.0740], 19);
     const street = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png');
     const satellite = L.tileLayer('https://{s}.google.com/vt/lyrs=s&x={x}&y={y}&z={z}', {
-  subdomains: ['mt0', 'mt1', 'mt2', 'mt3'],
-  maxZoom: 20
-});
+      subdomains: ['mt0', 'mt1', 'mt2', 'mt3'],
+      maxZoom: 20
+    });
     let currentLayer = street;
     street.addTo(map);
+
     let markerGroup = L.layerGroup().addTo(map);
     let trail = [], markerCount = 0, markerMode = null, startTime = Date.now();
     let breadcrumbMode = false;
@@ -233,8 +315,7 @@ if (navigator.geolocation) {
         alert("GPS location not yet available.");
       }
     };
-
-    document.getElementById('actionDropdownBtn').onclick = () => {
+        document.getElementById('actionDropdownBtn').onclick = () => {
       const menu = document.getElementById('actionDropdownContent');
       menu.style.display = (menu.style.display === 'none' || menu.style.display === '') ? 'flex' : 'none';
     };
@@ -296,6 +377,63 @@ if (navigator.geolocation) {
       const now = new Date();
       document.getElementById('clock').textContent = "TIME: " + now.toLocaleString();
     }, 1000);
+        function drawSunHUD(lat, lon) {
+      const times = SunCalc.getTimes(new Date(), lat, lon);
+      const now = new Date();
+      const canvas = document.getElementById("sunCanvas");
+      const ctx = canvas.getContext("2d");
+      const centerX = canvas.width / 2;
+      const centerY = canvas.height / 2;
+      const radius = 50;
+
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      // Draw full circular HUD ring
+      ctx.strokeStyle = "#00ff00";
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.arc(centerX, centerY, radius, 0, 2 * Math.PI);
+      ctx.stroke();
+
+      // Time angle for sun position
+      const secondsInDay = 86400;
+      const nowSec = now.getHours() * 3600 + now.getMinutes() * 60 + now.getSeconds();
+      const angle = (nowSec / secondsInDay) * 2 * Math.PI;
+
+      const sunX = centerX + radius * Math.cos(angle - Math.PI / 2);
+      const sunY = centerY + radius * Math.sin(angle - Math.PI / 2);
+
+      // Draw sun position dot
+      ctx.fillStyle = "#ffff00";
+      ctx.beginPath();
+      ctx.arc(sunX, sunY, 5, 0, 2 * Math.PI);
+      ctx.fill();
+
+      // Update text below the dial
+      document.getElementById("sunInfo").innerHTML = `
+        <div>SUNRISE: ${times.sunrise.toLocaleTimeString()}</div>
+        <div>SUNSET: ${times.sunset.toLocaleTimeString()}</div>
+        <div>NOW: ${now.toLocaleTimeString()}</div>
+      `;
+    }
+
+    function initSunDial() {
+      if (navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition(pos => {
+          const { latitude, longitude } = pos.coords;
+          drawSunHUD(latitude, longitude);
+          setInterval(() => drawSunHUD(latitude, longitude), 60000);
+        }, () => {
+          drawSunHUD(33.4484, -112.0740); // Phoenix fallback
+          setInterval(() => drawSunHUD(33.4484, -112.0740), 60000);
+        });
+      } else {
+        drawSunHUD(33.4484, -112.0740);
+        setInterval(() => drawSunHUD(33.4484, -112.0740), 60000);
+      }
+    }
+
+    initSunDial();
   </script>
 </body>
 </html>
