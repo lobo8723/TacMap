@@ -81,7 +81,7 @@
       margin-bottom: 4px;
     }
 
-    #viewLog, #resetLog {
+    #viewLog, #resetLog, #exportLog {
       background: black;
       color: #00ff00;
       border: 1px solid #00ff00;
@@ -140,6 +140,7 @@
     <div><strong>CHECK-INS:</strong> <span id="checkCount">0</span> | <strong>LAST:</strong> <span id="lastTime">--:--:--</span></div>
     <div><strong>MOVE:</strong> <span id="stepCount">0</span> steps | <strong>DISTANCE:</strong> <span id="distCount">0</span>m</div>
     <button id="viewLog">[VIEW LOG]</button>
+    <button id="exportLog">[EXPORT LOG]</button>
     <div id="logSection" style="display:none;">
       <div>LOG:</div>
       <div id="logData"></div>
@@ -164,9 +165,8 @@
 
     let trail = [], markers = [], steps = 0, totalDist = 0;
     let checkIns = 0, checkLog = [];
-
-    let lastLatLng = null;
     let roundStartTime = null;
+    let lastLatLng = null;
 
     // // LOCAL STORAGE BACKUP – RESTORE ON LOAD
     window.onload = () => {
@@ -231,9 +231,67 @@
       if (lastLatLng) map.setView(lastLatLng, 20, { animate: true });
     };
 
-    function updateGPSStatus(text) {
-      document.getElementById('gpsStatus').textContent = text;
-    }
+    document.getElementById('viewLog').onclick = () => {
+      const section = document.getElementById('logSection');
+      section.style.display = section.style.display === 'none' ? 'block' : 'none';
+    };
+
+    document.getElementById('resetLog').onclick = () => {
+      checkIns = 0;
+      checkLog = [];
+      roundStartTime = null;
+      document.getElementById('checkCount').textContent = 0;
+      document.getElementById('lastTime').textContent = '--:--:--';
+      document.getElementById('logData').innerHTML = '';
+      saveData();
+    };
+
+    document.getElementById('exportLog').onclick = () => {
+      if (!checkLog.length) return alert("No check-in data to export.");
+      const now = new Date();
+      let summary = `TACTICAL PATROL LOG – ${now.toLocaleString()}\n\n`;
+      summary += `Total Patrols: ${checkIns}\nTotal Distance: ${totalDist} meters\n`;
+
+      // Calculate intervals
+      let intervalTimes = [];
+      for (let i = 1; i < checkLog.length; i++) {
+        const prev = checkLog[i - 1].match(/(\d{2}:\d{2}:\d{2})/)[1];
+        const curr = checkLog[i].match(/(\d{2}:\d{2}:\d{2})/)[1];
+        const t1 = new Date(`1970-01-01T${prev}`);
+        const t2 = new Date(`1970-01-01T${curr}`);
+        const mins = Math.abs((t2 - t1) / 60000);
+        intervalTimes.push(mins);
+      }
+
+      if (intervalTimes.length) {
+        const avg = Math.round(intervalTimes.reduce((a, b) => a + b) / intervalTimes.length);
+        let trend = "";
+        if (intervalTimes.length >= 3) {
+          const first = intervalTimes[0];
+          const last = intervalTimes[intervalTimes.length - 1];
+          if (last < first - 5) trend = `Intervals accelerated from ~${first} to ~${last} min.`;
+          else if (last > first + 5) trend = `Intervals slowed from ~${first} to ~${last} min.`;
+          else trend = `Intervals remained consistent around ~${avg} minutes.`;
+        } else {
+          trend = `Average patrol interval: ~${avg} minutes.`;
+        }
+        summary += `${trend}\n\n`;
+      }
+
+      summary += "CHECK-IN DETAILS:\n";
+      checkLog.forEach((entry, i) => {
+        const clean = entry.replace(/<br>/g, '\n').replace(/–/g, '-');
+        summary += `${i + 1}) ${clean}\n\n`;
+      });
+
+      const blob = new Blob([summary], { type: 'text/plain' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `Tactical_Log_${now.getTime()}.txt`;
+      a.click();
+      URL.revokeObjectURL(url);
+    };
 
     function updateAddressDisplay(address) {
       document.getElementById('address').textContent = address;
@@ -260,7 +318,7 @@
       const t = now.toLocaleTimeString();
       let activeTime = "--:--:--";
       if (roundStartTime) activeTime = getElapsedTime(roundStartTime, now);
-      const entryNum = (checkIns + 1).toString().padStart(2,'0');
+      const entryNum = (checkIns + 1).toString().padStart(2, '0');
       const logEntry = `${entryNum} – ${t}<br>Steps: ${steps} | Distance: ${totalDist}m | Time: ${activeTime}`;
       checkIns++;
       document.getElementById('checkCount').textContent = checkIns;
@@ -273,21 +331,6 @@
     function updateLog() {
       document.getElementById('logData').innerHTML = checkLog.map(line => `<div>${line}</div>`).join('');
     }
-
-    document.getElementById('viewLog').onclick = () => {
-      const section = document.getElementById('logSection');
-      section.style.display = section.style.display === 'none' ? 'block' : 'none';
-    };
-
-    document.getElementById('resetLog').onclick = () => {
-      checkIns = 0;
-      checkLog = [];
-      roundStartTime = null;
-      document.getElementById('checkCount').textContent = 0;
-      document.getElementById('lastTime').textContent = '--:--:--';
-      document.getElementById('logData').innerHTML = '';
-      saveData();
-    };
 
     function calcDistance(latlng1, latlng2) {
       const R = 6371e3;
@@ -302,7 +345,7 @@
       const { latitude, longitude, accuracy } = pos.coords;
       if (accuracy > 30) return;
 
-      updateGPSStatus(`GPS: LOCKED (${Math.round(accuracy)}m)`);
+      document.getElementById('gpsStatus').textContent = `GPS: LOCKED (${Math.round(accuracy)}m)`;
 
       const latlng = { lat: latitude, lng: longitude };
       lastLatLng = latlng;
@@ -342,14 +385,14 @@
           updateAddressDisplay(`Lat: ${latitude.toFixed(5)}, Lon: ${longitude.toFixed(5)}`);
         });
     }, () => {
-      updateGPSStatus("GPS: ERROR");
+      document.getElementById('gpsStatus').textContent = "GPS: ERROR";
     }, {
       enableHighAccuracy: true,
       maximumAge: 0,
       timeout: 5000
     });
 
-    // // DISABLE DOUBLE-TAP ZOOM ON BUTTONS
+    // DISABLE DOUBLE-TAP ZOOM ON BUTTONS
     document.querySelectorAll("button").forEach(btn => {
       btn.addEventListener("touchstart", e => {
         if (e.touches.length > 1) e.preventDefault();
