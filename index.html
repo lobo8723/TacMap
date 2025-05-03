@@ -151,10 +151,46 @@
     let checkIns = 0, checkLog = [];
 
     let lastLatLng = null;
-
-    // // MOVEMENT-BASED ROUND TIMER
     let roundStartTime = null;
-        function getElapsedTime(start, end) {
+
+    // // LOCAL STORAGE BACKUP – RESTORE ON LOAD
+    window.onload = () => {
+      const saved = localStorage.getItem("tacMapData");
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        steps = parsed.steps || 0;
+        totalDist = parsed.totalDist || 0;
+        checkIns = parsed.checkIns || 0;
+        checkLog = parsed.checkLog || [];
+        trail = parsed.trail || [];
+
+        document.getElementById('stepCount').textContent = steps;
+        document.getElementById('distCount').textContent = totalDist;
+        document.getElementById('checkCount').textContent = checkIns;
+        document.getElementById('lastTime').textContent = parsed.lastTime || "--:--:--";
+        updateLog();
+
+        // restore breadcrumbs
+        for (let p of trail) {
+          const mark = L.circleMarker(p, {
+            radius: 2, color: '#00ff00', fillColor: '#00ff00', fillOpacity: 1
+          }).addTo(map);
+          markers.push(mark);
+        }
+      }
+    };
+        function saveData() {
+      localStorage.setItem("tacMapData", JSON.stringify({
+        steps,
+        totalDist,
+        checkIns,
+        checkLog,
+        trail,
+        lastTime: document.getElementById('lastTime').textContent
+      }));
+    }
+
+    function getElapsedTime(start, end) {
       const delta = Math.floor((end - start) / 1000);
       const hrs = String(Math.floor(delta / 3600)).padStart(2, '0');
       const min = String(Math.floor((delta % 3600) / 60)).padStart(2, '0');
@@ -177,9 +213,7 @@
     };
 
     document.getElementById('gpsBtn').onclick = () => {
-      if (lastLatLng) {
-        map.setView(lastLatLng, 20, { animate: true });
-      }
+      if (lastLatLng) map.setView(lastLatLng, 20, { animate: true });
     };
 
     function updateGPSStatus(text) {
@@ -201,29 +235,28 @@
       trail = [];
       steps = 0;
       totalDist = 0;
-      roundStartTime = null; // // MOVEMENT-BASED ROUND TIMER RESET
+      roundStartTime = null;
       updateStats();
+      saveData();
     }
 
     function doCheckIn() {
       const now = new Date();
       const t = now.toLocaleTimeString();
       let activeTime = "--:--:--";
-      if (roundStartTime) {
-        activeTime = getElapsedTime(roundStartTime, now);
-      }
-      const entryNum = (checkIns + 1).toString().padStart(2, '0');
+      if (roundStartTime) activeTime = getElapsedTime(roundStartTime, now);
+      const entryNum = (checkIns + 1).toString().padStart(2,'0');
       const logEntry = `${entryNum} – ${t}<br>Steps: ${steps} | Distance: ${totalDist}m | Time: ${activeTime}`;
       checkIns++;
       document.getElementById('checkCount').textContent = checkIns;
       document.getElementById('lastTime').textContent = t;
       checkLog.push(logEntry);
       updateLog();
+      saveData();
     }
 
     function updateLog() {
-      const log = document.getElementById('logData');
-      log.innerHTML = checkLog.map(line => `<div>${line}</div>`).join('');
+      document.getElementById('logData').innerHTML = checkLog.map(line => `<div>${line}</div>`).join('');
     }
 
     document.getElementById('viewLog').onclick = () => {
@@ -234,18 +267,19 @@
     document.getElementById('resetLog').onclick = () => {
       checkIns = 0;
       checkLog = [];
-      roundStartTime = null; // // MOVEMENT-BASED ROUND TIMER RESET
+      roundStartTime = null;
       document.getElementById('checkCount').textContent = 0;
       document.getElementById('lastTime').textContent = '--:--:--';
       document.getElementById('logData').innerHTML = '';
+      saveData();
     };
 
     function calcDistance(latlng1, latlng2) {
       const R = 6371e3;
-      const dLat = (latlng2.lat - latlng1.lat) * Math.PI / 180;
-      const dLon = (latlng2.lng - latlng1.lng) * Math.PI / 180;
-      const a = Math.sin(dLat / 2) ** 2 + Math.cos(latlng1.lat * Math.PI / 180) * Math.cos(latlng2.lat * Math.PI / 180) * Math.sin(dLon / 2) ** 2;
-      const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+      const dLat = (latlng2.lat-latlng1.lat) * Math.PI/180;
+      const dLon = (latlng2.lng-latlng1.lng) * Math.PI/180;
+      const a = Math.sin(dLat/2)**2 + Math.cos(latlng1.lat*Math.PI/180)*Math.cos(latlng2.lat*Math.PI/180)*Math.sin(dLon/2)**2;
+      const c = 2*Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
       return Math.round(R * c);
     }
 
@@ -266,10 +300,7 @@
           totalDist += dist;
           updateStats();
 
-          // // MOVEMENT-BASED ROUND TIMER START
-          if (!roundStartTime) {
-            roundStartTime = new Date();
-          }
+          if (!roundStartTime) roundStartTime = new Date();
 
           const mark = L.circleMarker(latlng, {
             radius: 2,
@@ -278,12 +309,14 @@
             fillOpacity: 1
           }).addTo(map);
           markers.push(mark);
+          trail.push(latlng);
+          saveData();
         }
       } else {
         map.setView(latlng, 20, { animate: true });
+        trail.push(latlng);
+        saveData();
       }
-
-      trail.push(latlng);
 
       fetch(`https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${latitude}&lon=${longitude}`)
         .then(res => res.json())
