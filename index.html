@@ -81,6 +81,16 @@
       margin-top: 4px;
     }
 
+    .editNoteBtn {
+      background: black;
+      color: #00ff00;
+      border: 1px solid #00ff00;
+      padding: 3px 6px;
+      font-size: 11px;
+      cursor: pointer;
+      margin-top: 4px;
+    }
+
     #logData {
       color: orange;
       font-size: 10px;
@@ -155,7 +165,6 @@
   <div id="address">LOCATING...</div>
   <button id="satBtn">SATELLITE VIEW</button>
 
-  <!-- CHECK-IN BOX START -->
   <div id="checkinBox">
     <!-- // OFFICER INFO FIELDS -->
     <div><label>Officer:</label><input type="text" id="officerName" placeholder="Enter name"></div>
@@ -193,7 +202,7 @@
     <button onclick="doCheckIn()">[CHECK-IN]</button>
   </div>
 
-  <!-- // MAP LIBRARY -->
+  <!-- // MAP + PDF LIBS -->
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
   <script>
@@ -210,7 +219,7 @@
     let lastLatLng = null;
     let roundStartTime = null;
     let currentNoteIndex = null;
-        // // LOCAL STORAGE LOAD ON START
+        // // LOAD DATA ON START
     window.onload = () => {
       const saved = localStorage.getItem("tacMapData");
       if (saved) {
@@ -258,7 +267,7 @@
       const container = document.getElementById('logData');
       container.innerHTML = checkLog.map((line, i) => {
         const note = checkNotes[i] || '--';
-        return `<div>${line}<br>Note: ${note}<br><button onclick="editNote(${i})">[EDIT NOTE]</button></div><br>`;
+        return `<div>${line}<br>Note: ${note}<br><button class="editNoteBtn" onclick="editNote(${i})">[EDIT NOTE]</button></div><br>`;
       }).join('');
     }
 
