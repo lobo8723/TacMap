@@ -103,8 +103,7 @@
       cursor: pointer;
       margin-top: 4px;
     }
-
-    #logData {
+        #logData {
       color: orange;
       font-size: 10px;
       margin-top: 4px;
@@ -139,7 +138,8 @@
       font-size: 12px;
       cursor: pointer;
     }
-        /* // NOTE EDIT MODAL */
+
+    /* // NOTE EDIT MODAL */
     #noteModal {
       display: none;
       position: fixed;
@@ -180,26 +180,25 @@
       z-index: 3000;
       justify-content: center;
       align-items: center;
-      color: #00ff00;
+      color: yellow;
       font-size: 13px;
       font-family: monospace;
       text-align: center;
       padding: 20px;
     }
-
-    .reminderContent {
+        .reminderContent {
       background: black;
-      border: 2px solid #00ff00;
+      border: 2px solid yellow;
       padding: 20px 30px;
       max-width: 320px;
-      box-shadow: 0 0 10px #00ff00;
+      box-shadow: 0 0 10px yellow;
     }
 
     .reminderContent button {
       margin: 5px;
       background: black;
-      color: #00ff00;
-      border: 1px solid #00ff00;
+      color: yellow;
+      border: 1px solid yellow;
       padding: 6px 12px;
       font-family: monospace;
       font-size: 12px;
@@ -252,7 +251,6 @@
       <label>How often should this message appear?</label><br><br>
       <button onclick="setReminderPref('always')">[ALWAYS]</button>
       <button onclick="setReminderPref('once')">[ONCE]</button>
-      <button onclick="setReminderPref('never')">[NEVER]</button>
     </div>
   </div>
 
@@ -539,9 +537,8 @@
         if (e.touches.length > 1) e.preventDefault();
       }, { passive: false });
     });
-    
+
     document.addEventListener("gesturestart", e => e.preventDefault());
   </script>
 </body>
 </html>
-    
