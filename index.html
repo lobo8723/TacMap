@@ -139,8 +139,7 @@
       font-size: 12px;
       cursor: pointer;
     }
-
-    /* // NOTE EDIT MODAL */
+        /* // NOTE EDIT MODAL */
     #noteModal {
       display: none;
       position: fixed;
@@ -171,6 +170,41 @@
       border: 1px solid #00ff00;
       padding: 6px 12px;
     }
+
+    /* // REMINDER MODAL SYSTEM (MODULAR ADDITION) */
+    #reminderModal {
+      display: none;
+      position: fixed;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: rgba(0,0,0,0.9);
+      z-index: 3000;
+      justify-content: center;
+      align-items: center;
+      color: #00ff00;
+      font-size: 13px;
+      font-family: monospace;
+      text-align: center;
+      padding: 20px;
+    }
+
+    .reminderContent {
+      background: black;
+      border: 2px solid #00ff00;
+      padding: 20px 30px;
+      max-width: 320px;
+      box-shadow: 0 0 10px #00ff00;
+    }
+
+    .reminderContent button {
+      margin: 5px;
+      background: black;
+      color: #00ff00;
+      border: 1px solid #00ff00;
+      padding: 6px 12px;
+      font-family: monospace;
+      font-size: 12px;
+      cursor: pointer;
+    }
   </style>
 </head>
 <body>
@@ -178,7 +212,8 @@
   <div id="address">LOCATING...</div>
   <button id="satBtn">SATELLITE VIEW</button>
   <button id="gpsBtn">[GPS]</button>
-    <div id="checkinBox">
+
+  <div id="checkinBox">
     <!-- // OFFICER INFO FIELDS -->
     <div><label>Officer:</label><input type="text" id="officerName" placeholder="Enter name"></div>
     <div><label>Location:</label><input type="text" id="postLocation" placeholder="Enter post address"></div>
@@ -198,14 +233,27 @@
       <button id="resetLog">[RESET LOG]</button>
     </div>
   </div>
-
-  <!-- // MODAL: NOTE EDITOR -->
+    <!-- // MODAL: NOTE EDITOR -->
   <div id="noteModal">
     <div><strong>Edit Patrol Note</strong></div>
     <textarea id="noteInput" placeholder="Enter note here..."></textarea><br>
     <button onclick="clearNote()">[CLEAR NOTE]</button>
     <button onclick="saveNote()">[SAVE]</button>
     <button onclick="cancelNote()">[CANCEL]</button>
+  </div>
+
+  <!-- // REMINDER MODAL SYSTEM (MODULAR ADDITION) -->
+  <div id="reminderModal">
+    <div class="reminderContent">
+      <strong>REMINDER:</strong><br>
+      This system relies on local storage.<br>
+      <u>Do not clear your browsing history</u><br>
+      or your patrol data will be lost.<br><br>
+      <label>How often should this message appear?</label><br><br>
+      <button onclick="setReminderPref('always')">[ALWAYS]</button>
+      <button onclick="setReminderPref('once')">[ONCE]</button>
+      <button onclick="setReminderPref('never')">[NEVER]</button>
+    </div>
   </div>
 
   <!-- // BOTTOM HUD -->
@@ -233,13 +281,20 @@
     let lastLatLng = null;
     let roundStartTime = null;
     let currentNoteIndex = null;
-
-    // // GPS BUTTON RESTORED FUNCTIONALITY
+        // // GPS BUTTON RESTORED FUNCTIONALITY
     document.getElementById('gpsBtn').onclick = () => {
       if (lastLatLng) map.setView(lastLatLng, 20, { animate: true });
     };
-        // // LOAD DATA ON START
+
+    // // REMINDER MODAL SYSTEM (MODULAR ADDITION)
     window.onload = () => {
+      const pref = localStorage.getItem('reminderPref');
+      if (!pref || pref === 'always') {
+        document.getElementById('reminderModal').style.display = 'flex';
+      } else if (pref === 'once' && !localStorage.getItem('reminderShownOnce')) {
+        document.getElementById('reminderModal').style.display = 'flex';
+      }
+
       const saved = localStorage.getItem("tacMapData");
       if (saved) {
         const parsed = JSON.parse(saved);
@@ -268,6 +323,12 @@
       }
     };
 
+    function setReminderPref(pref) {
+      localStorage.setItem('reminderPref', pref);
+      if (pref === 'once') localStorage.setItem('reminderShownOnce', 'yes');
+      document.getElementById('reminderModal').style.display = 'none';
+    }
+
     function saveData() {
       localStorage.setItem("tacMapData", JSON.stringify({
         steps,
@@ -281,8 +342,7 @@
         location: document.getElementById('postLocation').value
       }));
     }
-
-    function updateLog() {
+        function updateLog() {
       const container = document.getElementById('logData');
       container.innerHTML = checkLog.map((line, i) => {
         const note = checkNotes[i] || '--';
@@ -319,7 +379,8 @@
       currentNoteIndex = null;
       document.getElementById("noteModal").style.display = 'none';
     }
-        function getElapsedTime(start, end) {
+
+    function getElapsedTime(start, end) {
       const delta = Math.floor((end - start) / 1000);
       const hrs = String(Math.floor(delta / 3600)).padStart(2, '0');
       const min = String(Math.floor((delta % 3600) / 60)).padStart(2, '0');
@@ -333,8 +394,7 @@
     }
 
     setInterval(updateClock, 1000);
-
-    document.getElementById('satBtn').onclick = () => {
+        document.getElementById('satBtn').onclick = () => {
       map.removeLayer(currentLayer);
       currentLayer = currentLayer === street ? satellite : street;
       currentLayer.addTo(map);
@@ -428,11 +488,12 @@
         trail.push(latlng);
         saveData();
       }
-
-      fetch(`https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${latitude}&lon=${longitude}`)
+            fetch(`https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${latitude}&lon=${longitude}`)
         .then(res => res.json())
         .then(data => {
-          if (data.display_name) document.getElementById('address').textContent = data.display_name;
+          if (data.display_name) {
+            document.getElementById('address').textContent = data.display_name;
+          }
         })
         .catch(() => {
           document.getElementById('address').textContent = `Lat: ${latitude.toFixed(5)}, Lon: ${longitude.toFixed(5)}`;
@@ -472,14 +533,15 @@
 
       doc.save("Patrol_Log.pdf");
     };
-
-    // // DISABLE ZOOM FROM DOUBLE TAP
+        // // DISABLE ZOOM FROM DOUBLE TAP
     document.querySelectorAll("button").forEach(btn => {
       btn.addEventListener("touchstart", e => {
         if (e.touches.length > 1) e.preventDefault();
       }, { passive: false });
     });
+    
     document.addEventListener("gesturestart", e => e.preventDefault());
   </script>
 </body>
 </html>
+    
