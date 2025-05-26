@@ -56,7 +56,8 @@
     textarea {
       resize: vertical;
     }
-        .severity-select {
+
+    .severity-select {
       display: flex;
       justify-content: space-between;
       margin-top: 10px;
@@ -112,7 +113,8 @@
       font-weight: bold;
       font-size: 14px;
     }
-        #otherIncidentContainer {
+
+    #otherIncidentContainer {
       max-height: 0;
       overflow: hidden;
       transition: max-height 0.3s ease;
@@ -149,19 +151,33 @@
     <label for="location">Location</label>
     <input type="text" id="location" placeholder="Enter location or use GPS">
     <button type="button" onclick="getLocation()">Use My Location</button>
-
-    <label>Incident Severity</label>
+        <label>Incident Severity</label>
     <div class="severity-select">
       <label><input type="radio" name="severity" value="Low" onclick="updateSeverity('Low')"><span class="green">Low</span></label>
       <label><input type="radio" name="severity" value="Moderate" onclick="updateSeverity('Moderate')"><span class="yellow">Moderate</span></label>
       <label><input type="radio" name="severity" value="High" onclick="updateSeverity('High')"><span class="red">High</span></label>
     </div>
     <div id="severityDisplay" class="color-tag"></div>
-        <label for="incidentType">Incident Type</label>
+
+    <label for="incidentType">Incident Type</label>
     <select id="incidentType" onchange="toggleOtherField(this)">
       <option value="Trespassing">Trespassing</option>
       <option value="Vandalism">Vandalism</option>
       <option value="Theft">Theft</option>
+      <option value="Loitering">Loitering</option>
+      <option value="Disturbance">Disturbance</option>
+      <option value="Medical Emergency">Medical Emergency</option>
+      <option value="Alarm Response">Alarm Response</option>
+      <option value="Suspicious Person">Suspicious Person</option>
+      <option value="Unauthorized Access">Unauthorized Access</option>
+      <option value="Domestic Dispute">Domestic Dispute</option>
+      <option value="Weapon Sighting">Weapon Sighting</option>
+      <option value="Noise Complaint">Noise Complaint</option>
+      <option value="Physical Altercation">Physical Altercation</option>
+      <option value="Property Damage">Property Damage</option>
+      <option value="Fire or Smoke">Fire or Smoke</option>
+      <option value="Missing Person">Missing Person</option>
+      <option value="Found Property">Found Property</option>
       <option value="Other">Other</option>
     </select>
 
@@ -185,63 +201,151 @@
     <div class="images-preview" id="previewContainer"></div>
 
     <button type="button" onclick="generatePDF()">Generate Report</button>
-    <div id="confirmationMessage">Report successfully submitted and PDF generated.</div>
+    <div id="confirmationMessage">Successfully generated PDF.</div>
   </div>
-
   <script>
-    function getLocation() {
-      if (navigator.geolocation) {
-        navigator.geolocation.getCurrentPosition(async function(position) {
-          const lat = position.coords.latitude;
-          const lon = position.coords.longitude;
-          try {
-            const response = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}`);
-            const data = await response.json();
-            document.getElementById("location").value = data.display_name || `Lat: ${lat}, Lon: ${lon}`;
-          } catch {
-            document.getElementById("location").value = `Lat: ${lat}, Lon: ${lon}`;
-          }
-        });
-      } else {
-        alert("Geolocation not supported.");
-      }
+  function getLocation() {
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(async function(position) {
+        const lat = position.coords.latitude;
+        const lon = position.coords.longitude;
+        try {
+          const response = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}`);
+          const data = await response.json();
+          document.getElementById("location").value = data.display_name || `Lat: ${lat}, Lon: ${lon}`;
+        } catch {
+          document.getElementById("location").value = `Lat: ${lat}, Lon: ${lon}`;
+        }
+      });
+    } else {
+      alert("Geolocation not supported.");
     }
+  }
 
-    function updateSeverity(level) {
-      const display = document.getElementById('severityDisplay');
-      display.textContent = "Severity Level: " + level.toUpperCase();
-      display.style.color = level === 'Low' ? "green" : level === 'Moderate' ? "goldenrod" : "red";
-    }
+  function updateSeverity(level) {
+    const display = document.getElementById('severityDisplay');
+    display.textContent = "Severity Level: " + level.toUpperCase();
+    display.style.color = level === 'Low' ? "green" : level === 'Moderate' ? "goldenrod" : "red";
+  }
 
-    function toggleOtherField(selectObj) {
-      const container = document.getElementById('otherIncidentContainer');
-      container.classList.toggle('show', selectObj.value === 'Other');
-    }
+  function toggleOtherField(selectObj) {
+    const container = document.getElementById('otherIncidentContainer');
+    container.classList.toggle('show', selectObj.value === 'Other');
+  }
 
-    function previewImages(input) {
-      const previewContainer = document.getElementById('previewContainer');
-      previewContainer.innerHTML = '';
-      Array.from(input.files).slice(0, 4).forEach(file => {
-        const reader = new FileReader();
-        reader.onload = e => {
-          const img = document.createElement('img');
+  function previewImages(input) {
+    const previewContainer = document.getElementById('previewContainer');
+    previewContainer.innerHTML = '';
+    Array.from(input.files).slice(0, 4).forEach(file => {
+      const reader = new FileReader();
+      reader.onload = e => {
+        const img = document.createElement('img');
+        img.src = e.target.result;
+        previewContainer.appendChild(img);
+      };
+      reader.readAsDataURL(file);
+    });
+  }
+    async function generatePDF() {
+    const { jsPDF } = window.jspdf;
+    const pdf = new jsPDF();
+
+    const officerName = document.getElementById("officerName").value;
+    const badgeNumber = document.getElementById("badgeNumber").value;
+    const incidentDateTime = document.getElementById("incidentDateTime").value;
+    const location = document.getElementById("location").value;
+    const incidentType = document.getElementById("incidentType").value;
+    const otherIncidentType = document.getElementById("otherIncidentType").value;
+    const finalType = incidentType === "Other" ? otherIncidentType : incidentType;
+    const severityInput = document.querySelector('input[name="severity"]:checked');
+    const severity = severityInput ? severityInput.value : "N/A";
+    const details = document.getElementById("incidentDetails").value;
+    const status = document.getElementById("incidentStatus").value;
+
+    let y = 10;
+    pdf.setFont("Helvetica", "bold");
+    pdf.setFontSize(16);
+    pdf.setFillColor(40, 40, 40);
+    pdf.setTextColor(255, 255, 255);
+    pdf.rect(10, y, 190, 10, "F");
+    pdf.text("REPORT FORM", 105, y + 7, { align: "center" });
+    y += 20;
+
+    pdf.setFontSize(11);
+    pdf.setTextColor(0);
+    const fields = [
+      ["Officer Name", officerName],
+      ["Badge Number", badgeNumber],
+      ["Incident Date & Time", incidentDateTime],
+      ["Location", location],
+      ["Incident Severity", severity.toUpperCase()],
+      ["Incident Type", finalType],
+      ["Incident Status", status]
+    ];
+
+    fields.forEach(([label, value], i) => {
+      pdf.setFont("Helvetica", "bold");
+      pdf.text(`${label}:`, 10, y);
+      pdf.setFont("Helvetica", "normal");
+      const color = label === "Incident Severity"
+        ? severity === "High" ? [200, 0, 0] :
+          severity === "Moderate" ? [218, 165, 32] :
+          severity === "Low" ? [0, 128, 0] : [0, 0, 0]
+        : [0, 0, 0];
+      pdf.setTextColor(...color);
+      pdf.text(value || "N/A", 60, y);
+      pdf.setTextColor(0);
+      y += 8;
+    });
+
+    pdf.setFont("Helvetica", "bold");
+    pdf.setFillColor(220, 220, 220);
+    pdf.rect(10, y, 190, 8, "F");
+    pdf.text("Narrative", 12, y + 6);
+    y += 12;
+
+    pdf.setFont("Helvetica", "normal");
+    let splitText = pdf.splitTextToSize(details || "N/A", 180);
+    pdf.text(splitText, 10, y);
+    y += splitText.length * 7 + 5;
+
+    const files = document.getElementById("photoUpload").files;
+    for (let i = 0; i < Math.min(files.length, 4); i++) {
+      const file = files[i];
+      const reader = new FileReader();
+      await new Promise(resolve => {
+        reader.onload = function (e) {
+          const img = new Image();
+          img.onload = function () {
+            if (y > 260) {
+              pdf.addPage();
+              y = 10;
+            }
+            pdf.addImage(img, 'JPEG', 10, y, 60, 45);
+            y += 50;
+            resolve();
+          };
           img.src = e.target.result;
-          previewContainer.appendChild(img);
         };
         reader.readAsDataURL(file);
       });
     }
 
-    function generatePDF() {
-      const msg = document.getElementById('confirmationMessage');
-      msg.style.display = "block";
-      msg.style.opacity = 1;
-      setTimeout(() => {
-        msg.style.opacity = 0;
-        setTimeout(() => msg.style.display = "none", 500);
-      }, 2500);
-      alert("PDF has been generated. You can now send it manually.");
-    }
-  </script>
+    const timestamp = new Date().toLocaleString();
+    pdf.setFontSize(8);
+    pdf.text(`Generated on ${timestamp}`, 200, 290, { align: "right" });
+
+    pdf.save("incident_report.pdf");
+
+    const msg = document.getElementById('confirmationMessage');
+    msg.style.display = "block";
+    msg.style.opacity = 1;
+    setTimeout(() => {
+      msg.style.opacity = 0;
+      setTimeout(() => msg.style.display = "none", 500);
+    }, 2500);
+  }
+</script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 </body>
 </html>
