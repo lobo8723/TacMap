@@ -151,15 +151,15 @@
     <label for="location">Location</label>
     <input type="text" id="location" placeholder="Enter location or use GPS">
     <button type="button" onclick="getLocation()">Use My Location</button>
-        <label>Incident Severity</label>
+
+    <label>Incident Severity</label>
     <div class="severity-select">
       <label><input type="radio" name="severity" value="Low" onclick="updateSeverity('Low')"><span class="green">Low</span></label>
       <label><input type="radio" name="severity" value="Moderate" onclick="updateSeverity('Moderate')"><span class="yellow">Moderate</span></label>
       <label><input type="radio" name="severity" value="High" onclick="updateSeverity('High')"><span class="red">High</span></label>
     </div>
     <div id="severityDisplay" class="color-tag"></div>
-
-    <label for="incidentType">Incident Type</label>
+        <label for="incidentType">Incident Type</label>
     <select id="incidentType" onchange="toggleOtherField(this)">
       <option value="Trespassing">Trespassing</option>
       <option value="Vandalism">Vandalism</option>
@@ -197,13 +197,16 @@
     </select>
 
     <label for="photoUpload">Upload Photos (Max 4)</label>
-    <input type="file" id="photoUpload" accept="image/*" multiple onchange="previewImages(this)">
+    <input type="file" id="photoUpload" accept="image/*" multiple onchange="accumulatePreviewImages(this)">
     <div class="images-preview" id="previewContainer"></div>
 
     <button type="button" onclick="generatePDF()">Generate Report</button>
     <div id="confirmationMessage">Successfully generated PDF.</div>
   </div>
-  <script>
+  <!-- ============================= -->
+<!-- START: SCRIPT SECTION FIXED -->
+<!-- ============================= -->
+<script>
   function getLocation() {
     if (navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(async function(position) {
@@ -233,20 +236,33 @@
     container.classList.toggle('show', selectObj.value === 'Other');
   }
 
-  function previewImages(input) {
+  // ===========================================
+  // MODULAR FIX: Accumulate Image Previews (Max 4)
+  // ===========================================
+  const accumulatedFiles = [];
+
+  function accumulatePreviewImages(input) {
     const previewContainer = document.getElementById('previewContainer');
-    previewContainer.innerHTML = '';
-    Array.from(input.files).slice(0, 4).forEach(file => {
+    const newFiles = Array.from(input.files);
+
+    for (let i = 0; i < newFiles.length && accumulatedFiles.length < 4; i++) {
+      accumulatedFiles.push(newFiles[i]);
       const reader = new FileReader();
       reader.onload = e => {
         const img = document.createElement('img');
         img.src = e.target.result;
         previewContainer.appendChild(img);
       };
-      reader.readAsDataURL(file);
-    });
+      reader.readAsDataURL(newFiles[i]);
+    }
+
+    // Reset input to allow same file selection again
+    input.value = '';
   }
-    async function generatePDF() {
+    // =============================
+  // CONTINUED: PDF GENERATION
+  // =============================
+  async function generatePDF() {
     const { jsPDF } = window.jspdf;
     const pdf = new jsPDF();
     const officer = document.getElementById("officerName").value;
@@ -259,7 +275,6 @@
     const finalType = type === "Other" ? otherType : type;
     const details = document.getElementById("incidentDetails").value;
     const status = document.getElementById("incidentStatus").value;
-    const files = document.getElementById("photoUpload").files;
 
     let y = 10;
     pdf.setFont("helvetica", "bold");
@@ -303,8 +318,8 @@
     pdf.text(split, 10, y);
     y += split.length * 6 + 5;
 
-    for (let i = 0; i < Math.min(4, files.length); i++) {
-      const file = files[i];
+    for (let i = 0; i < Math.min(4, accumulatedFiles.length); i++) {
+      const file = accumulatedFiles[i];
       const reader = new FileReader();
       await new Promise(resolve => {
         reader.onload = function (e) {
