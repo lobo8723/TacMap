@@ -1,252 +1,247 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <title>Incident Report Form</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <style>
-        html, body {
-            margin: 0;
-            padding: 0;
-            font-family: Arial, sans-serif;
-            background-color: #f2f2f2;
-            color: #333;
-        }
+  <meta charset="UTF-8">
+  <title>Incident Report Form</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <style>
+    html, body {
+      margin: 0;
+      padding: 0;
+      font-family: Arial, sans-serif;
+      background-color: #f2f2f2;
+      color: #333;
+    }
 
-        .container {
-            background: #fff;
-            margin: 10px;
-            padding: 15px;
-            border-radius: 5px;
-            box-shadow: 0 0 8px rgba(0,0,0,0.1);
-        }
+    .container {
+      background: #fff;
+      margin: 10px;
+      padding: 15px;
+      border-radius: 5px;
+      box-shadow: 0 0 8px rgba(0,0,0,0.1);
+    }
 
-        h2 {
-            text-align: center;
-            margin-bottom: 15px;
-            font-size: 20px;
-            text-transform: uppercase;
-        }
+    h2 {
+      text-align: center;
+      margin-bottom: 15px;
+      font-size: 20px;
+      text-transform: uppercase;
+    }
 
-        label {
-            display: block;
-            margin-top: 10px;
-            font-weight: bold;
-            font-size: 14px;
-        }
+    label {
+      display: block;
+      margin-top: 10px;
+      font-weight: bold;
+      font-size: 14px;
+    }
 
-        input[type="text"],
-        input[type="datetime-local"],
-        input[type="email"],
-        textarea,
-        select {
-            width: 100%;
-            padding: 8px;
-            margin-top: 5px;
-            font-size: 14px;
-            border: 1px solid #ccc;
-            border-radius: 3px;
-            box-sizing: border-box;
-        }
+    input[type="text"],
+    input[type="datetime-local"],
+    textarea,
+    select {
+      width: 100%;
+      padding: 8px;
+      margin-top: 5px;
+      font-size: 14px;
+      border: 1px solid #ccc;
+      border-radius: 3px;
+      box-sizing: border-box;
+    }
 
-        input[type="datetime-local"] {
-            appearance: none;
-            -webkit-appearance: none;
-        }
+    input[type="datetime-local"] {
+      appearance: none;
+      -webkit-appearance: none;
+    }
 
-        textarea {
-            resize: vertical;
-        }
-
+    textarea {
+      resize: vertical;
+    }
         .severity-select {
-            display: flex;
-            justify-content: space-between;
-            margin-top: 10px;
-        }
+      display: flex;
+      justify-content: space-between;
+      margin-top: 10px;
+    }
 
-        .severity-select label {
-            flex: 1;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 5px;
-            padding: 6px 4px;
-            border: 1px solid #ccc;
-            border-radius: 3px;
-            font-weight: normal;
-            font-size: 13px;
-        }
+    .severity-select label {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      padding: 8px;
+      font-size: 14px;
+      border: 1px solid #ccc;
+      border-radius: 3px;
+    }
 
-        .green { color: green; }
-        .yellow { color: goldenrod; }
-        .red { color: red; }
+    .green { color: green; }
+    .yellow { color: goldenrod; }
+    .red { color: red; }
 
-        button {
-            margin-top: 15px;
-            padding: 10px;
-            width: 100%;
-            background-color: #007bff;
-            color: white;
-            border: none;
-            border-radius: 3px;
-            font-size: 14px;
-            cursor: pointer;
-            transition: transform 0.1s ease-in-out;
-        }
+    button {
+      margin-top: 15px;
+      padding: 10px;
+      width: 100%;
+      background-color: #007bff;
+      color: white;
+      border: none;
+      border-radius: 3px;
+      font-size: 14px;
+      cursor: pointer;
+      transition: transform 0.1s ease-in-out;
+    }
 
-        button:active {
-            transform: scale(0.98);
-        }
-                .images-preview {
-            margin-top: 10px;
-            display: flex;
-            flex-wrap: wrap;
-            gap: 5px;
-        }
+    button:active {
+      transform: scale(0.98);
+    }
 
-        .images-preview img {
-            width: 75px;
-            height: auto;
-            border: 1px solid #ccc;
-            border-radius: 3px;
-        }
+    .images-preview {
+      margin-top: 10px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 5px;
+    }
 
-        .color-tag {
-            font-weight: bold;
-            font-size: 14px;
-        }
+    .images-preview img {
+      width: 75px;
+      height: auto;
+      border-radius: 3px;
+    }
 
+    .color-tag {
+      font-weight: bold;
+      font-size: 14px;
+    }
         #otherIncidentContainer {
-            max-height: 0;
-            overflow: hidden;
-            transition: max-height 0.3s ease;
-        }
+      max-height: 0;
+      overflow: hidden;
+      transition: max-height 0.3s ease;
+    }
 
-        #otherIncidentContainer.show {
-            max-height: 100px;
-        }
+    #otherIncidentContainer.show {
+      max-height: 100px;
+    }
 
-        #confirmationMessage {
-            display: none;
-            text-align: center;
-            margin-top: 15px;
-            color: green;
-            font-weight: bold;
-        }
-    </style>
+    #confirmationMessage {
+      display: none;
+      text-align: center;
+      margin-top: 15px;
+      color: green;
+      font-weight: bold;
+      opacity: 0;
+      transition: opacity 0.5s ease-in-out;
+    }
+  </style>
 </head>
 <body>
-    <div class="container">
-        <h2>Incident Report Form</h2>
+  <div class="container">
+    <h2>Incident Report Form</h2>
 
-        <label for="officerName">Officer Name</label>
-        <input type="text" id="officerName" placeholder="Enter officer's name">
+    <label for="officerName">Officer Name</label>
+    <input type="text" id="officerName" placeholder="Enter officer's name">
 
-        <label for="badgeNumber">Badge Number</label>
-        <input type="text" id="badgeNumber" placeholder="Enter badge number">
+    <label for="badgeNumber">Badge Number</label>
+    <input type="text" id="badgeNumber" placeholder="Enter badge number">
 
-        <label for="incidentDateTime">Incident Date & Time</label>
-        <input type="datetime-local" id="incidentDateTime">
+    <label for="incidentDateTime">Incident Date & Time</label>
+    <input type="datetime-local" id="incidentDateTime">
 
-        <label for="location">Location</label>
-        <input type="text" id="location" placeholder="Enter location or use GPS">
-        <button type="button" onclick="getLocation()">Use My Location</button>
+    <label for="location">Location</label>
+    <input type="text" id="location" placeholder="Enter location or use GPS">
+    <button type="button" onclick="getLocation()">Use My Location</button>
 
-        <label>Incident Severity</label>
-        <div class="severity-select">
-            <label><input type="radio" name="severity" value="Low" onclick="updateSeverity('Low')"><span class="green">Low</span></label>
-            <label><input type="radio" name="severity" value="Moderate" onclick="updateSeverity('Moderate')"><span class="yellow">Moderate</span></label>
-            <label><input type="radio" name="severity" value="High" onclick="updateSeverity('High')"><span class="red">High</span></label>
-        </div>
-        <div id="severityDisplay" class="color-tag"></div>
-
+    <label>Incident Severity</label>
+    <div class="severity-select">
+      <label><input type="radio" name="severity" value="Low" onclick="updateSeverity('Low')"><span class="green">Low</span></label>
+      <label><input type="radio" name="severity" value="Moderate" onclick="updateSeverity('Moderate')"><span class="yellow">Moderate</span></label>
+      <label><input type="radio" name="severity" value="High" onclick="updateSeverity('High')"><span class="red">High</span></label>
+    </div>
+    <div id="severityDisplay" class="color-tag"></div>
         <label for="incidentType">Incident Type</label>
-        <select id="incidentType" onchange="toggleOtherField(this)">
-            <option value="Trespassing">Trespassing</option>
-            <option value="Vandalism">Vandalism</option>
-            <option value="Theft">Theft</option>
-            <option value="Medical Emergency">Medical Emergency</option>
-            <option value="Alarm Response">Alarm Response</option>
-            <option value="Unauthorized Access">Unauthorized Access</option>
-            <option value="Verbal Altercation">Verbal Altercation</option>
-            <option value="Physical Altercation">Physical Altercation</option>
-            <option value="Weapons Involved">Weapons Involved</option>
-            <option value="Narcotics Suspected">Narcotics Suspected</option>
-            <option value="Other">Other</option>
-        </select>
-                <div id="otherIncidentContainer">
-            <label for="otherIncidentType">Specify Other Incident</label>
-            <input type="text" id="otherIncidentType" placeholder="Describe other incident type">
-        </div>
+    <select id="incidentType" onchange="toggleOtherField(this)">
+      <option value="Trespassing">Trespassing</option>
+      <option value="Vandalism">Vandalism</option>
+      <option value="Theft">Theft</option>
+      <option value="Other">Other</option>
+    </select>
 
-        <label for="incidentDetails">Incident Details</label>
-        <textarea id="incidentDetails" rows="8" placeholder="Provide a full narrative of the incident..."></textarea>
-
-        <label for="incidentStatus">Incident Status</label>
-        <select id="incidentStatus">
-            <option value="Resolved On Site">Resolved On Site</option>
-            <option value="Escalated to Supervisor">Escalated to Supervisor</option>
-            <option value="Ongoing / Requires Follow-up">Ongoing / Requires Follow-up</option>
-        </select>
-
-        <label for="photoUpload">Upload Photos (Max 4)</label>
-        <input type="file" id="photoUpload" accept="image/*" multiple onchange="previewImages(this)">
-        <div class="images-preview" id="previewContainer"></div>
-
-        <label for="emailAddress">Send Report To Email (optional)</label>
-        <input type="email" id="emailAddress" placeholder="Enter email address to send report">
-
-        <button type="button" onclick="submitReport()">Submit Report</button>
-        <div id="confirmationMessage">Report successfully submitted and PDF generated.</div>
+    <div id="otherIncidentContainer">
+      <label for="otherIncidentType">Specify Other Incident</label>
+      <input type="text" id="otherIncidentType" placeholder="Describe other incident type">
     </div>
 
-    <script>
-        function getLocation() {
-            if (navigator.geolocation) {
-                navigator.geolocation.getCurrentPosition(function(position) {
-                    const lat = position.coords.latitude;
-                    const lon = position.coords.longitude;
-                    document.getElementById("location").value = "Lat: " + lat + ", Lon: " + lon;
-                });
-            } else {
-                alert("Geolocation is not supported by this browser.");
-            }
-        }
+    <label for="incidentDetails">Incident Details</label>
+    <textarea id="incidentDetails" rows="8" placeholder="Provide a full narrative of the incident..."></textarea>
 
-        function updateSeverity(level) {
-            const display = document.getElementById('severityDisplay');
-            display.textContent = "Severity Level: " + level.toUpperCase();
-            display.style.color = level === 'Low' ? "green" : level === 'Moderate' ? "goldenrod" : "red";
-        }
+    <label for="incidentStatus">Incident Status</label>
+    <select id="incidentStatus">
+      <option value="Resolved On Site">Resolved On Site</option>
+      <option value="Escalated to Supervisor">Escalated to Supervisor</option>
+      <option value="Ongoing / Requires Follow-up">Ongoing / Requires Follow-up</option>
+    </select>
 
-        function toggleOtherField(selectObj) {
-            const container = document.getElementById('otherIncidentContainer');
-            container.classList.toggle('show', selectObj.value === 'Other');
-        }
+    <label for="photoUpload">Upload Photos (Max 4)</label>
+    <input type="file" id="photoUpload" accept="image/*" multiple onchange="previewImages(this)">
+    <div class="images-preview" id="previewContainer"></div>
 
-        function previewImages(input) {
-            const previewContainer = document.getElementById('previewContainer');
-            previewContainer.innerHTML = '';
-            Array.from(input.files).slice(0, 4).forEach(file => {
-                const reader = new FileReader();
-                reader.onload = e => {
-                    const img = document.createElement('img');
-                    img.src = e.target.result;
-                    previewContainer.appendChild(img);
-                };
-                reader.readAsDataURL(file);
-            });
-        }
+    <button type="button" onclick="generatePDF()">Generate Report</button>
+    <div id="confirmationMessage">Report successfully submitted and PDF generated.</div>
+  </div>
 
-        function submitReport() {
-            const msg = document.getElementById('confirmationMessage');
-            msg.style.display = "block";
-            msg.style.opacity = 0;
-            setTimeout(() => {
-                msg.style.transition = "opacity 0.5s ease-in-out";
-                msg.style.opacity = 1;
-            }, 10);
-        }
-    </script>
+  <script>
+    function getLocation() {
+      if (navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition(async function(position) {
+          const lat = position.coords.latitude;
+          const lon = position.coords.longitude;
+          try {
+            const response = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}`);
+            const data = await response.json();
+            document.getElementById("location").value = data.display_name || `Lat: ${lat}, Lon: ${lon}`;
+          } catch {
+            document.getElementById("location").value = `Lat: ${lat}, Lon: ${lon}`;
+          }
+        });
+      } else {
+        alert("Geolocation not supported.");
+      }
+    }
+
+    function updateSeverity(level) {
+      const display = document.getElementById('severityDisplay');
+      display.textContent = "Severity Level: " + level.toUpperCase();
+      display.style.color = level === 'Low' ? "green" : level === 'Moderate' ? "goldenrod" : "red";
+    }
+
+    function toggleOtherField(selectObj) {
+      const container = document.getElementById('otherIncidentContainer');
+      container.classList.toggle('show', selectObj.value === 'Other');
+    }
+
+    function previewImages(input) {
+      const previewContainer = document.getElementById('previewContainer');
+      previewContainer.innerHTML = '';
+      Array.from(input.files).slice(0, 4).forEach(file => {
+        const reader = new FileReader();
+        reader.onload = e => {
+          const img = document.createElement('img');
+          img.src = e.target.result;
+          previewContainer.appendChild(img);
+        };
+        reader.readAsDataURL(file);
+      });
+    }
+
+    function generatePDF() {
+      const msg = document.getElementById('confirmationMessage');
+      msg.style.display = "block";
+      msg.style.opacity = 1;
+      setTimeout(() => {
+        msg.style.opacity = 0;
+        setTimeout(() => msg.style.display = "none", 500);
+      }, 2500);
+      alert("PDF has been generated. You can now send it manually.");
+    }
+  </script>
 </body>
 </html>
