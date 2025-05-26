@@ -1,360 +1,683 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <title>OFFICER REPORT</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
+  <title>TacMap – Field Activity Report</title>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <style>
+    /* ========== GLOBAL STYLES ========== */
     html, body {
       margin: 0;
       padding: 0;
+      height: 100%;
+      background: #f2f2f2;
       font-family: Arial, sans-serif;
-      background-color: #f2f2f2;
       color: #333;
     }
 
-    .container {
-      background: #fff;
-      margin: 10px;
-      padding: 15px;
-      border-radius: 5px;
-      box-shadow: 0 0 8px rgba(0,0,0,0.1);
-    }
-
-    h2 {
-      text-align: center;
-      margin-bottom: 15px;
-      font-size: 20px;
-      text-transform: uppercase;
-    }
-
-    label {
-      display: block;
-      margin-top: 10px;
-      font-weight: bold;
-      font-size: 14px;
-    }
-
-    input[type="text"],
-    input[type="datetime-local"],
-    textarea,
-    select {
+    #map {
+      height: 100%;
       width: 100%;
-      padding: 8px;
-      margin-top: 5px;
-      font-size: 14px;
+      z-index: 0;
+    }
+
+    #address {
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      padding: 8px 12px;
+      font-size: 13px;
+      background: rgba(255,255,255,0.95);
+      color: #333;
+      z-index: 999;
+      text-align: left;
+      line-height: 1.4em;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    }
+
+    #satBtn, #gpsBtn {
+      position: absolute;
+      top: 48px;
+      z-index: 999;
+      background-color: #007bff;
+      color: #fff;
+      border: none;
+      padding: 6px 14px;
+      font-size: 13px;
+      border-radius: 4px;
+      cursor: pointer;
+      box-shadow: 0 0 5px rgba(0,0,0,0.1);
+    }
+
+    #satBtn { left: 12px; }
+    #gpsBtn { right: 12px; }
+
+    /* ========== CHECK-IN BOX ========== */
+    #checkinBox {
+      position: absolute;
+      top: 100px;
+      left: 12px;
+      z-index: 999;
+      background: #ffffff;
+      padding: 12px;
+      border-radius: 6px;
+      box-shadow: 0 0 6px rgba(0,0,0,0.1);
+      max-width: 300px;
+      font-size: 13px;
+      color: #333;
+    }
+
+    #checkinBox div,
+    #checkinBox input {
+      margin-bottom: 6px;
+    }
+
+    #checkinBox input {
+      width: 100%;
+      background: #fff;
+      color: #333;
       border: 1px solid #ccc;
-      border-radius: 3px;
+      font-size: 13px;
+      padding: 6px;
+      border-radius: 4px;
       box-sizing: border-box;
     }
 
-    input[type="datetime-local"] {
-      appearance: none;
-      -webkit-appearance: none;
-    }
-
-    textarea {
-      resize: vertical;
-    }
-
-    .severity-select {
-      display: flex;
-      justify-content: space-between;
-      margin-top: 10px;
-    }
-
-    .severity-select label {
-      flex: 1;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 6px;
-      padding: 8px;
-      font-size: 14px;
-      border: 1px solid #ccc;
-      border-radius: 3px;
-    }
-
-    .green { color: green; }
-    .yellow { color: goldenrod; }
-    .red { color: red; }
-
-    button {
-      margin-top: 15px;
-      padding: 10px;
-      width: 100%;
+    #viewLog, #resetLog, #exportLog {
       background-color: #007bff;
       color: white;
       border: none;
-      border-radius: 3px;
-      font-size: 14px;
+      padding: 6px 10px;
+      font-size: 13px;
+      border-radius: 4px;
       cursor: pointer;
-      transition: transform 0.1s ease-in-out;
+      margin-top: 4px;
+      width: 100%;
     }
 
-    button:active {
-      transform: scale(0.98);
-    }
-
-    .images-preview {
-      margin-top: 10px;
-      display: flex;
-      flex-wrap: wrap;
-      gap: 5px;
-    }
-
-    .images-preview img {
-      width: 75px;
-      height: auto;
+    .editNoteBtn {
+      background-color: #6c757d;
+      color: white;
+      border: none;
+      padding: 4px 8px;
+      font-size: 12px;
       border-radius: 3px;
+      cursor: pointer;
+      margin-top: 4px;
     }
 
-    .color-tag {
-      font-weight: bold;
-      font-size: 14px;
+    #logData {
+      color: #333;
+      font-size: 12px;
+      margin-top: 6px;
+      max-height: 160px;
+      overflow-y: auto;
     }
 
-    #otherIncidentContainer {
-      max-height: 0;
-      overflow: hidden;
-      transition: max-height 0.3s ease;
-    }
-
-    #otherIncidentContainer.show {
-      max-height: 100px;
-    }
-
-    #confirmationMessage {
+    /* ========== CONTINUED IN PART 2 ========== */
+        /* ========== NOTE EDIT MODAL ========== */
+    #noteModal {
       display: none;
+      position: fixed;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: rgba(0,0,0,0.75);
+      z-index: 2000;
+      color: #333;
+      font-size: 13px;
       text-align: center;
-      margin-top: 15px;
-      color: green;
+      padding-top: 80px;
+    }
+
+    #noteModal textarea {
+      width: 80%;
+      height: 100px;
+      background: #fff;
+      border: 1px solid #ccc;
+      color: #333;
+      padding: 8px;
+      font-family: Arial, sans-serif;
+      margin-bottom: 12px;
+      border-radius: 4px;
+    }
+
+    #noteModal button {
+      margin: 0 6px;
+      background-color: #007bff;
+      color: white;
+      border: none;
+      padding: 6px 12px;
+      font-size: 13px;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+
+    /* ========== REMINDER MODAL ========== */
+    #reminderModal {
+      display: none;
+      position: fixed;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: rgba(0,0,0,0.8);
+      z-index: 3000;
+      justify-content: center;
+      align-items: center;
+      font-size: 14px;
+      font-family: Arial, sans-serif;
+      text-align: center;
+      padding: 20px;
+      color: #fff;
+    }
+
+    .reminderContent {
+      background: #333;
+      border: 2px solid #ffc107;
+      padding: 20px 30px;
+      border-radius: 6px;
+      max-width: 340px;
+      box-shadow: 0 0 10px #ffc107;
+    }
+
+    .reminderContent button {
+      margin: 5px;
+      background-color: #ffc107;
+      color: #000;
+      border: none;
+      padding: 6px 14px;
+      font-size: 13px;
+      font-family: Arial, sans-serif;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+
+    /* ========== BOTTOM HUD CONTROLS ========== */
+    .hud {
+      position: absolute;
+      bottom: 0;
+      width: 100%;
+      background: #fff;
+      padding: 10px 12px;
+      box-sizing: border-box;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      z-index: 999;
+      flex-wrap: wrap;
+      font-size: 13px;
+      border-top: 1px solid #ccc;
+    }
+
+    .hud span {
+      margin: 2px 8px;
       font-weight: bold;
-      opacity: 0;
-      transition: opacity 0.5s ease-in-out;
+    }
+
+    .hud button {
+      background-color: #007bff;
+      color: white;
+      border: none;
+      padding: 8px 14px;
+      font-size: 13px;
+      border-radius: 4px;
+      cursor: pointer;
+      margin: 2px 6px;
     }
   </style>
 </head>
 <body>
-  <div class="container">
-    <h2>OFFICER REPORT</h2>
+  <div id="map"></div>
+  <div id="address">LOCATING...</div>
+  <button id="satBtn">SATELLITE VIEW</button>
+  <button id="gpsBtn">CENTER MAP</button>
 
-    <label for="officerName">Officer Name</label>
-    <input type="text" id="officerName" placeholder="Enter officer's name">
+  <!-- CONTINUED IN PART 3 -->
+    <!-- ========== CHECK-IN MODULE ========== -->
+  <div id="checkinBox">
+    <!-- OFFICER + LOCATION INPUTS -->
+    <div><label>Officer:</label><input type="text" id="officerName" placeholder="Enter officer name"></div>
+    <div><label>Location:</label><input type="text" id="postLocation" placeholder="Enter post/post address"></div>
 
-    <label for="badgeNumber">Badge Number</label>
-    <input type="text" id="badgeNumber" placeholder="Enter badge number">
+    <!-- CHECK-IN SUMMARY -->
+    <div><strong>Check-Ins:</strong> <span id="checkCount">0</span></div>
+    <div><strong>Last Check-In:</strong> <span id="lastTime">--:--:--</span></div>
+    <div><strong>Steps:</strong> <span id="stepCount">0</span> | <strong>Distance:</strong> <span id="distCount">0</span>m</div>
 
-    <label for="incidentDateTime">Incident Date & Time</label>
-    <input type="datetime-local" id="incidentDateTime">
+    <!-- LOG BUTTONS -->
+    <button id="viewLog">[VIEW LOG]</button>
+    <button id="exportLog">[EXPORT LOG]</button>
 
-    <label for="location">Location</label>
-    <input type="text" id="location" placeholder="Enter location or use GPS">
-    <button type="button" onclick="getLocation()">Use My Location</button>
-
-    <label>Incident Severity</label>
-    <div class="severity-select">
-      <label><input type="radio" name="severity" value="Low" onclick="updateSeverity('Low')"><span class="green">Low</span></label>
-      <label><input type="radio" name="severity" value="Moderate" onclick="updateSeverity('Moderate')"><span class="yellow">Moderate</span></label>
-      <label><input type="radio" name="severity" value="High" onclick="updateSeverity('High')"><span class="red">High</span></label>
+    <!-- CHECK-IN LOG SECTION -->
+    <div id="logSection" style="display:none;">
+      <div><strong>Activity Log:</strong></div>
+      <div id="logData"></div>
+      <button id="resetLog">[RESET LOG]</button>
     </div>
-    <div id="severityDisplay" class="color-tag"></div>
-        <label for="incidentType">Incident Type</label>
-    <select id="incidentType" onchange="toggleOtherField(this)">
-      <option value="Trespassing">Trespassing</option>
-      <option value="Vandalism">Vandalism</option>
-      <option value="Theft">Theft</option>
-      <option value="Loitering">Loitering</option>
-      <option value="Disturbance">Disturbance</option>
-      <option value="Medical Emergency">Medical Emergency</option>
-      <option value="Alarm Response">Alarm Response</option>
-      <option value="Suspicious Person">Suspicious Person</option>
-      <option value="Unauthorized Access">Unauthorized Access</option>
-      <option value="Domestic Dispute">Domestic Dispute</option>
-      <option value="Weapon Sighting">Weapon Sighting</option>
-      <option value="Noise Complaint">Noise Complaint</option>
-      <option value="Physical Altercation">Physical Altercation</option>
-      <option value="Property Damage">Property Damage</option>
-      <option value="Fire or Smoke">Fire or Smoke</option>
-      <option value="Missing Person">Missing Person</option>
-      <option value="Found Property">Found Property</option>
-      <option value="Other">Other</option>
-    </select>
-
-    <div id="otherIncidentContainer">
-      <label for="otherIncidentType">Specify Other Incident</label>
-      <input type="text" id="otherIncidentType" placeholder="Describe other incident type">
-    </div>
-
-    <label for="incidentDetails">Incident Details</label>
-    <textarea id="incidentDetails" rows="8" placeholder="Provide a full narrative of the incident..."></textarea>
-
-    <label for="incidentStatus">Incident Status</label>
-    <select id="incidentStatus">
-      <option value="Resolved On Site">Resolved On Site</option>
-      <option value="Escalated to Supervisor">Escalated to Supervisor</option>
-      <option value="Ongoing / Requires Follow-up">Ongoing / Requires Follow-up</option>
-    </select>
-
-    <label for="photoUpload">Upload Photos (Max 4)</label>
-    <input type="file" id="photoUpload" accept="image/*" multiple onchange="accumulatePreviewImages(this)">
-    <div class="images-preview" id="previewContainer"></div>
-
-    <button type="button" onclick="generatePDF()">Generate Report</button>
-    <div id="confirmationMessage">Successfully generated PDF.</div>
   </div>
-  <!-- ============================= -->
-<!-- START: SCRIPT SECTION FIXED -->
-<!-- ============================= -->
-<script>
-  function getLocation() {
-    if (navigator.geolocation) {
-      navigator.geolocation.getCurrentPosition(async function(position) {
-        const lat = position.coords.latitude;
-        const lon = position.coords.longitude;
-        try {
-          const response = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}`);
-          const data = await response.json();
-          document.getElementById("location").value = data.display_name || `Lat: ${lat}, Lon: ${lon}`;
-        } catch {
-          document.getElementById("location").value = `Lat: ${lat}, Lon: ${lon}`;
-        }
-      });
-    } else {
-      alert("Geolocation not supported.");
+
+  <!-- ========== NOTE EDIT MODAL ========== -->
+  <div id="noteModal">
+    <div><strong>Edit Check-In Note</strong></div>
+    <textarea id="noteInput" placeholder="Enter note here..."></textarea><br>
+    <button onclick="clearNote()">Clear</button>
+    <button onclick="saveNote()">Save</button>
+    <button onclick="cancelNote()">Cancel</button>
+  </div>
+
+  <!-- ========== REMINDER MODAL ========== -->
+  <div id="reminderModal">
+    <div class="reminderContent">
+      <strong>REMINDER:</strong><br>
+      This system uses local browser storage.<br>
+      <u>Do not clear history</u> or data may be lost.<br><br>
+      <label>How often should this message appear?</label><br><br>
+      <button onclick="setReminderPref('always')">Always</button>
+      <button onclick="setReminderPref('once')">Once</button>
+    </div>
+  </div>
+
+  <!-- ========== BOTTOM HUD CONTROLS ========== -->
+  <div class="hud">
+    <span id="gpsStatus">GPS: WAITING...</span>
+    <span id="clock">TIME: --:--:--</span>
+    <button onclick="clearMarkers()">Clear Markers</button>
+    <button onclick="doCheckIn()">Check-In</button>
+  </div>
+
+  <!-- ========== MAP + PDF LIBRARIES ========== -->
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <!-- SCRIPT LOGIC CONTINUES IN PART 4 -->
+    <script>
+    // ========== MAP INITIALIZATION ==========
+    let map = L.map('map').setView([33.4484, -112.0740], 20);
+    let street = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png');
+    let satellite = L.tileLayer('https://{s}.google.com/vt/lyrs=s&x={x}&y={y}&z={z}', {
+      subdomains: ['mt0','mt1','mt2','mt3'],
+      maxZoom: 20
+    });
+    let currentLayer = street;
+    street.addTo(map);
+
+    // ========== STATE VARIABLES ==========
+    let trail = [], markers = [], steps = 0, totalDist = 0;
+    let checkIns = 0, checkLog = [], checkNotes = [];
+    let lastLatLng = null, roundStartTime = null, currentNoteIndex = null;
+
+    // ========== SATELLITE TOGGLE ==========
+    document.getElementById('satBtn').onclick = () => {
+      map.removeLayer(currentLayer);
+      currentLayer = currentLayer === street ? satellite : street;
+      currentLayer.addTo(map);
+      document.getElementById('satBtn').textContent = currentLayer === street ? "SATELLITE VIEW" : "MAP VIEW";
+    };
+
+    // ========== GPS CENTERING BUTTON ==========
+    document.getElementById('gpsBtn').onclick = () => {
+      if (lastLatLng) map.setView(lastLatLng, 20, { animate: true });
+    };
+
+    // ========== CLOCK ==========
+    function updateClock() {
+      const now = new Date();
+      document.getElementById("clock").textContent = "TIME: " + now.toLocaleString();
     }
-  }
+    setInterval(updateClock, 1000);
 
-  function updateSeverity(level) {
-    const display = document.getElementById('severityDisplay');
-    display.textContent = "Severity Level: " + level.toUpperCase();
-    display.style.color = level === 'Low' ? "green" : level === 'Moderate' ? "goldenrod" : "red";
-  }
-
-  function toggleOtherField(selectObj) {
-    const container = document.getElementById('otherIncidentContainer');
-    container.classList.toggle('show', selectObj.value === 'Other');
-  }
-
-  // ===========================================
-  // MODULAR FIX: Accumulate Image Previews (Max 4)
-  // ===========================================
-  const accumulatedFiles = [];
-
-  function accumulatePreviewImages(input) {
-    const previewContainer = document.getElementById('previewContainer');
-    const newFiles = Array.from(input.files);
-
-    for (let i = 0; i < newFiles.length && accumulatedFiles.length < 4; i++) {
-      accumulatedFiles.push(newFiles[i]);
-      const reader = new FileReader();
-      reader.onload = e => {
-        const img = document.createElement('img');
-        img.src = e.target.result;
-        previewContainer.appendChild(img);
-      };
-      reader.readAsDataURL(newFiles[i]);
-    }
-
-    // Reset input to allow same file selection again
-    input.value = '';
-  }
-    // =============================
-  // CONTINUED: PDF GENERATION
-  // =============================
-  async function generatePDF() {
-    const { jsPDF } = window.jspdf;
-    const pdf = new jsPDF();
-    const officer = document.getElementById("officerName").value;
-    const badge = document.getElementById("badgeNumber").value;
-    const dateTime = document.getElementById("incidentDateTime").value;
-    const location = document.getElementById("location").value;
-    const severity = document.querySelector('input[name="severity"]:checked')?.value || "N/A";
-    const type = document.getElementById("incidentType").value;
-    const otherType = document.getElementById("otherIncidentType").value;
-    const finalType = type === "Other" ? otherType : type;
-    const details = document.getElementById("incidentDetails").value;
-    const status = document.getElementById("incidentStatus").value;
-
-    let y = 10;
-    pdf.setFont("helvetica", "bold");
-    pdf.setFillColor(40, 40, 40);
-    pdf.setTextColor(255, 255, 255);
-    pdf.rect(10, y, 190, 10, "F");
-    pdf.setFontSize(16);
-    pdf.text("REPORT FORM", 105, y + 7, { align: "center" });
-
-    y += 20;
-    const fields = [
-      ["Officer Name", officer], ["Badge Number", badge],
-      ["Incident Date & Time", dateTime], ["Location", location],
-      ["Incident Severity", severity.toUpperCase()], ["Incident Type", finalType],
-      ["Incident Status", status], ["", ""]
-    ];
-    pdf.setFontSize(11);
-    for (let i = 0; i < fields.length; i += 2) {
-      pdf.setFont("helvetica", "bold");
-      pdf.setTextColor(0);
-      pdf.text(`${fields[i][0]}:`, 10, y);
-      pdf.text(`${fields[i + 1][0]}:`, 105, y);
-      pdf.setFont("helvetica", "normal");
-      if (fields[i][0] === "Incident Severity") {
-        const color = severity === "High" ? [200, 0, 0] : severity === "Moderate" ? [218, 165, 32] : [0, 128, 0];
-        pdf.setTextColor(...color);
+    // ========== REMINDER MODAL LAUNCH ==========
+    window.onload = () => {
+      const pref = localStorage.getItem('reminderPref');
+      if (!pref || pref === 'always') {
+        document.getElementById('reminderModal').style.display = 'flex';
+      } else if (pref === 'once' && !localStorage.getItem('reminderShownOnce')) {
+        document.getElementById('reminderModal').style.display = 'flex';
       }
-      pdf.text(fields[i][1] || "N/A", 60, y);
-      pdf.setTextColor(0);
-      pdf.text(fields[i + 1][1] || "", 145, y);
-      y += 8;
+
+      // ========== RESTORE DATA FROM LOCALSTORAGE ==========
+      const saved = localStorage.getItem("tacMapData");
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        steps = parsed.steps || 0;
+        totalDist = parsed.totalDist || 0;
+        checkIns = parsed.checkIns || 0;
+        checkLog = parsed.checkLog || [];
+        checkNotes = parsed.checkNotes || [];
+        trail = parsed.trail || [];
+
+        document.getElementById('stepCount').textContent = steps;
+        document.getElementById('distCount').textContent = totalDist;
+        document.getElementById('checkCount').textContent = checkIns;
+        document.getElementById('lastTime').textContent = parsed.lastTime || "--:--:--";
+        document.getElementById('officerName').value = parsed.officer || '';
+        document.getElementById('postLocation').value = parsed.location || '';
+        updateLog();
+
+        for (let p of trail) {
+          const mark = L.circleMarker(p, {
+            radius: 3,
+            color: "#007bff",
+            fillColor: "#007bff",
+            fillOpacity: 1
+          }).addTo(map);
+          markers.push(mark);
+        }
+      }
+    };
+
+    // CONTINUES IN PART 5: GPS logic, log handling, notes, data save
+        // ========== GPS TRACKING & LOCATION ==========
+    navigator.geolocation.watchPosition(pos => {
+      const { latitude, longitude, accuracy } = pos.coords;
+      if (accuracy > 30) return;
+
+      document.getElementById('gpsStatus').textContent = `GPS: LOCKED (${Math.round(accuracy)}m)`;
+      const latlng = { lat: latitude, lng: longitude };
+      lastLatLng = latlng;
+
+      if (trail.length > 0) {
+        const last = trail[trail.length - 1];
+        const dist = calcDistance(last, latlng);
+        if (dist >= 1) {
+          steps++;
+          totalDist += dist;
+          updateStats();
+          if (!roundStartTime) roundStartTime = new Date();
+          const mark = L.circleMarker(latlng, {
+            radius: 3,
+            color: "#007bff",
+            fillColor: "#007bff",
+            fillOpacity: 1
+          }).addTo(map);
+          markers.push(mark);
+          trail.push(latlng);
+          saveData();
+        }
+      } else {
+        map.setView(latlng, 20, { animate: true });
+        trail.push(latlng);
+        saveData();
+      }
+
+      fetch(`https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${latitude}&lon=${longitude}`)
+        .then(res => res.json())
+        .then(data => {
+          if (data.display_name) {
+            document.getElementById('address').textContent = data.display_name;
+          }
+        })
+        .catch(() => {
+          document.getElementById('address').textContent = `Lat: ${latitude.toFixed(5)}, Lon: ${longitude.toFixed(5)}`;
+        });
+    }, () => {
+      document.getElementById('gpsStatus').textContent = "GPS: ERROR";
+    }, {
+      enableHighAccuracy: true,
+      maximumAge: 0,
+      timeout: 5000
+    });
+
+    // ========== CALCULATE DISTANCE BETWEEN POINTS ==========
+    function calcDistance(latlng1, latlng2) {
+      const R = 6371e3;
+      const dLat = (latlng2.lat - latlng1.lat) * Math.PI / 180;
+      const dLon = (latlng2.lng - latlng1.lng) * Math.PI / 180;
+      const a = Math.sin(dLat / 2) ** 2 +
+                Math.cos(latlng1.lat * Math.PI / 180) *
+                Math.cos(latlng2.lat * Math.PI / 180) *
+                Math.sin(dLon / 2) ** 2;
+      const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+      return Math.round(R * c);
     }
 
-    pdf.setFont("helvetica", "bold");
-    pdf.setFillColor(220, 220, 220);
-    pdf.rect(10, y, 190, 8, "F");
-    pdf.text("Narrative", 12, y + 6);
-    y += 14;
-    pdf.setFont("helvetica", "normal");
-    let split = pdf.splitTextToSize(details || "N/A", 185);
-    pdf.text(split, 10, y);
-    y += split.length * 6 + 5;
-
-    for (let i = 0; i < Math.min(4, accumulatedFiles.length); i++) {
-      const file = accumulatedFiles[i];
-      const reader = new FileReader();
-      await new Promise(resolve => {
-        reader.onload = function (e) {
-          const img = new Image();
-          img.onload = function () {
-            if (y > 240) {
-              pdf.addPage();
-              y = 10;
-            }
-            pdf.addImage(img, 'JPEG', 10, y, 60, 45);
-            y += 50;
-            resolve();
-          };
-          img.src = e.target.result;
-        };
-        reader.readAsDataURL(file);
-      });
+    // ========== LOG NOTE FUNCTIONS ==========
+    function updateLog() {
+      const container = document.getElementById('logData');
+      container.innerHTML = checkLog.map((line, i) => {
+        const note = checkNotes[i] || '--';
+        return `<div>${line}<br><strong>Note:</strong> ${note}<br><button class="editNoteBtn" onclick="editNote(${i})">Edit Note</button></div><br>`;
+      }).join('');
     }
 
-    const timestamp = new Date().toLocaleString();
-    pdf.setFontSize(8);
-    pdf.setTextColor(100);
-    pdf.text(`Generated on ${timestamp}`, 200, 290, { align: "right" });
+    function editNote(index) {
+      currentNoteIndex = index;
+      document.getElementById("noteInput").value = checkNotes[index] || '';
+      document.getElementById("noteModal").style.display = 'block';
+    }
 
-    pdf.save("incident_report.pdf");
+    function saveNote() {
+      const text = document.getElementById("noteInput").value.trim();
+      if (currentNoteIndex !== null) {
+        checkNotes[currentNoteIndex] = text;
+        updateLog();
+        saveData();
+        cancelNote();
+      }
+    }
 
-    const msg = document.getElementById('confirmationMessage');
-    msg.style.display = "block";
-    msg.style.opacity = 1;
-    setTimeout(() => {
-      msg.style.opacity = 0;
-      setTimeout(() => msg.style.display = "none", 500);
-    }, 2500);
-  }
-</script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    function clearNote() {
+      if (currentNoteIndex !== null) {
+        checkNotes[currentNoteIndex] = '';
+        updateLog();
+        saveData();
+        cancelNote();
+      }
+    }
+
+    function cancelNote() {
+      currentNoteIndex = null;
+      document.getElementById("noteModal").style.display = 'none';
+    }
+
+    // CONTINUES IN PART 6: check-in logic, saving data, marker clearing
+        // ========== CHECK-IN LOGIC ==========
+    function doCheckIn() {
+      const now = new Date();
+      const t = now.toLocaleTimeString();
+      let activeTime = "--:--:--";
+      if (roundStartTime) activeTime = getElapsedTime(roundStartTime, now);
+      const entryNum = (checkIns + 1).toString().padStart(2, '0');
+      const logEntry = `${entryNum} – ${t}\nSteps: ${steps} | Distance: ${totalDist}m | Time: ${activeTime}`;
+      
+      checkIns++;
+      document.getElementById('checkCount').textContent = checkIns;
+      document.getElementById('lastTime').textContent = t;
+      checkLog.push(logEntry);
+      checkNotes.push('');
+      updateLog();
+      saveData();
+    }
+
+    // ========== SAVE TO LOCALSTORAGE ==========
+    function saveData() {
+      localStorage.setItem("tacMapData", JSON.stringify({
+        steps,
+        totalDist,
+        checkIns,
+        checkLog,
+        checkNotes,
+        trail,
+        lastTime: document.getElementById('lastTime').textContent,
+        officer: document.getElementById('officerName').value,
+        location: document.getElementById('postLocation').value
+      }));
+    }
+
+    // ========== LOG PANEL TOGGLE ==========
+    document.getElementById('viewLog').onclick = () => {
+      const section = document.getElementById('logSection');
+      section.style.display = section.style.display === 'none' ? 'block' : 'none';
+    };
+
+    // ========== RESET LOG ==========
+    document.getElementById('resetLog').onclick = () => {
+      checkIns = 0;
+      checkLog = [];
+      checkNotes = [];
+      roundStartTime = null;
+      document.getElementById('checkCount').textContent = 0;
+      document.getElementById('lastTime').textContent = '--:--:--';
+      document.getElementById('logData').innerHTML = '';
+      saveData();
+    };
+
+    // ========== MARKER + TRAIL RESET ==========
+    function clearMarkers() {
+      markers.forEach(m => map.removeLayer(m));
+      markers = [];
+      trail = [];
+      steps = 0;
+      totalDist = 0;
+      roundStartTime = null;
+      updateStats();
+      saveData();
+    }
+
+    // ========== STAT DISPLAY UPDATE ==========
+    function updateStats() {
+      document.getElementById('stepCount').textContent = steps;
+      document.getElementById('distCount').textContent = totalDist;
+    }
+
+    // ========== TIME FORMATTER ==========
+    function getElapsedTime(start, end) {
+      const delta = Math.floor((end - start) / 1000);
+      const hrs = String(Math.floor(delta / 3600)).padStart(2, '0');
+      const min = String(Math.floor((delta % 3600) / 60)).padStart(2, '0');
+      const sec = String(delta % 60).padStart(2, '0');
+      return `${hrs}:${min}:${sec}`;
+    }
+
+    // CONTINUES IN PART 7: PDF export using Officer Report format
+        // ========== PDF EXPORT FUNCTION ==========
+    document.getElementById('exportLog').onclick = async () => {
+      const { jsPDF } = window.jspdf;
+      const doc = new jsPDF();
+      const officer = document.getElementById("officerName").value || "--";
+      const location = document.getElementById("postLocation").value || "--";
+
+      let y = 10;
+
+      // HEADER
+      doc.setFont("helvetica", "bold");
+      doc.setFillColor(40, 40, 40);
+      doc.setTextColor(255, 255, 255);
+      doc.rect(10, y, 190, 10, "F");
+      doc.setFontSize(16);
+      doc.text("PATROL LOG", 105, y + 7, { align: "center" });
+      y += 20;
+
+      // FIELD DATA (Two-column layout)
+      const fields = [
+        ["Officer Name", officer],
+        ["Location", location],
+        ["Total Check-Ins", String(checkIns)],
+        ["Total Distance", `${totalDist} meters`],
+        ["Total Steps", String(steps)],
+        ["Last Check-In", document.getElementById("lastTime").textContent]
+      ];
+
+      doc.setFontSize(11);
+      for (let i = 0; i < fields.length; i += 2) {
+        doc.setFont("helvetica", "bold");
+        doc.setTextColor(0);
+        doc.text(`${fields[i][0]}:`, 10, y);
+        if (fields[i + 1]) doc.text(`${fields[i + 1][0]}:`, 105, y);
+
+        doc.setFont("helvetica", "normal");
+        doc.setTextColor(33, 33, 33);
+        doc.text(fields[i][1], 60, y);
+        if (fields[i + 1]) doc.text(fields[i + 1][1], 150, y);
+        y += 8;
+      }
+
+      // SECTION HEADER: Narrative
+      y += 4;
+      doc.setFont("helvetica", "bold");
+      doc.setFillColor(220, 220, 220);
+      doc.setTextColor(0);
+      doc.rect(10, y, 190, 8, "F");
+      doc.text("Narrative Log", 12, y + 6);
+      y += 14;
+
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(10);
+
+      // CONTINUES IN PART 8: log entries, note text, dynamic spacing
+            for (let i = 0; i < checkLog.length; i++) {
+        const entry = checkLog[i].replace(/\n/g, '\n');
+        const note = checkNotes[i] ? `Note: ${checkNotes[i]}` : "Note: --";
+        const block = entry + "\n" + note;
+
+        const lines = doc.splitTextToSize(block, 180);
+        if (y + lines.length * 6 > 270) {
+          doc.addPage();
+          y = 10;
+        }
+
+        doc.text(lines, 10, y);
+        y += lines.length * 6 + 4;
+      }
+
+      // TIMESTAMP FOOTER
+      const timestamp = new Date().toLocaleString();
+      doc.setFontSize(8);
+      doc.setTextColor(100);
+      doc.text(`Generated on ${timestamp}`, 200, 290, { align: "right" });
+
+      doc.save("patrol_log.pdf");
+    };
+
+    // ========== REMINDER PREFERENCE SETTER ==========
+    function setReminderPref(pref) {
+      localStorage.setItem('reminderPref', pref);
+      if (pref === 'once') localStorage.setItem('reminderShownOnce', 'yes');
+      document.getElementById('reminderModal').style.display = 'none';
+    }
+
+    // CONTINUES IN PART 9: mobile fixes, zoom prevention, safety measures
+        // ========== MOBILE ZOOM PREVENTION ==========
+    document.querySelectorAll("button").forEach(btn => {
+      btn.addEventListener("touchstart", e => {
+        if (e.touches.length > 1) e.preventDefault();
+      }, { passive: false });
+    });
+
+    document.addEventListener("gesturestart", e => e.preventDefault());
+
+  </script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 </body>
 </html>
+<!-- ========== PART 10: OPTIONAL ENHANCEMENTS MODULE ========== -->
+<script>
+  // ========== OPTIONAL: EMBEDDED LOGO IN PDF HEADER ==========
+  // You can insert a logo image (Base64 or URL-based) into the top of the PDF.
+  // Example usage (uncomment to enable):
+
+  // const logo = new Image();
+  // logo.src = 'data:image/png;base64,...'; // Replace with your actual logo Base64
+  // logo.onload = function () {
+  //   doc.addImage(logo, 'PNG', 10, 10, 30, 10);
+  // };
+
+  // ========== OPTIONAL: AUTO-TRIM TRAIL TO LAST X MARKERS ==========
+  // This keeps trail light on memory if you're tracking for long periods.
+  // Example:
+  // if (trail.length > 100) {
+  //   const old = trail.shift();
+  //   const removedMarker = markers.shift();
+  //   map.removeLayer(removedMarker);
+  // }
+
+  // ========== OPTIONAL: EXPORT JSON DATA ==========
+  // To allow raw export of the patrol session as JSON:
+  // const rawData = localStorage.getItem("tacMapData");
+  // const blob = new Blob([rawData], { type: 'application/json' });
+  // const url = URL.createObjectURL(blob);
+  // const link = document.createElement('a');
+  // link.href = url;
+  // link.download = "tacmap_data.json";
+  // link.click();
+
+  // ========== SYSTEM COMPLETE ==========
+  console.log("TACMAP interface and PDF export system successfully loaded.");
+</script>
