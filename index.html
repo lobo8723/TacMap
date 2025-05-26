@@ -1,376 +1,252 @@
-<!-- ========================= -->
-<!-- PART 1: NEW REPORT PANEL STYLES -->
-<!-- ========================= -->
-<style>
-  /* REPORT PANEL TOGGLE BUTTON (BOTTOM HUD) */
-  .hud .reportToggleBtn {
-    background-color: #17a2b8;
-    color: white;
-    border: none;
-    padding: 8px 14px;
-    font-size: 13px;
-    border-radius: 4px;
-    cursor: pointer;
-    margin: 2px 6px;
-  }
-
-  /* FULLSCREEN REPORT PANEL */
-  #reportPanel {
-    display: none;
-    position: fixed;
-    top: 0; left: 0; right: 0; bottom: 0;
-    background: #fff;
-    z-index: 3000;
-    overflow-y: auto;
-    padding: 20px 16px;
-    box-sizing: border-box;
-  }
-
-  #reportPanel h2 {
-    text-align: center;
-    margin-top: 0;
-    font-size: 18px;
-    color: #007bff;
-  }
-
-  #reportPanel input,
-  #reportPanel button,
-  #reportPanel textarea {
-    width: 100%;
-    font-size: 13px;
-    padding: 8px;
-    margin-top: 8px;
-    box-sizing: border-box;
-    border: 1px solid #ccc;
-    border-radius: 4px;
-  }
-
-  #reportPanel label {
-    margin-top: 12px;
-    font-weight: bold;
-    display: block;
-    font-size: 13px;
-  }
-
-  #reportPanel .btnRow {
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-    margin-top: 12px;
-  }
-
-  #closeReportBtn {
-    background-color: #dc3545;
-    color: white;
-    border: none;
-    padding: 10px;
-    font-size: 14px;
-    border-radius: 4px;
-    margin-top: 20px;
-    width: 100%;
-    cursor: pointer;
-  }
-</style>
-
-<!-- CONTINUES IN PART 2: HTML panel structure & toggle button -->
-<!-- ========================= -->
-<!-- PART 2: REPORT PANEL HTML + TOGGLE -->
-<!-- ========================= -->
-
-<!-- FULLSCREEN REPORT PANEL -->
-<div id="reportPanel">
-  <h2>Field Activity Report</h2>
-
-  <!-- Officer Info -->
-  <label for="officerNamePanel">Officer</label>
-  <input type="text" id="officerNamePanel" placeholder="Enter officer name">
-
-  <label for="postLocationPanel">Location</label>
-  <input type="text" id="postLocationPanel" placeholder="Enter post/post address">
-
-  <!-- Stats -->
-  <label>Stats</label>
-  <div><strong>Check-Ins:</strong> <span id="panelCheckCount">0</span></div>
-  <div><strong>Last Check-In:</strong> <span id="panelLastTime">--:--:--</span></div>
-  <div><strong>Steps:</strong> <span id="panelStepCount">0</span> | <strong>Distance:</strong> <span id="panelDistCount">0</span>m</div>
-
-  <!-- Log Controls -->
-  <div class="btnRow">
-    <button onclick="viewPanelLog()">[VIEW LOG]</button>
-    <button onclick="exportLog()">[EXPORT LOG]</button>
-    <button onclick="resetLog()">[RESET LOG]</button>
-  </div>
-
-  <button id="closeReportBtn" onclick="toggleReportPanel(false)">Close Panel</button>
-</div>
-
-<!-- ADD BUTTON TO BOTTOM HUD -->
-<script>
-  // Append [+ REPORT PANEL] button dynamically
-  window.onload = function () {
-    const hud = document.querySelector('.hud');
-    const reportBtn = document.createElement('button');
-    reportBtn.textContent = "+ REPORT PANEL";
-    reportBtn.className = "reportToggleBtn";
-    reportBtn.onclick = () => toggleReportPanel(true);
-    hud.insertBefore(reportBtn, hud.children[hud.children.length - 1]);
-
-    // existing localStorage restore logic...
-        // CONTINUE RESTORING DATA INTO PANEL FIELDS
-    const saved = localStorage.getItem("tacMapData");
-    if (saved) {
-      const parsed = JSON.parse(saved);
-      steps = parsed.steps || 0;
-      totalDist = parsed.totalDist || 0;
-      checkIns = parsed.checkIns || 0;
-      checkLog = parsed.checkLog || [];
-      checkNotes = parsed.checkNotes || [];
-      trail = parsed.trail || [];
-
-      document.getElementById('stepCount').textContent = steps;
-      document.getElementById('distCount').textContent = totalDist;
-      document.getElementById('checkCount').textContent = checkIns;
-      document.getElementById('lastTime').textContent = parsed.lastTime || "--:--:--";
-      document.getElementById('officerName').value = parsed.officer || '';
-      document.getElementById('postLocation').value = parsed.location || '';
-
-      // ALSO SYNC REPORT PANEL FIELDS
-      document.getElementById('panelStepCount').textContent = steps;
-      document.getElementById('panelDistCount').textContent = totalDist;
-      document.getElementById('panelCheckCount').textContent = checkIns;
-      document.getElementById('panelLastTime').textContent = parsed.lastTime || "--:--:--";
-      document.getElementById('officerNamePanel').value = parsed.officer || '';
-      document.getElementById('postLocationPanel').value = parsed.location || '';
-
-      updateLog();
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Tactical Spelling Assist Tool</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <style>
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background: #f0f0f0;
+      margin: 0;
+      padding: 20px;
     }
-  };
-</script>
-
-<!-- CONTINUES IN PART 4: toggle logic, syncing fields, and saving on close -->
-<!-- ========================= -->
-<!-- PART 4: TOGGLE PANEL + SYNC FIELDS -->
-<!-- ========================= -->
-<script>
-  function toggleReportPanel(show) {
-    const panel = document.getElementById('reportPanel');
-    panel.style.display = show ? 'block' : 'none';
-
-    if (!show) {
-      // sync back to main fields when closing
-      document.getElementById('officerName').value = document.getElementById('officerNamePanel').value;
-      document.getElementById('postLocation').value = document.getElementById('postLocationPanel').value;
-      saveData();
-    } else {
-      // sync current data to panel when opening
-      document.getElementById('panelStepCount').textContent = steps;
-      document.getElementById('panelDistCount').textContent = totalDist;
-      document.getElementById('panelCheckCount').textContent = checkIns;
-      document.getElementById('panelLastTime').textContent = document.getElementById('lastTime').textContent;
-      document.getElementById('officerNamePanel').value = document.getElementById('officerName').value;
-      document.getElementById('postLocationPanel').value = document.getElementById('postLocation').value;
+    #mainContainer {
+      max-width: 900px;
+      margin: auto;
+      background: #fff;
+      padding: 20px;
+      border-radius: 10px;
+      box-shadow: 0 0 15px rgba(0,0,0,0.2);
     }
-  }
-
-  function viewPanelLog() {
-    document.getElementById('logSection').style.display = 'block';
-    toggleReportPanel(false);
-  }
-</script>
-
-<!-- CONTINUES IN PART 5: minor style adjustment + functionality isolation -->
-<!-- ========================= -->
-<!-- PART 5: ISOLATE PANEL LOGIC & PRESERVE CLEAN LAYOUT -->
-<!-- ========================= -->
-
-<style>
-  /* OVERRIDE CONFLICTS IF ANY */
-  #checkinBox {
-    display: block;
-  }
-
-  /* PREVENT MAP BEHIND PANEL FROM SCROLLING */
-  body.modal-open {
-    overflow: hidden;
-  }
-</style>
-
-<script>
-  // Lock scroll when panel is open
-  function toggleReportPanel(show) {
-    const panel = document.getElementById('reportPanel');
-    panel.style.display = show ? 'block' : 'none';
-    document.body.classList.toggle('modal-open', show);
-
-    if (!show) {
-      document.getElementById('officerName').value = document.getElementById('officerNamePanel').value;
-      document.getElementById('postLocation').value = document.getElementById('postLocationPanel').value;
-      saveData();
-    } else {
-      document.getElementById('panelStepCount').textContent = steps;
-      document.getElementById('panelDistCount').textContent = totalDist;
-      document.getElementById('panelCheckCount').textContent = checkIns;
-      document.getElementById('panelLastTime').textContent = document.getElementById('lastTime').textContent;
-      document.getElementById('officerNamePanel').value = document.getElementById('officerName').value;
-      document.getElementById('postLocationPanel').value = document.getElementById('postLocation').value;
+    h1 {
+      text-align: center;
+      color: #003366;
     }
-  }
-</script>
-
-<!-- CONTINUES IN PART 6: syncing export PDF with panel inputs -->
-<!-- ========================= -->
-<!-- PART 6: PDF EXPORT USES PANEL FIELDS IF VISIBLE -->
-<!-- ========================= -->
-<script>
-  function exportLog() {
-    const { jsPDF } = window.jspdf;
-    const doc = new jsPDF();
-
-    // Prefer values from the report panel if it's open
-    const officer = document.getElementById("officerNamePanel").value || document.getElementById("officerName").value || "--";
-    const location = document.getElementById("postLocationPanel").value || document.getElementById("postLocation").value || "--";
-
-    let y = 10;
-    doc.setFont("helvetica", "bold");
-    doc.setFillColor(40, 40, 40);
-    doc.setTextColor(255, 255, 255);
-    doc.rect(10, y, 190, 10, "F");
-    doc.setFontSize(16);
-    doc.text("PATROL LOG", 105, y + 7, { align: "center" });
-    y += 20;
-
-    const fields = [
-      ["Officer Name", officer],
-      ["Location", location],
-      ["Total Check-Ins", String(checkIns)],
-      ["Total Distance", `${totalDist} meters`],
-      ["Total Steps", String(steps)],
-      ["Last Check-In", document.getElementById("lastTime").textContent]
-    ];
-
-    doc.setFontSize(11);
-    for (let i = 0; i < fields.length; i += 2) {
-      doc.setFont("helvetica", "bold");
-      doc.setTextColor(0);
-      doc.text(`${fields[i][0]}:`, 10, y);
-      if (fields[i + 1]) doc.text(`${fields[i + 1][0]}:`, 105, y);
-
-      doc.setFont("helvetica", "normal");
-      doc.setTextColor(33, 33, 33);
-      doc.text(fields[i][1], 60, y);
-      if (fields[i + 1]) doc.text(fields[i + 1][1], 150, y);
-      y += 8;
+    textarea {
+      width: 100%;
+      height: 150px;
+      font-size: 16px;
+      padding: 10px;
+      border-radius: 6px;
+      border: 1px solid #ccc;
+      resize: vertical;
     }
+    #buttonPanel {
+      margin-top: 20px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      justify-content: center;
+    }
+    .wordBtn {
+      padding: 10px 14px;
+      background: #006699;
+      color: white;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+    }
+    .wordBtn:hover {
+      background: #004d73;
+    }
+  </style>
+</head>
+<body>
+  <div id="mainContainer">
+    <h1>Tactical Spelling Assist Tool</h1>
+    <textarea id="reportInput" placeholder="Start typing your report here..."></textarea>
 
-    // CONTINUES IN PART 7: narrative log & auto page breaks
-</script>
-<!-- ========================= -->
-<!-- PART 7: PDF LOG NARRATIVE SECTION -->
-<!-- ========================= -->
-<script>
-    y += 4;
-    doc.setFont("helvetica", "bold");
-    doc.setFillColor(220, 220, 220);
-    doc.setTextColor(0);
-    doc.rect(10, y, 190, 8, "F");
-    doc.text("Narrative Log", 12, y + 6);
-    y += 14;
+    <div id="buttonPanel">
+      <button class="wordBtn" onclick="insertWord('suspect')">Suspect</button>
+      <button class="wordBtn" onclick="insertWord('vehicle')">Vehicle</button>
+      <button class="wordBtn" onclick="insertWord('trespasser')">Trespasser</button>
+      <button class="wordBtn" onclick="insertWord('perimeter')">Perimeter</button>
+      <button class="wordBtn" onclick="insertWord('complied')">Complied</button>
+      <button class="wordBtn" onclick="insertWord('dispatched')">Dispatched</button>
+      <button class="wordBtn" onclick="insertWord('observed')">Observed</button>
+      <button class="wordBtn" onclick="insertWord('individual')">Individual</button>
+      <button class="wordBtn" onclick="insertWord('verbal warning')">Verbal Warning</button>
+    </div>
+        <hr style="margin: 30px 0;">
 
-    doc.setFont("helvetica", "normal");
-    doc.setFontSize(10);
+    <!-- Phrase Generator -->
+    <h3>Quick Phrase Generator</h3>
+    <label for="timeSelect">Time:</label>
+    <select id="timeSelect">
+      <option value="At 2100 hours,">At 2100 hours,</option>
+      <option value="At 2300 hours,">At 2300 hours,</option>
+      <option value="At 0200 hours,">At 0200 hours,</option>
+    </select>
 
-    for (let i = 0; i < checkLog.length; i++) {
-      const entry = checkLog[i].replace(/\n/g, '\n');
-      const note = checkNotes[i] ? `Note: ${checkNotes[i]}` : "Note: --";
-      const block = entry + "\n" + note;
+    <label for="actionSelect">Action:</label>
+    <select id="actionSelect">
+      <option value="the officer observed">the officer observed</option>
+      <option value="the officer made contact with">the officer made contact with</option>
+      <option value="the officer detained">the officer detained</option>
+    </select>
 
-      const lines = doc.splitTextToSize(block, 180);
-      if (y + lines.length * 6 > 270) {
-        doc.addPage();
-        y = 10;
+    <label for="subjectSelect">Subject:</label>
+    <select id="subjectSelect">
+      <option value="a male individual near the rear gate.">a male individual near the rear gate.</option>
+      <option value="a suspicious vehicle near the perimeter fence.">a suspicious vehicle near the perimeter fence.</option>
+      <option value="a trespasser attempting entry through the east gate.">a trespasser attempting entry through the east gate.</option>
+    </select>
+
+    <button onclick="generatePhrase()" class="wordBtn" style="margin-top: 10px;">Insert Phrase</button>
+
+    <!-- Drag-and-Drop Sentence Builder -->
+    <h3 style="margin-top: 30px;">Sentence Builder (Drag & Drop)</h3>
+    <div id="sentencePool" style="display: flex; gap: 10px; flex-wrap: wrap;">
+      <div class="draggableBox" draggable="true">Officer observed</div>
+      <div class="draggableBox" draggable="true">Suspicious individual</div>
+      <div class="draggableBox" draggable="true">Near rear gate</div>
+      <div class="draggableBox" draggable="true">Issued verbal warning</div>
+      <div class="draggableBox" draggable="true">Contacted dispatch</div>
+    </div>
+
+    <div id="dropZone" ondrop="drop(event)" ondragover="allowDrop(event)" style="margin-top: 20px; padding: 20px; border: 2px dashed #ccc; border-radius: 8px; min-height: 80px;">
+      <strong>Drop phrases here to build sentence.</strong>
+    </div>
+        <style>
+      .draggableBox {
+        background: #e0e0e0;
+        padding: 8px 12px;
+        border-radius: 6px;
+        cursor: move;
       }
 
-      doc.text(lines, 10, y);
-      y += lines.length * 6 + 4;
-    }
+      #dropZone .draggableBox {
+        background: #cce5ff;
+        margin: 5px 0;
+      }
 
-    const timestamp = new Date().toLocaleString();
-    doc.setFontSize(8);
-    doc.setTextColor(100);
-    doc.text(`Generated on ${timestamp}`, 200, 290, { align: "right" });
+      #cantSpellMode {
+        margin-top: 30px;
+        background: #ffcc00;
+        border: none;
+        color: #333;
+        padding: 10px 14px;
+        font-weight: bold;
+        border-radius: 6px;
+        cursor: pointer;
+      }
 
-    doc.save("patrol_log.pdf");
-  }
-</script>
-<!-- ========================= -->
-<!-- PART 8: saveData() UPDATES BOTH INPUT SETS -->
-<!-- ========================= -->
-<script>
-  function saveData() {
-    const officerVal = document.getElementById('officerName').value || document.getElementById('officerNamePanel').value;
-    const locationVal = document.getElementById('postLocation').value || document.getElementById('postLocationPanel').value;
+      #suggestions {
+        margin-top: 15px;
+        padding: 10px;
+        background: #f8f8f8;
+        border: 1px solid #ccc;
+        border-radius: 6px;
+        display: none;
+      }
+    </style>
 
-    localStorage.setItem("tacMapData", JSON.stringify({
-      steps,
-      totalDist,
-      checkIns,
-      checkLog,
-      checkNotes,
-      trail,
-      lastTime: document.getElementById('lastTime').textContent,
-      officer: officerVal,
-      location: locationVal
-    }));
-  }
-</script>
-<!-- ========================= -->
-<!-- PART 9: UNIFIED RESET & LOG FUNCTIONS -->
-<!-- ========================= -->
-<script>
-  function resetLog() {
-    checkIns = 0;
-    checkLog = [];
-    checkNotes = [];
-    roundStartTime = null;
+    <button id="cantSpellMode" onclick="toggleCantSpell()">Activate ‘I Can’t Spell’ Mode</button>
+    <div id="suggestions"></div>
 
-    document.getElementById('checkCount').textContent = 0;
-    document.getElementById('panelCheckCount').textContent = 0;
+    <script>
+      function insertWord(word) {
+        let textarea = document.getElementById('reportInput');
+        textarea.value += (textarea.value.trim().length ? ' ' : '') + word;
+        textarea.focus();
+      }
 
-    document.getElementById('lastTime').textContent = '--:--:--';
-    document.getElementById('panelLastTime').textContent = '--:--:--';
+      function generatePhrase() {
+        let phrase = document.getElementById('timeSelect').value + ' ' +
+                     document.getElementById('actionSelect').value + ' ' +
+                     document.getElementById('subjectSelect').value;
+        insertWord(phrase);
+      }
 
-    document.getElementById('logData').innerHTML = '';
-    saveData();
-  }
+      function allowDrop(ev) {
+        ev.preventDefault();
+      }
 
-  function updateStats() {
-    document.getElementById('stepCount').textContent = steps;
-    document.getElementById('panelStepCount').textContent = steps;
-    document.getElementById('distCount').textContent = totalDist;
-    document.getElementById('panelDistCount').textContent = totalDist;
-  }
+      function drop(ev) {
+        ev.preventDefault();
+        const data = ev.dataTransfer.getData("text");
+        const newElem = document.createElement("div");
+        newElem.className = "draggableBox";
+        newElem.textContent = data;
+        document.getElementById("dropZone").appendChild(newElem);
+        insertWord(data);
+      }
 
-  function updateLog() {
-    const container = document.getElementById('logData');
-    container.innerHTML = checkLog.map((line, i) => {
-      const note = checkNotes[i] || '--';
-      return `<div>${line}<br><strong>Note:</strong> ${note}<br><button class="editNoteBtn" onclick="editNote(${i})">Edit Note</button></div><br>`;
-    }).join('');
-  }
-</script>
-<!-- ========================= -->
-<!-- PART 10: MODULE FINALIZER & CLEAN EXIT -->
-<!-- ========================= -->
-<script>
-  // ========== SYSTEM FINALIZER ==========
-  console.log("Fullscreen Report Panel integrated successfully.");
+      document.querySelectorAll(".draggableBox").forEach(box => {
+        box.addEventListener("dragstart", e => {
+          e.dataTransfer.setData("text", e.target.textContent);
+        });
+      });
+            const dictionary = ["suspect", "vehicle", "trespasser", "perimeter", "complied", "dispatch", "observed", "individual", "warning", "suspicious", "security"];
 
-  // Optionally auto-close panel on ESC key
-  document.addEventListener('keydown', function(e) {
-    if (e.key === 'Escape') {
-      toggleReportPanel(false);
-    }
-  });
-</script>
+      function soundex(s) {
+        s = s.toLowerCase().replace(/[^a-z]/g, '');
+        if (!s) return "";
+        const a = s.split('');
+        const f = a.shift();
+        const codes = { a:'', e:'', i:'', o:'', u:'', h:'', w:'', y:'', b:'1', f:'1', p:'1', v:'1', c:'2', g:'2', j:'2', k:'2', q:'2', s:'2', x:'2', z:'2', d:'3', t:'3', l:'4', m:'5', n:'5', r:'6' };
+        const mapped = a.map(letter => codes[letter]);
+        const filtered = mapped.filter((code, i) => code !== mapped[i - 1]).join('');
+        return (f + filtered + '000').slice(0, 4).toUpperCase();
+      }
+
+      let cantSpell = false;
+
+      function toggleCantSpell() {
+        cantSpell = !cantSpell;
+        document.getElementById("cantSpellMode").innerText = cantSpell ? "‘I Can’t Spell’ Mode: ON" : "Activate ‘I Can’t Spell’ Mode";
+        document.getElementById("suggestions").style.display = cantSpell ? "block" : "none";
+      }
+
+      document.getElementById("reportInput").addEventListener("input", function() {
+        if (!cantSpell) return;
+        const words = this.value.split(/\s+/);
+        const lastWord = words[words.length - 1].toLowerCase();
+        const userSoundex = soundex(lastWord);
+        const matches = dictionary.filter(w => soundex(w) === userSoundex);
+        showSuggestions(matches, lastWord);
+      });
+
+      function showSuggestions(matches, input) {
+        const div = document.getElementById("suggestions");
+        if (matches.length === 0) {
+          div.innerHTML = `<em>No suggestions for "${input}"</em>`;
+        } else {
+          div.innerHTML = "<strong>Did you mean:</strong><br>" + matches.map(m => `<button onclick="replaceLastWord('${m}')">${m}</button>`).join(" ");
+        }
+      }
+
+      function replaceLastWord(word) {
+        let textarea = document.getElementById("reportInput");
+        let text = textarea.value.trim().split(/\s+/);
+        text[text.length - 1] = word;
+        textarea.value = text.join(" ");
+        textarea.focus();
+      }
+    </script>
+        <hr style="margin: 30px 0;">
+    <h3>Pronounce a Word</h3>
+    <input type="text" id="speakWord" placeholder="Type word to hear..." style="width: 60%; padding: 8px;">
+    <button onclick="speakIt()" class="wordBtn">Speak</button>
+
+    <script>
+      function speakIt() {
+        const word = document.getElementById("speakWord").value;
+        const msg = new SpeechSynthesisUtterance(word);
+        window.speechSynthesis.speak(msg);
+      }
+    </script>
+
+    <hr style="margin: 30px 0;">
+    <h3>Basic Grammar Hints</h3>
+    <p>Words with repeated spaces, no punctuation, or lowercase sentence starts will be underlined in red.</p>
+    <script>
+      document.getElementById("reportInput").addEventListener("input", function() {
+        const text = this.value;
+        this.style.borderColor = (text.includes("  ") || !/[.!?]$/.test(text.trim())) ? "red" : "#ccc";
+      });
+    </script>
+  </div>
 </body>
 </html>
