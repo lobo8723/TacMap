@@ -37,7 +37,6 @@
 
     input[type="text"],
     input[type="datetime-local"],
-    input[type="date"],
     textarea,
     select {
       width: 100%;
@@ -62,12 +61,10 @@
       display: flex;
       justify-content: space-between;
       margin-top: 10px;
-      flex-wrap: wrap;
-      gap: 5px;
     }
 
     .severity-select label {
-      flex: 1 1 30%;
+      flex: 1;
       display: flex;
       align-items: center;
       justify-content: center;
@@ -129,8 +126,7 @@
 
     #confirmationMessage,
     #maintenanceConfirmationMessage,
-    #darConfirmationMessage,
-    #vehicleConfirmationMessage {
+    #darConfirmationMessage {
       display: none;
       text-align: center;
       margin-top: 15px;
@@ -150,16 +146,15 @@
   <button onclick="toggleForm('officer')" style="margin-bottom:5px;">👮‍♂️ Officer Report</button>
   <button onclick="toggleForm('maintenance')" style="margin-bottom:5px;">🔧 Maintenance Report</button>
   <button onclick="toggleForm('dar')" style="margin-bottom:5px;">📋 Daily Activity Report</button>
-  <!-- ✅ ADDED VEHICLE REPORT BUTTON -->
-  <button onclick="toggleForm('vehicle')" style="margin-bottom:5px;">🚓 Vehicle Report</button>
 </div>
+
 <!-- ============================= -->
 <!-- OFFICER REPORT CONTAINER -->
 <!-- ============================= -->
 <div id="officerReportBox" style="display: none;">
   <div class="container">
     <h2>OFFICER REPORT</h2>
-    <label for="officerName">Officer Name</label>
+        <label for="officerName">Officer Name</label>
     <input type="text" id="officerName" placeholder="Enter officer's name">
 
     <label for="badgeNumber">Badge Number</label>
@@ -225,7 +220,6 @@
     <div id="confirmationMessage">Successfully generated PDF.</div>
   </div>
 </div>
-
 <!-- ============================= -->
 <!-- MAINTENANCE REPORT CONTAINER -->
 <!-- ============================= -->
@@ -255,7 +249,6 @@
     <div id="maintenanceConfirmationMessage">Successfully generated PDF.</div>
   </div>
 </div>
-
 <!-- ============================= -->
 <!-- DAILY ACTIVITY REPORT CONTAINER -->
 <!-- ============================= -->
@@ -269,133 +262,43 @@
     <div id="darConfirmationMessage">Successfully generated PDF.</div>
   </div>
 </div>
+
 <!-- ============================= -->
-<!-- VEHICLE REPORT CONTAINER -->
+<!-- START: SCRIPT SECTION -->
 <!-- ============================= -->
-<div id="vehicleReportBox" style="display: none;">
-  <div class="container">
-    <h2>VEHICLE REPORT</h2>
-
-    <!-- === OFFICER & VEHICLE INFO === -->
-    <label for="vehicleOfficer">Officer Name</label>
-    <input type="text" id="vehicleOfficer" placeholder="Enter officer's name">
-
-    <label for="vehiclePlate">License Plate Number</label>
-    <input type="text" id="vehiclePlate" placeholder="Enter or scan plate">
-    <input type="file" id="vehiclePlateImage" accept="image/*">
-    <button type="button" onclick="scanTextFromImage('vehiclePlateImage','vehiclePlate')">🔍 Scan Plate</button>
-
-    <label for="vehicleVIN">Vehicle VIN</label>
-    <input type="text" id="vehicleVIN" placeholder="Enter or scan VIN">
-    <input type="file" id="vehicleVINImage" accept="image/*">
-    <button type="button" onclick="scanTextFromImage('vehicleVINImage','vehicleVIN')">🔍 Scan VIN</button>
-
-    <label for="vehicleMake">Vehicle Make</label>
-    <input type="text" id="vehicleMake" placeholder="e.g., Ford">
-
-    <label for="vehicleModel">Vehicle Model</label>
-    <input type="text" id="vehicleModel" placeholder="e.g., Explorer">
-
-    <label for="vehicleColor">Vehicle Color</label>
-    <input type="text" id="vehicleColor" placeholder="e.g., Black">
-
-    <label for="vehicleType">Vehicle Type</label>
-    <select id="vehicleType">
-      <option value="Sedan">Sedan</option>
-      <option value="SUV">SUV</option>
-      <option value="Truck">Truck</option>
-      <option value="Van">Van</option>
-      <option value="Motorcycle">Motorcycle</option>
-      <option value="Other">Other</option>
-    </select>
-        <!-- === DRIVER INFORMATION === -->
-    <label for="driverName">Driver Name</label>
-    <input type="text" id="driverName" placeholder="Enter driver's full name">
-
-    <label for="driverLicense">Driver License Number</label>
-    <input type="text" id="driverLicense" placeholder="e.g., AZ1234567">
-
-    <label for="driverContact">Driver Contact Info</label>
-    <input type="text" id="driverContact" placeholder="Phone or email">
-
-    <label for="driverAffiliation">Affiliation</label>
-    <select id="driverAffiliation">
-      <option value="Resident">Resident</option>
-      <option value="Contractor">Contractor</option>
-      <option value="Visitor">Visitor</option>
-      <option value="Unknown">Unknown</option>
-    </select>
-
-    <!-- === PERMIT & ALERT TAGGING === -->
-    <label for="permitNumber">Permit Number</label>
-    <input type="text" id="permitNumber">
-
-    <label for="permitExpiry">Permit Expiry Date</label>
-    <input type="date" id="permitExpiry">
-
-    <label for="vehicleAlert">Flag Vehicle</label>
-    <select id="vehicleAlert">
-      <option value="No Flag">No Flag</option>
-      <option value="BOLO">BOLO</option>
-      <option value="Suspicious">Suspicious</option>
-      <option value="Previous Incident">Previous Incident</option>
-    </select>
-
-    <!-- === ENTRY / EXIT TIMES === -->
-    <label for="entryTime">Entry Time</label>
-    <input type="datetime-local" id="entryTime">
-
-    <label for="exitTime">Exit Time</label>
-    <input type="datetime-local" id="exitTime">
-        <!-- === LOCATION W/ GPS === -->
-    <label for="vehicleLocation">Location</label>
-    <input type="text" id="vehicleLocation" placeholder="Enter or use GPS">
-    <button type="button" onclick="getLocation('vehicleLocation')">Use My Location</button>
-
-    <!-- === VEHICLE INSPECTION CHECKLIST === -->
-    <label>Vehicle Inspection</label>
-    <div class="severity-select" style="flex-wrap: wrap;">
-      <label><input type="checkbox" id="checkPlate"> Plate Matches</label>
-      <label><input type="checkbox" id="checkTags"> Tags Valid</label>
-      <label><input type="checkbox" id="checkVIN"> VIN Verified</label>
-      <label><input type="checkbox" id="checkDamage"> No Damage</label>
-      <label><input type="checkbox" id="checkWindows"> Windows OK</label>
-      <label><input type="checkbox" id="checkContraband"> No Contraband</label>
-    </div>
-
-    <!-- === NOTES / OBSERVATIONS === -->
-    <label for="vehicleNote">Notes / Observations</label>
-    <textarea id="vehicleNote" rows="6" placeholder="Any observations, comments, or concerns..."></textarea>
-        <!-- === SIGNATURES === -->
-    <label for="officerSignature">Officer Signature (type name)</label>
-    <input type="text" id="officerSignature" placeholder="Officer full name">
-
-    <label for="driverSignature">Driver Signature (type name)</label>
-    <input type="text" id="driverSignature" placeholder="Driver full name (if available)">
-
-    <!-- === PHOTO UPLOAD === -->
-    <label for="vehiclePhotoUpload">Upload Vehicle Photos (Max 4)</label>
-    <input type="file" id="vehiclePhotoUpload" accept="image/*" multiple onchange="accumulateVehiclePhotos(this)">
-    <div class="images-preview" id="vehiclePreview"></div>
-
-    <!-- === PDF GENERATOR === -->
-    <button type="button" onclick="generateVehiclePDF()">Generate Vehicle Report</button>
-    <div id="vehicleConfirmationMessage">Successfully generated PDF.</div>
-  </div>
-</div>
+<script>
 // =============================
-// FORM TOGGLE HANDLER (UPDATED TO INCLUDE VEHICLE REPORT)
+// GEOLOCATION HANDLER (DUAL TARGET)
+// =============================
+function getLocation(targetId = "location") {
+  if (navigator.geolocation) {
+    navigator.geolocation.getCurrentPosition(async function(position) {
+      const lat = position.coords.latitude;
+      const lon = position.coords.longitude;
+      try {
+        const response = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}`);
+        const data = await response.json();
+        document.getElementById(targetId).value = data.display_name || `Lat: ${lat}, Lon: ${lon}`;
+      } catch {
+        document.getElementById(targetId).value = `Lat: ${lat}, Lon: ${lon}`;
+      }
+    });
+  } else {
+    alert("Geolocation not supported.");
+  }
+}
+
+// =============================
+// FORM TOGGLE HANDLER (UPDATED)
 // =============================
 function toggleForm(type) {
   const officer = document.getElementById("officerReportBox");
   const maintenance = document.getElementById("maintenanceReportBox");
   const dar = document.getElementById("dailyActivityReportBox");
-  const vehicle = document.getElementById("vehicleReportBox");
 
   officer.style.display = "none";
   maintenance.style.display = "none";
   dar.style.display = "none";
-  vehicle.style.display = "none";
 
   if (type === "officer") {
     officer.style.display = "block";
@@ -403,153 +306,111 @@ function toggleForm(type) {
     maintenance.style.display = "block";
   } else if (type === "dar") {
     dar.style.display = "block";
-  } else if (type === "vehicle") {
-    vehicle.style.display = "block";
   }
 }
-// =============================
-// VEHICLE REPORT – IMAGE HANDLING (Max 4)
-// =============================
-const vehiclePhotoFiles = [];
 
-function accumulateVehiclePhotos(input) {
-  const container = document.getElementById('vehiclePreview');
+// =============================
+// INCIDENT SEVERITY VISUAL DISPLAY
+// =============================
+function updateSeverity(level) {
+  const display = document.getElementById('severityDisplay');
+  display.textContent = "Severity Level: " + level.toUpperCase();
+  display.style.color = level === 'Low' ? "green" : level === 'Moderate' ? "goldenrod" : "red";
+}
+
+// =============================
+// INCIDENT TYPE - "OTHER" FIELD TOGGLE
+// =============================
+function toggleOtherField(selectObj) {
+  const container = document.getElementById('otherIncidentContainer');
+  container.classList.toggle('show', selectObj.value === 'Other');
+}
+// =============================
+// OFFICER REPORT - IMAGE HANDLING (Max 4)
+// =============================
+const accumulatedFiles = [];
+
+function accumulatePreviewImages(input) {
+  const previewContainer = document.getElementById('previewContainer');
   const newFiles = Array.from(input.files);
-  for (let i = 0; i < newFiles.length && vehiclePhotoFiles.length < 4; i++) {
-    vehiclePhotoFiles.push(newFiles[i]);
+  for (let i = 0; i < newFiles.length && accumulatedFiles.length < 4; i++) {
+    accumulatedFiles.push(newFiles[i]);
     const reader = new FileReader();
     reader.onload = e => {
       const img = document.createElement('img');
       img.src = e.target.result;
-      container.appendChild(img);
+      previewContainer.appendChild(img);
     };
     reader.readAsDataURL(newFiles[i]);
   }
   input.value = '';
 }
-// =============================
-// OCR SCANNER – TESSERACT.JS
-// =============================
-async function scanTextFromImage(imageInputId, outputInputId) {
-  const input = document.getElementById(imageInputId);
-  if (!input.files.length) return alert("Please upload an image first.");
-  
-  const file = input.files[0];
-  const reader = new FileReader();
 
-  reader.onload = async function(e) {
-    const { createWorker } = Tesseract;
-    const worker = await createWorker({
-      logger: m => console.log(m) // Optional: remove or comment out to silence logs
-    });
-
-    await worker.loadLanguage('eng');
-    await worker.initialize('eng');
-    const { data: { text } } = await worker.recognize(e.target.result);
-    await worker.terminate();
-
-    const cleaned = text.replace(/[^a-zA-Z0-9]/g, '').trim().toUpperCase();
-    document.getElementById(outputInputId).value = cleaned || "SCAN FAILED";
-  };
-
-  reader.readAsDataURL(file);
-}
 // =============================
-// VEHICLE REPORT – PDF GENERATOR
+// OFFICER REPORT - PDF GENERATOR
 // =============================
-async function generateVehiclePDF() {
+async function generatePDF() {
   const { jsPDF } = window.jspdf;
   const pdf = new jsPDF();
-  let y = 10;
+  const officer = document.getElementById("officerName").value;
+  const badge = document.getElementById("badgeNumber").value;
+  const dateTime = document.getElementById("incidentDateTime").value;
+  const location = document.getElementById("location").value;
+  const severity = document.querySelector('input[name="severity"]:checked')?.value || "N/A";
+  const type = document.getElementById("incidentType").value;
+  const otherType = document.getElementById("otherIncidentType").value;
+  const finalType = type === "Other" ? otherType : type;
+  const details = document.getElementById("incidentDetails").value;
+  const status = document.getElementById("incidentStatus").value;
 
+  let y = 10;
   pdf.setFont("helvetica", "bold");
   pdf.setFillColor(40, 40, 40);
   pdf.setTextColor(255, 255, 255);
   pdf.rect(10, y, 190, 10, "F");
   pdf.setFontSize(16);
-  pdf.text("VEHICLE REPORT", 105, y + 7, { align: "center" });
+  pdf.text("REPORT FORM", 105, y + 7, { align: "center" });
 
   y += 20;
-
   const fields = [
-    ["Officer", document.getElementById("vehicleOfficer").value],
-    ["Plate", document.getElementById("vehiclePlate").value],
-    ["VIN", document.getElementById("vehicleVIN").value],
-    ["Make", document.getElementById("vehicleMake").value],
-    ["Model", document.getElementById("vehicleModel").value],
-    ["Color", document.getElementById("vehicleColor").value],
-    ["Type", document.getElementById("vehicleType").value],
-    ["Driver Name", document.getElementById("driverName").value],
-    ["License #", document.getElementById("driverLicense").value],
-    ["Contact", document.getElementById("driverContact").value],
-    ["Affiliation", document.getElementById("driverAffiliation").value],
-    ["Permit #", document.getElementById("permitNumber").value],
-    ["Permit Expiry", document.getElementById("permitExpiry").value],
-    ["Flag", document.getElementById("vehicleAlert").value],
-    ["Entry Time", document.getElementById("entryTime").value],
-    ["Exit Time", document.getElementById("exitTime").value],
-    ["Location", document.getElementById("vehicleLocation").value]
+    ["Officer Name", officer], ["Badge Number", badge],
+    ["Incident Date & Time", dateTime], ["Location", location],
+    ["Incident Severity", severity.toUpperCase()], ["Incident Type", finalType],
+    ["Incident Status", status], ["", ""]
   ];
-
   pdf.setFontSize(11);
-  pdf.setTextColor(0);
   for (let i = 0; i < fields.length; i += 2) {
     pdf.setFont("helvetica", "bold");
+    pdf.setTextColor(0);
     pdf.text(`${fields[i][0]}:`, 10, y);
     pdf.text(`${fields[i + 1][0]}:`, 105, y);
     pdf.setFont("helvetica", "normal");
+    if (fields[i][0] === "Incident Severity") {
+      const color = severity === "High" ? [200, 0, 0] : severity === "Moderate" ? [218, 165, 32] : [0, 128, 0];
+      pdf.setTextColor(...color);
+    }
     pdf.text(fields[i][1] || "N/A", 60, y);
-    pdf.text(fields[i + 1][1] || "N/A", 145, y);
+    pdf.setTextColor(0);
+    pdf.text(fields[i + 1][1] || "", 145, y);
     y += 8;
   }
 
-  // Checklist
   pdf.setFont("helvetica", "bold");
   pdf.setFillColor(220, 220, 220);
   pdf.rect(10, y, 190, 8, "F");
-  pdf.text("Vehicle Inspection Checklist", 12, y + 6);
+  pdf.text("Narrative", 12, y + 6);
   y += 14;
-
-  const checks = [
-    ["Plate Matches", "checkPlate"],
-    ["Tags Valid", "checkTags"],
-    ["VIN Verified", "checkVIN"],
-    ["No Damage", "checkDamage"],
-    ["Windows OK", "checkWindows"],
-    ["No Contraband", "checkContraband"]
-  ];
-
   pdf.setFont("helvetica", "normal");
-  for (let i = 0; i < checks.length; i++) {
-    const label = checks[i][0];
-    const id = checks[i][1];
-    const val = document.getElementById(id).checked ? "✅ Yes" : "❌ No";
-    pdf.text(`${label}: ${val}`, 10, y);
-    y += 6;
-  }
-
-  // Notes
-  y += 4;
-  pdf.setFont("helvetica", "bold");
-  pdf.setFillColor(220, 220, 220);
-  pdf.rect(10, y, 190, 8, "F");
-  pdf.text("Officer Notes", 12, y + 6);
-  y += 14;
-
-  pdf.setFont("helvetica", "normal");
-  const notes = document.getElementById("vehicleNote").value || "N/A";
-  const split = pdf.splitTextToSize(notes, 185);
+  let split = pdf.splitTextToSize(details || "N/A", 185);
   pdf.text(split, 10, y);
   y += split.length * 6 + 5;
-
-  // Images
-  for (let i = 0; i < Math.min(4, vehiclePhotoFiles.length); i++) {
-    const file = vehiclePhotoFiles[i];
+    for (let i = 0; i < Math.min(4, accumulatedFiles.length); i++) {
+    const file = accumulatedFiles[i];
     const reader = new FileReader();
     await new Promise(resolve => {
-      reader.onload = function(e) {
+      reader.onload = function (e) {
         const img = new Image();
-        img.onload = function() {
+        img.onload = function () {
           if (y > 240) {
             pdf.addPage();
             y = 10;
@@ -564,26 +425,14 @@ async function generateVehiclePDF() {
     });
   }
 
-  // Signatures
-  y += 10;
-  pdf.setFont("helvetica", "bold");
-  pdf.setFillColor(220, 220, 220);
-  pdf.rect(10, y, 190, 8, "F");
-  pdf.text("Signatures", 12, y + 6);
-  y += 14;
-  pdf.setFont("helvetica", "normal");
-  pdf.text(`Officer Signature: ${document.getElementById("officerSignature").value || "N/A"}`, 10, y); y += 6;
-  pdf.text(`Driver Signature: ${document.getElementById("driverSignature").value || "N/A"}`, 10, y); y += 6;
-
-  // Timestamp
   const timestamp = new Date().toLocaleString();
   pdf.setFontSize(8);
   pdf.setTextColor(100);
   pdf.text(`Generated on ${timestamp}`, 200, 290, { align: "right" });
 
-  pdf.save("vehicle_report.pdf");
+  pdf.save("incident_report.pdf");
 
-  const msg = document.getElementById('vehicleConfirmationMessage');
+  const msg = document.getElementById('confirmationMessage');
   msg.style.display = "block";
   msg.style.opacity = 1;
   setTimeout(() => {
@@ -591,7 +440,211 @@ async function generateVehiclePDF() {
     setTimeout(() => msg.style.display = "none", 500);
   }, 2500);
 }
+// =============================
+// MAINTENANCE REPORT - IMAGE HANDLING (Max 4)
+// =============================
+const maintenanceFiles = [];
+
+function accumulateMaintenanceImages(input) {
+  const container = document.getElementById('maintenancePreview');
+  const newFiles = Array.from(input.files);
+  for (let i = 0; i < newFiles.length && maintenanceFiles.length < 4; i++) {
+    maintenanceFiles.push(newFiles[i]);
+    const reader = new FileReader();
+    reader.onload = e => {
+      const img = document.createElement('img');
+      img.src = e.target.result;
+      container.appendChild(img);
+    };
+    reader.readAsDataURL(newFiles[i]);
+  }
+  input.value = '';
+}
+
+// =============================
+// MAINTENANCE REPORT - PDF GENERATOR
+// =============================
+async function generateMaintenancePDF() {
+  const { jsPDF } = window.jspdf;
+  const pdf = new jsPDF();
+  const location = document.getElementById("maintenanceLocation").value || "N/A";
+  const issue = document.getElementById("maintenanceIssue").value || "N/A";
+  const status = document.getElementById("maintenanceStatus").value || "N/A";
+
+  let y = 10;
+  pdf.setFont("helvetica", "bold");
+  pdf.setFillColor(40, 40, 40);
+  pdf.setTextColor(255, 255, 255);
+  pdf.rect(10, y, 190, 10, "F");
+  pdf.setFontSize(16);
+  pdf.text("MAINTENANCE REPORT", 105, y + 7, { align: "center" });
+
+  y += 20;
+  const fields = [
+    ["Location", location],
+    ["Status", status],
+    ["", ""]
+  ];
+  pdf.setFontSize(11);
+  for (let i = 0; i < fields.length; i += 2) {
+    pdf.setFont("helvetica", "bold");
+    pdf.setTextColor(0);
+    pdf.text(`${fields[i][0]}:`, 10, y);
+    pdf.text(`${fields[i + 1][0]}:`, 105, y);
+    pdf.setFont("helvetica", "normal");
+    pdf.text(fields[i][1] || "N/A", 60, y);
+    pdf.text(fields[i + 1][1] || "", 145, y);
+    y += 8;
+  }
+
+  pdf.setFont("helvetica", "bold");
+  pdf.setFillColor(220, 220, 220);
+  pdf.rect(10, y, 190, 8, "F");
+  pdf.text("Issue Description", 12, y + 6);
+  y += 14;
+  pdf.setFont("helvetica", "normal");
+  let split = pdf.splitTextToSize(issue, 185);
+  pdf.text(split, 10, y);
+  y += split.length * 6 + 5;
+    for (let i = 0; i < Math.min(4, maintenanceFiles.length); i++) {
+    const file = maintenanceFiles[i];
+    const reader = new FileReader();
+    await new Promise(resolve => {
+      reader.onload = function (e) {
+        const img = new Image();
+        img.onload = function () {
+          if (y > 240) {
+            pdf.addPage();
+            y = 10;
+          }
+          pdf.addImage(img, 'JPEG', 10, y, 60, 45);
+          y += 50;
+          resolve();
+        };
+        img.src = e.target.result;
+      };
+      reader.readAsDataURL(file);
+    });
+  }
+
+  const timestamp = new Date().toLocaleString();
+  pdf.setFontSize(8);
+  pdf.setTextColor(100);
+  pdf.text(`Generated on ${timestamp}`, 200, 290, { align: "right" });
+
+  pdf.save("maintenance_report.pdf");
+
+  const msg = document.getElementById('maintenanceConfirmationMessage');
+  msg.style.display = "block";
+  msg.style.opacity = 1;
+  setTimeout(() => {
+    msg.style.opacity = 0;
+    setTimeout(() => msg.style.display = "none", 500);
+  }, 2500);
+}
+
+// =============================
+// DAILY ACTIVITY REPORT – ENTRY BUILDER
+// =============================
+let darCount = 0;
+function addDAREntry() {
+  if (darCount >= 16) return alert("Maximum of 16 entries reached.");
+  darCount++;
+
+  const container = document.getElementById('darEntryContainer');
+  const entry = document.createElement('div');
+  entry.className = 'dar-entry';
+  entry.style.marginTop = '15px';
+  entry.innerHTML = `
+    <label><b>Entry ${darCount}</b></label>
+    <label for="darTime${darCount}">Time</label>
+    <input type="datetime-local" id="darTime${darCount}">
+
+    <label for="darLocation${darCount}">Location</label>
+    <input type="text" id="darLocation${darCount}" placeholder="Enter location or use GPS">
+    <button type="button" onclick="getLocation('darLocation${darCount}')">Use My Location</button>
+
+    <label for="darType${darCount}">Activity Type</label>
+    <select id="darType${darCount}">
+      <option value="Patrol">Patrol</option>
+      <option value="Report Writing">Report Writing</option>
+      <option value="Break">Break</option>
+      <option value="Call for Service">Call for Service</option>
+      <option value="Alarm Response">Alarm Response</option>
+      <option value="Assist Other Officer">Assist Other Officer</option>
+      <option value="Suspicious Person">Suspicious Person</option>
+      <option value="Incident Response">Incident Response</option>
+      <option value="Follow-Up">Follow-Up</option>
+    </select>
+
+    <label for="darNote${darCount}">Description</label>
+    <textarea id="darNote${darCount}" rows="4" placeholder="Brief summary of this activity..."></textarea>
+  `;
+  container.appendChild(entry);
+}
+// =============================
+// DAILY ACTIVITY REPORT – PDF GENERATOR
+// =============================
+async function generateDARPdf() {
+  const { jsPDF } = window.jspdf;
+  const pdf = new jsPDF();
+
+  let y = 10;
+  pdf.setFont("helvetica", "bold");
+  pdf.setFillColor(40, 40, 40);
+  pdf.setTextColor(255, 255, 255);
+  pdf.rect(10, y, 190, 10, "F");
+  pdf.setFontSize(16);
+  pdf.text("DAILY ACTIVITY REPORT", 105, y + 7, { align: "center" });
+
+  y += 20;
+  pdf.setFontSize(12);
+  pdf.setFont("helvetica", "bold");
+  pdf.setTextColor(0);
+  pdf.text(`Total Entries: ${darCount}`, 10, y);
+  y += 10;
+
+  for (let i = 1; i <= darCount; i++) {
+    const time = document.getElementById(`darTime${i}`)?.value || "N/A";
+    const location = document.getElementById(`darLocation${i}`)?.value || "N/A";
+    const type = document.getElementById(`darType${i}`)?.value || "N/A";
+    const note = document.getElementById(`darNote${i}`)?.value || "N/A";
+
+    pdf.setFont("helvetica", "bold");
+    pdf.text(`Entry ${i}`, 10, y);
+    y += 6;
+
+    pdf.setFont("helvetica", "normal");
+    pdf.text(`Time: ${time}`, 10, y); y += 6;
+    pdf.text(`Location: ${location}`, 10, y); y += 6;
+    pdf.text(`Type: ${type}`, 10, y); y += 6;
+
+    let splitNote = pdf.splitTextToSize(`Note: ${note}`, 185);
+    pdf.text(splitNote, 10, y);
+    y += splitNote.length * 6 + 4;
+
+    if (y > 250) {
+      pdf.addPage();
+      y = 10;
+    }
+  }
+
+  const timestamp = new Date().toLocaleString();
+  pdf.setFontSize(8);
+  pdf.setTextColor(100);
+  pdf.text(`Generated on ${timestamp}`, 200, 290, { align: "right" });
+
+  pdf.save("daily_activity_report.pdf");
+
+  const msg = document.getElementById('darConfirmationMessage');
+  msg.style.display = "block";
+  msg.style.opacity = 1;
+  setTimeout(() => {
+    msg.style.opacity = 0;
+    setTimeout(() => msg.style.display = "none", 500);
+  }, 2500);
+}
+</script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/tesseract.js@4.0.2/dist/tesseract.min.js"></script>
 </body>
 </html>
