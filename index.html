@@ -650,7 +650,7 @@ window.onload = function () {
   // All your existing JS goes here
   // Example:
   async function generateMaintenancePDF() {
-    const { jsPDF } = window.jspdf;
+    const jsPDF = window.jspdf.jsPDF;
     const pdf = new jsPDF();
     ...
   }
