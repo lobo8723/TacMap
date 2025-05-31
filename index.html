@@ -138,7 +138,6 @@
   </style>
 </head>
 <body>
-
 <!-- ============================= -->
 <!-- REPORT TOGGLE BUTTONS -->
 <!-- ============================= -->
@@ -154,7 +153,8 @@
 <div id="officerReportBox" style="display: none;">
   <div class="container">
     <h2>OFFICER REPORT</h2>
-        <label for="officerName">Officer Name</label>
+
+    <label for="officerName">Officer Name</label>
     <input type="text" id="officerName" placeholder="Enter officer's name">
 
     <label for="badgeNumber">Badge Number</label>
@@ -196,8 +196,7 @@
       <option value="Found Property">Found Property</option>
       <option value="Other">Other</option>
     </select>
-
-    <div id="otherIncidentContainer">
+        <div id="otherIncidentContainer">
       <label for="otherIncidentType">Specify Other Incident</label>
       <input type="text" id="otherIncidentType" placeholder="Describe other incident type">
     </div>
@@ -262,7 +261,6 @@
     <div id="darConfirmationMessage">Successfully generated PDF.</div>
   </div>
 </div>
-
 <!-- ============================= -->
 <!-- START: SCRIPT SECTION -->
 <!-- ============================= -->
@@ -308,7 +306,6 @@ function toggleForm(type) {
     dar.style.display = "block";
   }
 }
-
 // =============================
 // INCIDENT SEVERITY VISUAL DISPLAY
 // =============================
@@ -325,6 +322,7 @@ function toggleOtherField(selectObj) {
   const container = document.getElementById('otherIncidentContainer');
   container.classList.toggle('show', selectObj.value === 'Other');
 }
+
 // =============================
 // OFFICER REPORT - IMAGE HANDLING (Max 4)
 // =============================
@@ -345,7 +343,6 @@ function accumulatePreviewImages(input) {
   }
   input.value = '';
 }
-
 // =============================
 // OFFICER REPORT - PDF GENERATOR
 // =============================
@@ -440,6 +437,7 @@ async function generatePDF() {
     setTimeout(() => msg.style.display = "none", 500);
   }, 2500);
 }
+
 // =============================
 // MAINTENANCE REPORT - IMAGE HANDLING (Max 4)
 // =============================
@@ -460,7 +458,6 @@ function accumulateMaintenanceImages(input) {
   }
   input.value = '';
 }
-
 // =============================
 // MAINTENANCE REPORT - PDF GENERATOR
 // =============================
@@ -506,7 +503,8 @@ async function generateMaintenancePDF() {
   let split = pdf.splitTextToSize(issue, 185);
   pdf.text(split, 10, y);
   y += split.length * 6 + 5;
-    for (let i = 0; i < Math.min(4, maintenanceFiles.length); i++) {
+
+  for (let i = 0; i < Math.min(4, maintenanceFiles.length); i++) {
     const file = maintenanceFiles[i];
     const reader = new FileReader();
     await new Promise(resolve => {
@@ -542,7 +540,6 @@ async function generateMaintenancePDF() {
     setTimeout(() => msg.style.display = "none", 500);
   }, 2500);
 }
-
 // =============================
 // DAILY ACTIVITY REPORT – ENTRY BUILDER
 // =============================
@@ -582,6 +579,7 @@ function addDAREntry() {
   `;
   container.appendChild(entry);
 }
+
 // =============================
 // DAILY ACTIVITY REPORT – PDF GENERATOR
 // =============================
