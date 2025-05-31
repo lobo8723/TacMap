@@ -644,5 +644,17 @@ async function generateDARPdf() {
 }
 </script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+
+<script>
+window.onload = function () {
+  // All your existing JS goes here
+  // Example:
+  async function generateMaintenancePDF() {
+    const { jsPDF } = window.jspdf;
+    const pdf = new jsPDF();
+    ...
+  }
+};
+</script>
 </body>
 </html>
