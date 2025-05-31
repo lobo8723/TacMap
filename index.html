@@ -461,9 +461,18 @@ function accumulateMaintenanceImages(input) {
 // =============================
 // MAINTENANCE REPORT - PDF GENERATOR
 // =============================
+<script>
 async function generateMaintenancePDF() {
-  const { jsPDF } = window.jspdf;
+  // ✅ FIX: Proper jsPDF UMD access
+  const jsPDF = window.jspdf?.jsPDF;
+
+  if (!jsPDF) {
+    alert("PDF library failed to load. Make sure jsPDF is included at the bottom of your HTML.");
+    return;
+  }
+
   const pdf = new jsPDF();
+
   const location = document.getElementById("maintenanceLocation").value || "N/A";
   const issue = document.getElementById("maintenanceIssue").value || "N/A";
   const status = document.getElementById("maintenanceStatus").value || "N/A";
@@ -540,6 +549,7 @@ async function generateMaintenancePDF() {
     setTimeout(() => msg.style.display = "none", 500);
   }, 2500);
 }
+</script>
 // =============================
 // DAILY ACTIVITY REPORT – ENTRY BUILDER
 // =============================
